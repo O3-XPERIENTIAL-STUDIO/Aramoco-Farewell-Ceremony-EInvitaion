@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Seat assignment | Aramco Farewells</title>
+    <link rel="icon" type="image/png" href="assets/icon.png" />
+    <link rel="apple-touch-icon" href="assets/icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #0D1117;
+            --surface: #161B22;
+            --surface-hover: #21262D;
+            --surface2: #21262D;
+            --border: #30363D;
+            --text: #E6EDF3;
+            --text-muted: #8B949E;
+            --gold: #D29922;
+            --accent: #2F81F7;
+            --red: #F85149;
+            --green: #3FB950;
+            --amber: #D29922;
+            --radius: 14px;
+        }
+        html, body { height: 100%; }
+        body {
+            font-family: Inter, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            color-scheme: dark;
+        }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            background: var(--surface2);
+            color: var(--text);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .btn-primary { background: #CBA886; color: #002650; border-color: #CBA886; }
+        .btn-ghost { background: transparent; }
+        .btn:hover { filter: brightness(1.08); }
+        .btn:disabled { opacity: 0.55; cursor: wait; }
+        input, select {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: #0D1117;
+            color: var(--text);
+            padding: 9px 10px;
+            font-size: 13px;
+        }
+        .gate {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+        }
+        .gate-card {
+            width: 100%;
+            max-width: 380px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 28px 24px;
+        }
+        .gate-card h1 { font-size: 1.15rem; margin-bottom: 6px; }
+        .gate-card p { color: var(--text-muted); font-size: 13px; margin-bottom: 16px; }
+        .gate-card input { margin-bottom: 10px; }
+        .gate-error { color: var(--red); font-size: 12px; min-height: 18px; margin-bottom: 8px; }
+        .app { display: none; }
+        .app.open { display: block; }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border);
+        }
+        .header h1 { font-size: 1.15rem; }
+        .header h1 span { color: var(--gold); }
+        .header-right { display: flex; gap: 8px; align-items: center; }
+        .wrap { padding: 18px 22px 40px; }
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+        }
+        .hint { color: var(--text-muted); font-size: 12px; margin-bottom: 12px; }
+        .hint code {
+            font-size: 11px;
+            background: #0D1117;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 1px 5px;
+        }
+        .seat-stats { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+        .seat-chip {
+            border: 1px solid var(--border);
+            background: var(--surface2);
+            color: var(--text);
+            border-radius: 999px;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .seat-chip.active { border-color: var(--gold); color: var(--gold); }
+        .map-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        .map-meta { color: var(--text-muted); font-size: 12px; line-height: 1.45; }
+        .map-meta strong { color: var(--text); }
+        .map-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+        .map-upload-status {
+            display: none;
+            width: 100%;
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        .map-upload-status.visible { display: block; }
+        .map-upload-status.is-working {
+            background: rgba(47, 129, 247, 0.16);
+            color: #79b8ff;
+            border: 1px solid rgba(47, 129, 247, 0.35);
+        }
+        .map-upload-status.is-ok {
+            background: rgba(63, 185, 80, 0.14);
+            color: var(--green);
+            border: 1px solid rgba(63, 185, 80, 0.32);
+        }
+        .map-upload-status.is-err {
+            background: rgba(248, 81, 73, 0.14);
+            color: var(--red);
+            border: 1px solid rgba(248, 81, 73, 0.32);
+        }
+        .seat-layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 360px;
+            gap: 16px;
+            align-items: start;
+        }
+        .seat-map-stage {
+            position: relative;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: #071422;
+            overflow: hidden;
+        }
+        .seat-zoom-bar {
+            position: absolute;
+            z-index: 4;
+            top: 10px;
+            right: 10px;
+            display: flex;
+            gap: 6px;
+            background: rgba(13, 17, 23, 0.82);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 6px;
+            backdrop-filter: blur(8px);
+        }
+        .seat-zoom-bar .btn {
+            width: 38px;
+            height: 38px;
+            padding: 0;
+            font-size: 18px;
+            line-height: 1;
+        }
+        .seat-zoom-bar .btn.wide { width: auto; padding: 0 10px; font-size: 12px; }
+        .seat-zoom-level {
+            min-width: 46px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            color: var(--text-muted);
+            font-variant-numeric: tabular-nums;
+        }
+        .seat-viewport {
+            height: min(78vh, 760px);
+            overflow: hidden;
+            touch-action: none;
+            cursor: grab;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .seat-viewport.is-panning { cursor: grabbing; }
+        .seat-map-inner {
+            transform-origin: 0 0;
+            will-change: transform;
+        }
+        .seat-map-inner svg {
+            display: block;
+            width: 1400px;
+            height: 980px;
+            max-width: none;
+        }
+        .seat-side {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+            background: var(--surface2);
+            min-height: 280px;
+        }
+        .seat-side h3 { font-size: 14px; margin-bottom: 8px; }
+        .seat-side p { color: var(--text-muted); font-size: 12px; line-height: 1.5; margin-bottom: 10px; }
+        .seat-side input, .seat-side .btn { width: 100%; margin-bottom: 8px; }
+        .seat-current {
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 12px;
+            background: rgba(203, 168, 134, 0.08);
+        }
+        .seat-current strong { display: block; color: var(--gold); margin-bottom: 4px; }
+        .seat-assign-status {
+            display: none;
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        .seat-assign-status.visible { display: block; }
+        .seat-assign-status.is-working {
+            background: rgba(47, 129, 247, 0.16);
+            color: #79b8ff;
+            border: 1px solid rgba(47, 129, 247, 0.35);
+        }
+        .seat-assign-status.is-ok {
+            background: rgba(63, 185, 80, 0.14);
+            color: var(--green);
+            border: 1px solid rgba(63, 185, 80, 0.32);
+        }
+        .seat-assign-status.is-err {
+            background: rgba(248, 81, 73, 0.14);
+            color: var(--red);
+            border: 1px solid rgba(248, 81, 73, 0.32);
+        }
+        .seat-guest-list {
+            max-height: 360px;
+            overflow: auto;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .seat-guest-row {
+            display: block;
+            width: 100%;
+            text-align: left;
+            border: 0;
+            border-bottom: 1px solid var(--border);
+            background: transparent;
+            color: var(--text);
+            padding: 11px 12px;
+            cursor: pointer;
+            transition: background 0.12s ease, box-shadow 0.12s ease, transform 0.08s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .seat-guest-row:last-child { border-bottom: 0; }
+        .seat-guest-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+        .seat-guest-name { font-weight: 600; font-size: 13px; }
+        .seat-guest-row small { display: block; color: var(--text-muted); font-size: 11px; margin-top: 3px; }
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            flex-shrink: 0;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            border-radius: 999px;
+            padding: 3px 8px;
+            line-height: 1.2;
+        }
+        .status-badge::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+        .status-accepted {
+            background: rgba(63, 185, 80, 0.12);
+            color: var(--green);
+            border: 1px solid rgba(63, 185, 80, 0.28);
+        }
+        .status-pending {
+            background: rgba(210, 153, 34, 0.12);
+            color: var(--amber);
+            border: 1px solid rgba(210, 153, 34, 0.28);
+        }
+        .status-declined {
+            background: rgba(248, 81, 73, 0.12);
+            color: var(--red);
+            border: 1px solid rgba(248, 81, 73, 0.28);
+        }
+        @media (hover: hover) and (pointer: fine) {
+            .seat-guest-row:hover {
+                background: rgba(203, 168, 134, 0.16);
+            }
+        }
+        .seat-guest-row:active,
+        .seat-guest-row.is-pressed {
+            background: rgba(203, 168, 134, 0.28);
+            transform: scale(0.985);
+        }
+        .seat-guest-row.is-selected {
+            background: rgba(203, 168, 134, 0.18);
+            box-shadow: inset 3px 0 0 #CBA886;
+        }
+        .seat-guest-row.is-assigning {
+            background: rgba(47, 129, 247, 0.18);
+            box-shadow: inset 3px 0 0 var(--accent);
+        }
+        .seat-guest-row.is-assigning .seat-guest-name::after {
+            content: " · Assigning…";
+            color: #79b8ff;
+            font-weight: 700;
+        }
+        .seat-guest-list.is-busy .seat-guest-row:not(.is-assigning) {
+            opacity: 0.45;
+            pointer-events: none;
+        }
+        .seat-hover-card {
+            position: fixed;
+            z-index: 80;
+            min-width: 210px;
+            max-width: 280px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: #161B22;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+            color: var(--text);
+            display: none;
+        }
+        .seat-hover-card.visible { display: block; }
+        .seat-hover-card .hover-name { font-weight: 700; color: var(--gold); margin-bottom: 2px; }
+        .seat-hover-card .hover-meta { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
+        .seat-hover-actions { display: flex; gap: 6px; }
+        .seat-hover-actions .btn { flex: 1; margin: 0; padding: 6px 8px; font-size: 11px; }
+        @media (max-width: 980px) {
+            .header { flex-wrap: wrap; padding: 12px 14px; }
+            .header h1 { font-size: 1rem; }
+            .wrap { padding: 12px 12px 28px; }
+            .panel { padding: 12px; }
+            .seat-layout { grid-template-columns: 1fr; }
+            .seat-viewport { height: min(62vh, 560px); min-height: 280px; }
+            .seat-guest-list { max-height: 42vh; }
+            .seat-hover-card { display: none !important; }
+        }
+        @media (pointer: coarse) {
+            .seat-hover-card { display: none !important; }
+            .seat-guest-row { padding: 13px 12px; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="gate" id="gate">
+        <form class="gate-card" id="gateForm">
+            <h1>Seat assignment</h1>
+            <p>Admin access only. Enter the seat-management password.</p>
+            <input id="adminPassword" type="password" autocomplete="current-password" placeholder="Password" />
+            <div class="gate-error" id="gateError"></div>
+            <button class="btn btn-primary" type="submit" style="width:100%;">Unlock</button>
+        </form>
+    </div>
+
+    <div class="app" id="app">
+        <div class="header">
+            <h1>Aramco Farewells <span>Seat assignment</span></h1>
+            <div class="header-right">
+                <a class="btn btn-ghost" href="dashboard.html">Dashboard</a>
+                <button class="btn btn-ghost" type="button" onclick="lockSeats()">Lock</button>
+            </div>
+        </div>
+        <div class="wrap">
+            <div class="panel">
+                <div class="seat-stats" id="seatStats"></div>
+                <div class="map-toolbar">
+                    <div class="map-meta" id="mapMeta">Current map: placeholder Hall 4</div>
+                    <div class="map-actions">
+                        <input id="svgFileInput" type="file" accept=".dxf,.dwg,.svg,image/svg+xml,image/vnd.dxf,application/dxf,application/acad" hidden />
+                        <button class="btn btn-primary" type="button" onclick="document.getElementById('svgFileInput').click()">Upload CAD / SVG</button>
+                        <button class="btn btn-ghost" type="button" id="restoreMapBtn" onclick="restoreDefaultMap()" style="display:none;">Use placeholder</button>
+                    </div>
+                </div>
+                <div class="map-upload-status" id="mapUploadStatus"></div>
+                <p class="hint">Upload a CAD file and the system numbers chairs and tables for you. Recommended: AutoCAD <strong>DXF</strong> (2018). DWG and SVG also work. Optional: put zones on layers named VVIP, VIP, General, Media.</p>
+                <div class="seat-layout">
+                    <div class="seat-map-stage">
+                        <div class="seat-zoom-bar">
+                            <button class="btn" type="button" onclick="zoomBy(1/1.25)" aria-label="Zoom out">−</button>
+                            <div class="seat-zoom-level" id="seatZoomLevel">100%</div>
+                            <button class="btn" type="button" onclick="zoomBy(1.25)" aria-label="Zoom in">+</button>
+                            <button class="btn wide" type="button" onclick="fitMap()">Fit</button>
+                        </div>
+                        <div class="seat-viewport" id="seatViewport">
+                            <div class="seat-map-inner" id="seatMapInner"></div>
+                        </div>
+                    </div>
+                    <aside class="seat-side" id="seatSide">
+                        <h3>Select a seat</h3>
+                        <p>Click a chair on the map.</p>
+                    </aside>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="seat-hover-card" id="seatHoverCard"></div>
+
+    <script>
+        const baseURL = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
+        const ADMIN_PASSWORD = "admin123";
+        const AUTH_KEY = "aramcoFarewellSeatAdmin";
+        const MIN_SCALE = 0.35;
+        const MAX_SCALE = 6;
+
+        let users = [];
+        let seatMapLoaded = false;
+        let seatFilter = "";
+        let selectedSeatCode = "";
+        let selectedGuestId = "";
+        let assigningGuestId = "";
+        let seatRecords = [];
+        let seatGuestQuery = "";
+        let hoverHideTimer = null;
+        let mapIsUploaded = false;
+        let mapScale = 1;
+        let mapTx = 0;
+        let mapTy = 0;
+        let mapDidPan = false;
+        let mapGesturesBound = false;
+        let mapWidth = 1400;
+        let mapHeight = 980;
+        const pointers = new Map();
+        let lastPinchDist = 0;
+        let lastPanX = 0;
+        let lastPanY = 0;
+
+        function isUnlocked() {
+            return sessionStorage.getItem(AUTH_KEY) === "1";
+        }
+
+        function showApp() {
+            document.getElementById("gate").style.display = "none";
+            document.getElementById("app").classList.add("open");
+            fetchUsers();
+            loadSeatMap(true);
+        }
+
+        function lockSeats() {
+            sessionStorage.removeItem(AUTH_KEY);
+            location.reload();
+        }
+
+        document.getElementById("gateForm").addEventListener("submit", function(e) {
+            e.preventDefault();
+            const value = (document.getElementById("adminPassword").value || "").trim();
+            const error = document.getElementById("gateError");
+            if (value === ADMIN_PASSWORD) {
+                sessionStorage.setItem(AUTH_KEY, "1");
+                showApp();
+                return;
+            }
+            error.textContent = "Incorrect password.";
+        });
+
+        if (isUnlocked()) showApp();
+
+        document.getElementById("svgFileInput").addEventListener("change", async function() {
+            const file = this.files && this.files[0];
+            this.value = "";
+            if (file) await uploadSeatSvg(file);
+        });
+
+        function normalizeStatus(value) {
+            const status = (value || "").toString().trim().toLowerCase();
+            if (status === "accepted") return "accepted";
+            if (status === "declined") return "declined";
+            return "pending";
+        }
+
+        function statusLabel(value) {
+            const status = normalizeStatus(value);
+            if (status === "accepted") return "Accepted";
+            if (status === "declined") return "Declined";
+            return "Pending";
+        }
+
+        function normalizeUserType(value) {
+            const key = (value || "").toString().trim().toLowerCase().replace(/\s+/g, "");
+            if (key === "vvip" || key === "tier1") return "VVIP";
+            if (key === "vip-en" || key === "vipen" || key === "vip_en") return "VIP-EN";
+            if (key === "vip") return "VIP";
+            if (key === "media") return "Media";
+            return "General";
+        }
+
+        async function fetchUsers() {
+            const response = await fetch(`${baseURL}/api/AramcoFarewell/users`, { cache: "no-store" });
+            if (!response.ok) return;
+            const data = (await response.json()) || [];
+            users = data.map(u => ({
+                uniqueId: u.uniqueId || u.UniqueId || "",
+                userName: u.fullName || u.FullName || "",
+                emailId: u.emailId || u.EmailId || "",
+                company: u.company || u.Company || "",
+                inviteType: normalizeUserType(u.userType || u.UserType),
+                status: normalizeStatus(u.status || u.Status),
+                seatCode: u.seatCode || u.SeatCode || ""
+            }));
+        }
+
+        function escapeSeatHtml(value) {
+            return String(value || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+        }
+
+        function findSeat(code) {
+            const key = String(code || "").toUpperCase();
+            return seatRecords.find(s => (s.seatCode || s.SeatCode || "").toUpperCase() === key) || null;
+        }
+
+        function applyMapTransform() {
+            const inner = document.getElementById("seatMapInner");
+            if (!inner) return;
+            inner.style.transform = `translate(${mapTx}px, ${mapTy}px) scale(${mapScale})`;
+            const level = document.getElementById("seatZoomLevel");
+            if (level) level.textContent = Math.round(mapScale * 100) + "%";
+        }
+
+        function zoomAt(cx, cy, factor) {
+            const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, mapScale * factor));
+            const k = next / mapScale;
+            mapTx = cx - (cx - mapTx) * k;
+            mapTy = cy - (cy - mapTy) * k;
+            mapScale = next;
+            applyMapTransform();
+        }
+
+        function zoomBy(factor) {
+            const viewport = document.getElementById("seatViewport");
+            if (!viewport) return;
+            zoomAt(viewport.clientWidth / 2, viewport.clientHeight / 2, factor);
+        }
+
+        function fitMap() {
+            const viewport = document.getElementById("seatViewport");
+            if (!viewport || !viewport.clientWidth || !viewport.clientHeight) return;
+            const pad = 16;
+            const scale = Math.min(
+                (viewport.clientWidth - pad * 2) / mapWidth,
+                (viewport.clientHeight - pad * 2) / mapHeight
+            );
+            mapScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale));
+            mapTx = (viewport.clientWidth - mapWidth * mapScale) / 2;
+            mapTy = (viewport.clientHeight - mapHeight * mapScale) / 2;
+            applyMapTransform();
+        }
+
+        function pinchDistance() {
+            const pts = [...pointers.values()];
+            if (pts.length < 2) return 0;
+            return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        }
+
+        function bindMapGestures(viewport) {
+            if (mapGesturesBound) return;
+            mapGesturesBound = true;
+
+            viewport.addEventListener("wheel", (e) => {
+                e.preventDefault();
+                const rect = viewport.getBoundingClientRect();
+                zoomAt(e.clientX - rect.left, e.clientY - rect.top, e.deltaY < 0 ? 1.12 : 1 / 1.12);
+            }, { passive: false });
+
+            viewport.addEventListener("pointerdown", (e) => {
+                if (e.pointerType === "mouse" && e.button !== 0) return;
+                viewport.setPointerCapture(e.pointerId);
+                pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                lastPanX = e.clientX;
+                lastPanY = e.clientY;
+                mapDidPan = false;
+                if (pointers.size === 2) lastPinchDist = pinchDistance();
+            });
+
+            viewport.addEventListener("pointermove", (e) => {
+                if (!pointers.has(e.pointerId)) return;
+                pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+                if (pointers.size >= 2) {
+                    const rect = viewport.getBoundingClientRect();
+                    const pts = [...pointers.values()];
+                    const cx = (pts[0].x + pts[1].x) / 2 - rect.left;
+                    const cy = (pts[0].y + pts[1].y) / 2 - rect.top;
+                    const dist = pinchDistance();
+                    if (lastPinchDist) zoomAt(cx, cy, dist / lastPinchDist);
+                    lastPinchDist = dist;
+                    mapDidPan = true;
+                    viewport.classList.add("is-panning");
+                    return;
+                }
+                const dx = e.clientX - lastPanX;
+                const dy = e.clientY - lastPanY;
+                if (Math.hypot(dx, dy) > 6) {
+                    mapDidPan = true;
+                    viewport.classList.add("is-panning");
+                    hideSeatHover();
+                }
+                if (mapDidPan) {
+                    mapTx += dx;
+                    mapTy += dy;
+                    lastPanX = e.clientX;
+                    lastPanY = e.clientY;
+                    applyMapTransform();
+                }
+            });
+
+            const endPointer = (e) => {
+                pointers.delete(e.pointerId);
+                lastPinchDist = 0;
+                viewport.classList.remove("is-panning");
+                setTimeout(() => { mapDidPan = false; }, 50);
+            };
+            viewport.addEventListener("pointerup", endPointer);
+            viewport.addEventListener("pointercancel", endPointer);
+            viewport.addEventListener("lostpointercapture", (e) => {
+                if (pointers.has(e.pointerId)) endPointer(e);
+            });
+
+            window.addEventListener("resize", () => {
+                if (seatMapLoaded) fitMap();
+            });
+        }
+
+        async function loadSeatMap(forceSvg) {
+            const statsEl = document.getElementById("seatStats");
+            const viewport = document.getElementById("seatViewport");
+            const inner = document.getElementById("seatMapInner");
+            try {
+                const [dataRes, svgRes] = await Promise.all([
+                    fetch(`${baseURL}/api/AramcoFarewell/seats`, { cache: "no-store" }),
+                    (!seatMapLoaded || forceSvg)
+                        ? fetch(`${baseURL}/api/AramcoFarewell/seats/map`, { cache: "no-store" })
+                        : Promise.resolve(null)
+                ]);
+                if (!dataRes.ok) throw new Error("Could not load seats");
+                const data = await dataRes.json();
+                seatRecords = data.seats || data.Seats || [];
+                renderSeatStats(data.stats || data.Stats || {});
+                renderMapMeta(data.map || data.Map || {});
+                if (svgRes) {
+                    if (!svgRes.ok) throw new Error("Could not load seat map");
+                    inner.innerHTML = await svgRes.text();
+                    const svg = inner.querySelector("svg");
+                    if (svg && svg.viewBox && svg.viewBox.baseVal) {
+                        mapWidth = svg.viewBox.baseVal.width || 1400;
+                        mapHeight = svg.viewBox.baseVal.height || 980;
+                        svg.setAttribute("width", mapWidth);
+                        svg.setAttribute("height", mapHeight);
+                    }
+                    seatMapLoaded = true;
+                    bindSeatClicks(inner);
+                    bindMapGestures(viewport);
+                    requestAnimationFrame(fitMap);
+                }
+                paintSeats();
+                if (selectedSeatCode) renderSeatSide(selectedSeatCode);
+                else resetSeatSide();
+            } catch (err) {
+                console.error(err);
+                if (statsEl) statsEl.textContent = "Seat map is unavailable until the API is published.";
+            }
+        }
+
+        function renderSeatStats(stats) {
+            const el = document.getElementById("seatStats");
+            if (!el) return;
+            const items = [
+                ["", "Total", stats.total ?? stats.Total ?? 0],
+                ["Assigned", "Assigned", stats.assigned ?? stats.Assigned ?? 0],
+                ["Reserved", "Reserved", stats.reserved ?? stats.Reserved ?? 0],
+                ["Available", "Unassigned", stats.unassigned ?? stats.Unassigned ?? 0]
+            ];
+            el.innerHTML = items.map(([filter, label, value]) =>
+                `<button type="button" class="seat-chip${seatFilter === filter ? " active" : ""}" onclick="setSeatFilter('${filter}')">${label}: <strong>${value}</strong></button>`
+            ).join("");
+        }
+
+        function renderMapMeta(map) {
+            mapIsUploaded = !!(map.isUploaded ?? map.IsUploaded);
+            const fileName = map.fileName || map.FileName || (mapIsUploaded ? "uploaded.svg" : "hall4.svg");
+            const updated = map.updatedOn || map.UpdatedOn;
+            const meta = document.getElementById("mapMeta");
+            const restore = document.getElementById("restoreMapBtn");
+            if (meta) {
+                const when = updated ? ` · updated ${new Date(updated).toLocaleString()}` : "";
+                meta.innerHTML = mapIsUploaded
+                    ? `Current map: <strong>${escapeSeatHtml(fileName)}</strong>${escapeSeatHtml(when)}`
+                    : `Current map: <strong>placeholder Hall 4</strong> · upload a CAD SVG anytime to replace it`;
+            }
+            if (restore) restore.style.display = mapIsUploaded ? "" : "none";
+        }
+
+        function setMapUploadStatus(kind, message) {
+            const el = document.getElementById("mapUploadStatus");
+            if (!el) return;
+            el.className = "map-upload-status" + (kind ? ` visible is-${kind}` : "");
+            el.textContent = message || "";
+        }
+
+        async function uploadSeatSvg(file) {
+            if (!file) return;
+            if (mapIsUploaded && !confirm("Replace the current seat map? Seats that are not in the new file will lose their assignments."))
+                return;
+            setMapUploadStatus("working", `Uploading ${file.name}… chairs and tables will be numbered automatically.`);
+            try {
+                const body = new FormData();
+                body.append("file", file);
+                const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/map`, { method: "POST", body });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    setMapUploadStatus("err", data.message || data.Message || "Could not upload SVG.");
+                    return;
+                }
+                selectedSeatCode = "";
+                selectedGuestId = "";
+                assigningGuestId = "";
+                seatMapLoaded = false;
+                await loadSeatMap(true);
+                setMapUploadStatus("ok", data.message || data.Message || "Map replaced.");
+            } catch (err) {
+                setMapUploadStatus("err", "Could not upload SVG. Check the connection and try again.");
+            }
+        }
+
+        async function restoreDefaultMap() {
+            if (!confirm("Restore the placeholder Hall 4 map? Seats that are not on that map will lose their assignments."))
+                return;
+            setMapUploadStatus("working", "Restoring placeholder map…");
+            try {
+                const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/map`, { method: "DELETE" });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    setMapUploadStatus("err", data.message || data.Message || "Could not restore the placeholder map.");
+                    return;
+                }
+                selectedSeatCode = "";
+                selectedGuestId = "";
+                assigningGuestId = "";
+                seatMapLoaded = false;
+                await loadSeatMap(true);
+                setMapUploadStatus("ok", data.message || data.Message || "Placeholder map restored.");
+            } catch (err) {
+                setMapUploadStatus("err", "Could not restore the placeholder map.");
+            }
+        }
+
+        function resetSeatSide() {
+            const side = document.getElementById("seatSide");
+            if (!side) return;
+            side.innerHTML = "<h3>Select a seat</h3><p>Click a chair on the map.</p>";
+        }
+
+        function setSeatFilter(filter) {
+            seatFilter = seatFilter === filter ? "" : filter;
+            paintSeats();
+            renderSeatStats({
+                total: seatRecords.filter(s => seatStatus(s) !== "Blocked").length,
+                assigned: seatRecords.filter(s => seatStatus(s) === "Assigned").length,
+                reserved: seatRecords.filter(s => seatStatus(s) === "Reserved").length,
+                unassigned: seatRecords.filter(s => seatStatus(s) === "Available").length
+            });
+        }
+
+        function seatStatus(seat) {
+            return (seat && (seat.status || seat.Status)) || "Available";
+        }
+
+        function bindSeatClicks(root) {
+            root.querySelectorAll("[data-seat-code]").forEach(el => {
+                el.addEventListener("click", () => {
+                    if (mapDidPan) return;
+                    hideSeatHover();
+                    selectedSeatCode = el.getAttribute("data-seat-code") || "";
+                    selectedGuestId = "";
+                    assigningGuestId = "";
+                    seatGuestQuery = "";
+                    paintSeats();
+                    renderSeatSide(selectedSeatCode);
+                    if (window.matchMedia("(max-width: 980px)").matches) {
+                        document.getElementById("seatSide")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    }
+                });
+                el.addEventListener("mouseenter", () => {
+                    if (window.matchMedia("(pointer: coarse)").matches) return;
+                    showSeatHover(el);
+                });
+                el.addEventListener("mouseleave", scheduleHideSeatHover);
+            });
+            const hover = document.getElementById("seatHoverCard");
+            if (hover && !hover.dataset.bound) {
+                hover.dataset.bound = "1";
+                hover.addEventListener("mouseenter", () => { if (hoverHideTimer) clearTimeout(hoverHideTimer); });
+                hover.addEventListener("mouseleave", scheduleHideSeatHover);
+            }
+        }
+
+        function showSeatHover(el) {
+            if (hoverHideTimer) clearTimeout(hoverHideTimer);
+            const code = el.getAttribute("data-seat-code") || "";
+            const seat = findSeat(code);
+            if (!seat) return;
+            const status = seatStatus(seat);
+            const name = seat.guestName || seat.GuestName || "";
+            const zone = seat.zone || seat.Zone || "";
+            const hover = document.getElementById("seatHoverCard");
+            if (!hover) return;
+            let actions = `<button class="btn btn-primary" onclick="openSeatAssign('${escapeSeatHtml(code)}')">Assign</button>`;
+            if (status === "Assigned") {
+                actions = `
+                    <button class="btn btn-ghost" onclick="releaseSelectedSeat('${escapeSeatHtml(code)}')">Release</button>
+                    <button class="btn btn-primary" onclick="openSeatAssign('${escapeSeatHtml(code)}')">Assign new</button>`;
+            } else if (status === "Reserved") {
+                actions = `
+                    <button class="btn btn-ghost" onclick="releaseSelectedSeat('${escapeSeatHtml(code)}')">Release</button>
+                    <button class="btn btn-primary" onclick="openSeatAssign('${escapeSeatHtml(code)}')">Assign</button>`;
+            }
+            hover.innerHTML = `
+                <div class="hover-name">${escapeSeatHtml(name || code)}</div>
+                <div class="hover-meta">${escapeSeatHtml(code)} · ${escapeSeatHtml(status)}${zone ? " · " + escapeSeatHtml(zone) : ""}</div>
+                <div class="seat-hover-actions">${actions}</div>`;
+            hover.classList.add("visible");
+            const rect = el.getBoundingClientRect();
+            const cardW = hover.offsetWidth || 220;
+            const cardH = hover.offsetHeight || 90;
+            let left = rect.right + 10;
+            let top = rect.top;
+            if (left + cardW > window.innerWidth - 8) left = Math.max(8, rect.left - cardW - 10);
+            if (top + cardH > window.innerHeight - 8) top = Math.max(8, window.innerHeight - cardH - 8);
+            hover.style.left = left + "px";
+            hover.style.top = top + "px";
+        }
+
+        function scheduleHideSeatHover() {
+            if (hoverHideTimer) clearTimeout(hoverHideTimer);
+            hoverHideTimer = setTimeout(hideSeatHover, 180);
+        }
+
+        function hideSeatHover() {
+            const hover = document.getElementById("seatHoverCard");
+            if (hover) hover.classList.remove("visible");
+        }
+
+        function openSeatAssign(code) {
+            hideSeatHover();
+            selectedSeatCode = code;
+            selectedGuestId = "";
+            assigningGuestId = "";
+            seatGuestQuery = "";
+            paintSeats();
+            renderSeatSide(code);
+            setTimeout(() => {
+                const search = document.getElementById("seatGuestSearch");
+                if (search) search.focus();
+            }, 0);
+        }
+
+        function paintSeats() {
+            const inner = document.getElementById("seatMapInner");
+            if (!inner) return;
+            inner.querySelectorAll("[data-seat-code]").forEach(el => {
+                const code = (el.getAttribute("data-seat-code") || "").toUpperCase();
+                const seat = findSeat(code) || {};
+                const status = seatStatus(seat).toLowerCase();
+                el.classList.remove("is-available", "is-reserved", "is-assigned", "is-blocked", "is-selected");
+                el.classList.add("is-" + (status || "available"));
+                if (code === selectedSeatCode.toUpperCase()) el.classList.add("is-selected");
+                el.style.opacity = (seatFilter && seatStatus(seat) !== seatFilter) ? "0.28" : "1";
+            });
+        }
+
+        function invitees() {
+            const rank = { accepted: 0, pending: 1, declined: 2 };
+            return users.slice().sort((a, b) => {
+                const byStatus = (rank[a.status] ?? 9) - (rank[b.status] ?? 9);
+                if (byStatus) return byStatus;
+                return (a.userName || a.emailId || "").localeCompare(b.userName || b.emailId || "");
+            });
+        }
+
+        function renderSeatSide(code) {
+            const side = document.getElementById("seatSide");
+            const seat = findSeat(code);
+            if (!side || !seat) return;
+            const status = seatStatus(seat);
+            const guestName = seat.guestName || seat.GuestName || "";
+            const zone = seat.zone || seat.Zone || "";
+            const current = status === "Assigned" && guestName ? `
+                <div class="seat-current">
+                    <strong>${escapeSeatHtml(guestName)}</strong>
+                    Assigned to this seat
+                    <button class="btn btn-ghost" style="margin-top:8px;" onclick="releaseSelectedSeat('${escapeSeatHtml(code)}')">Release</button>
+                </div>` : "";
+            side.innerHTML = `
+                <h3>${escapeSeatHtml(code)}</h3>
+                <p>Zone: <strong>${escapeSeatHtml(zone)}</strong><br>Status: <strong>${escapeSeatHtml(status)}</strong></p>
+                ${current}
+                <div class="seat-assign-status" id="seatAssignStatus"></div>
+                <p>${status === "Assigned" ? "Assign a different guest" : "Search guests to assign"}</p>
+                <input type="search" id="seatGuestSearch" placeholder="Search name, email, company, status…" value="${escapeSeatHtml(seatGuestQuery)}" oninput="filterSeatGuests(this.value)" />
+                <div class="seat-guest-list" id="seatGuestList"></div>
+                <button class="btn btn-ghost" onclick="reserveSelectedSeat('${escapeSeatHtml(code)}')">Reserve seat</button>
+            `;
+            renderSeatGuestList();
+        }
+
+        function setAssignStatus(kind, message) {
+            const el = document.getElementById("seatAssignStatus");
+            if (!el) return;
+            el.className = "seat-assign-status" + (kind ? ` visible is-${kind}` : "");
+            el.textContent = message || "";
+        }
+
+        function filterSeatGuests(query) {
+            seatGuestQuery = query || "";
+            renderSeatGuestList();
+        }
+
+        function renderSeatGuestList() {
+            const list = document.getElementById("seatGuestList");
+            if (!list) return;
+            const q = seatGuestQuery.trim().toLowerCase();
+            const rows = invitees().filter(u => {
+                if (!q) return true;
+                return [u.userName, u.emailId, u.company, u.inviteType, u.seatCode, statusLabel(u.status)]
+                    .join(" ")
+                    .toLowerCase()
+                    .includes(q);
+            });
+            if (!rows.length) {
+                list.classList.remove("is-busy");
+                list.innerHTML = '<div class="seat-guest-row" style="cursor:default;">No matching guests</div>';
+                return;
+            }
+            list.classList.toggle("is-busy", !!assigningGuestId);
+            list.innerHTML = rows.map(u => {
+                const taken = u.seatCode ? ` · seat ${escapeSeatHtml(u.seatCode)}` : "";
+                const state = u.uniqueId === assigningGuestId
+                    ? " is-assigning"
+                    : (u.uniqueId === selectedGuestId ? " is-selected" : "");
+                return `<button type="button" class="seat-guest-row${state}"
+                    onpointerdown="pressGuestRow(this)"
+                    onpointerup="unpressGuestRow(this)"
+                    onpointerleave="unpressGuestRow(this)"
+                    onclick="assignSeatToGuest('${escapeSeatHtml(selectedSeatCode)}','${escapeSeatHtml(u.uniqueId)}','${escapeSeatHtml(u.userName || u.emailId)}')">
+                    <div class="seat-guest-top">
+                        <span class="seat-guest-name">${escapeSeatHtml(u.userName || u.emailId)}</span>
+                        <span class="status-badge status-${escapeSeatHtml(u.status)}">${escapeSeatHtml(statusLabel(u.status))}</span>
+                    </div>
+                    <small>${escapeSeatHtml(u.inviteType || "")} · ${escapeSeatHtml(u.emailId || "")}${taken}</small>
+                </button>`;
+            }).join("");
+        }
+
+        function pressGuestRow(el) {
+            if (el) el.classList.add("is-pressed");
+        }
+
+        function unpressGuestRow(el) {
+            if (el) el.classList.remove("is-pressed");
+        }
+
+        async function assignSeatToGuest(code, uniqueId, guestName) {
+            if (!code || !uniqueId || assigningGuestId) return;
+            selectedGuestId = uniqueId;
+            assigningGuestId = uniqueId;
+            renderSeatGuestList();
+            setAssignStatus("working", `Assigning ${guestName || "guest"} to ${code}…`);
+            try {
+                const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(code)}/assign`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ uniqueId })
+                });
+                const body = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    assigningGuestId = "";
+                    renderSeatGuestList();
+                    setAssignStatus("err", body.message || body.Message || "Could not assign seat");
+                    return;
+                }
+                const note = (body.zoneWarning || body.ZoneWarning)
+                    ? " Assigned. Guest type does not match this seat zone."
+                    : "";
+                hideSeatHover();
+                await fetchUsers();
+                assigningGuestId = "";
+                await loadSeatMap(false);
+                setAssignStatus("ok", `${guestName || "Guest"} assigned to ${code}.${note}`);
+            } catch (err) {
+                assigningGuestId = "";
+                renderSeatGuestList();
+                setAssignStatus("err", "Could not assign seat. Check the connection and try again.");
+            }
+        }
+
+        async function reserveSelectedSeat(code) {
+            hideSeatHover();
+            setAssignStatus("working", `Reserving ${code}…`);
+            const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(code)}/reserve`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({})
+            });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setAssignStatus("err", body.message || body.Message || "Could not reserve seat");
+                return;
+            }
+            await loadSeatMap(false);
+            setAssignStatus("ok", `${code} reserved.`);
+        }
+
+        async function releaseSelectedSeat(code) {
+            hideSeatHover();
+            setAssignStatus("working", `Releasing ${code}…`);
+            const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(code)}/release`, { method: "PUT" });
+            const body = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                setAssignStatus("err", body.message || body.Message || "Could not release seat");
+                return;
+            }
+            selectedGuestId = "";
+            assigningGuestId = "";
+            await fetchUsers();
+            await loadSeatMap(false);
+            setAssignStatus("ok", `${code} released.`);
+        }
+    </script>
+</body>
+
+</html>

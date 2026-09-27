@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>QR Check-in | Aramco Farewells</title>
+    <link rel="icon" type="image/png" href="assets/icon.png" />
+    <link rel="apple-touch-icon" href="assets/icon.png" />
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+    <style>
+        @font-face {
+            font-family: "DIN Next LT Arabic";
+            src: url("assets/fonts/DINNextLTArabic-Regular.ttf") format("truetype");
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        :root {
+            --navy: #002650;
+            --gold: #CBA886;
+            --white: #ffffff;
+            --ok: #1f8a5b;
+            --warn: #c47b1a;
+            --err: #c43c4a;
+            --muted: #5b6b7c;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html,
+        body {
+            min-height: 100%;
+            font-family: "DIN Next LT Arabic", Tahoma, sans-serif;
+            background: #06111d;
+            color: var(--white);
+        }
+
+        body {
+            min-height: 100dvh;
+            padding: calc(env(safe-area-inset-top, 0px) + 16px) 16px calc(env(safe-area-inset-bottom, 0px) + 20px);
+        }
+
+        .wrap {
+            max-width: 520px;
+            margin: 0 auto;
+        }
+
+        .top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand img {
+            width: 42px;
+            height: auto;
+        }
+
+        .brand h1 {
+            font-size: 1.05rem;
+            font-weight: 700;
+        }
+
+        .brand p {
+            font-size: 0.75rem;
+            color: #b7c2ce;
+        }
+
+        .reader-shell {
+            position: relative;
+            overflow: hidden;
+            width: 100%;
+            aspect-ratio: 3 / 4;
+            max-height: min(58dvh, 520px);
+            border-radius: 18px;
+            background: #0b1a2a;
+            border: 1px solid rgba(203, 168, 134, 0.35);
+        }
+
+        #reader,
+        #reader__scan_region {
+            width: 100% !important;
+            height: 100% !important;
+            min-height: 0 !important;
+        }
+
+        #reader video,
+        #reader__scan_region video,
+        #reader__scan_region canvas {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            border-radius: 18px;
+            display: block;
+        }
+
+        #reader__dashboard_section {
+            display: none !important;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            margin: 14px 0 16px;
+        }
+
+        .actions button {
+            width: 100%;
+        }
+
+        button {
+            appearance: none;
+            border: 0;
+            border-radius: 999px;
+            padding: 12px 16px;
+            font: inherit;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        .btn-gold {
+            flex: 1;
+            background: var(--gold);
+            color: var(--navy);
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--white);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .result {
+            display: none;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            border: 1px solid transparent;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .result.ok {
+            background: rgba(31, 138, 91, 0.16);
+            border-color: rgba(31, 138, 91, 0.45);
+        }
+
+        .result.warn {
+            background: rgba(196, 123, 26, 0.16);
+            border-color: rgba(196, 123, 26, 0.45);
+        }
+
+        .result.err {
+            background: rgba(196, 60, 74, 0.16);
+            border-color: rgba(196, 60, 74, 0.45);
+        }
+
+        .result h2 {
+            font-size: 1.15rem;
+            margin-bottom: 4px;
+        }
+
+        .result .meta {
+            color: #d5dde6;
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+
+        .manual {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 18px;
+        }
+
+        .manual input {
+            flex: 1;
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: #0b1a2a;
+            color: var(--white);
+            border-radius: 12px;
+            padding: 12px;
+            font: inherit;
+        }
+
+        .history h3 {
+            font-size: 0.78rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 10px;
+        }
+
+        .history li {
+            list-style: none;
+            padding: 10px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.08);
+            font-size: 0.9rem;
+        }
+
+        .history .when {
+            color: #9aabbb;
+            font-size: 0.78rem;
+        }
+
+        .status {
+            font-size: 0.8rem;
+            color: #9aabbb;
+            margin-top: 8px;
+            min-height: 1.2em;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrap">
+        <div class="top">
+            <div class="brand">
+                <div>
+                    <h1>EventPass</h1>
+                    <p>Scan guest QR to record check-in</p>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="reader-shell">
+            <div id="reader"></div>
+        </div>
+        <div class="status" id="cameraStatus">Camera is off. Tap to start.</div>
+
+        <div class="actions">
+            <button class="btn-gold" id="btnCamera" type="button">Start camera</button>
+        </div>
+
+        <div class="result" id="resultBox">
+            <h2 id="resultTitle"></h2>
+            <div class="meta" id="resultMeta"></div>
+        </div>
+
+
+        <div class="history">
+            <h3 id="sessionLabel">This session</h3>
+            <ul id="historyList"></ul>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            var API_BASE = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
+            var scanner = null;
+            var running = false;
+            var busy = false;
+            var lastCode = "";
+            var lastAt = 0;
+
+            var cameraBtn = document.getElementById("btnCamera");
+            var cameraStatus = document.getElementById("cameraStatus");
+
+            function setCameraButton(isRunning) {
+                running = !!isRunning;
+                cameraBtn.textContent = running ? "Stop camera" : "Start camera";
+                cameraBtn.className = running ? "btn-ghost" : "btn-gold";
+                cameraBtn.disabled = false;
+            }
+            var resultBox = document.getElementById("resultBox");
+            var resultTitle = document.getElementById("resultTitle");
+            var resultMeta = document.getElementById("resultMeta");
+            var historyList = document.getElementById("historyList");
+
+            function extractUniqueId(raw) {
+                var value = (raw || "").trim();
+                if (!value) return "";
+                try {
+                    var url = new URL(value);
+                    return (url.searchParams.get("uniqueId") || url.searchParams.get("UniqueId") || value).trim();
+                } catch (e) {
+                    var match = value.match(/[?&]uniqueId=([^&#]+)/i);
+                    return match ? decodeURIComponent(match[1]) : value;
+                }
+            }
+
+            function showResult(type, title, meta) {
+                resultBox.className = "result show " + type;
+                resultTitle.textContent = title;
+                resultMeta.innerHTML = meta;
+            }
+
+            function beep(ok) {
+                try {
+                    var ctx = new(window.AudioContext || window.webkitAudioContext)();
+                    var osc = ctx.createOscillator();
+                    var gain = ctx.createGain();
+                    osc.type = "sine";
+                    osc.frequency.value = ok ? 880 : 220;
+                    gain.gain.value = 0.05;
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start();
+                    setTimeout(function() {
+                        osc.stop();
+                        ctx.close();
+                    }, 140);
+                } catch (e) {}
+            }
+
+            function addHistory(name, when, returningGuest) {
+                var li = document.createElement("li");
+                li.innerHTML = "<strong>" + (name || "Guest") + "</strong>" +
+                    (returningGuest ? " · return" : " · first entry") +
+                    "<div class=\"when\">" + when + "</div>";
+                historyList.insertBefore(li, historyList.firstChild);
+            }
+
+            function getViewerTimeZoneLabel() {
+                try {
+                    var zone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'local';
+                    var parts = new Intl.DateTimeFormat(undefined, { timeZoneName: 'shortOffset' }).formatToParts(new Date());
+                    var offset = '';
+                    for (var i = 0; i < parts.length; i++) {
+                        if (parts[i].type === 'timeZoneName') offset = parts[i].value;
+                    }
+                    return offset ? zone + ' · ' + offset : zone;
+                } catch (e) {
+                    return 'local';
+                }
+            }
+
+            function formatTime(value) {
+                if (!value) return '';
+                var raw = String(value).trim();
+                var iso = /Z$|[+-]\d{2}:\d{2}$/.test(raw) ? raw : raw.replace(' ', 'T') + 'Z';
+                var date = new Date(iso);
+                if (isNaN(date.getTime())) return raw;
+                var options = {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true,
+                    timeZoneName: 'shortOffset'
+                };
+                try {
+                    return date.toLocaleString(undefined, options);
+                } catch (e) {
+                    options.timeZoneName = 'short';
+                    return date.toLocaleString(undefined, options);
+                }
+            }
+
+            function recordCheckIn(raw) {
+                var uniqueId = extractUniqueId(raw);
+                if (!uniqueId) {
+                    showResult("err", "No QR value", "The scan did not contain a guest id.");
+                    return Promise.resolve();
+                }
+
+                var now = Date.now();
+                if (uniqueId === lastCode && now - lastAt < 4000) {
+                    return Promise.resolve();
+                }
+                lastCode = uniqueId;
+                lastAt = now;
+                if (busy) return Promise.resolve();
+                busy = true;
+
+                showResult("warn", "Checking in…", uniqueId);
+
+                return fetch(API_BASE + "/api/AramcoFarewell/check-in?uniqueId=" + encodeURIComponent(uniqueId), {
+                    method: "POST",
+                    mode: "cors",
+                    cache: "no-store",
+                    headers: {
+                        "Accept": "application/json"
+                    }
+                }).then(function(res) {
+                    return res.text().then(function(text) {
+                        var body = {};
+                        try {
+                            body = text ? JSON.parse(text) : {};
+                        } catch (e) {}
+                        return {
+                            ok: res.ok,
+                            status: res.status,
+                            body: body
+                        };
+                    });
+                }).then(function(result) {
+                    var body = result.body || {};
+                    if (result.status === 404) {
+                        beep(false);
+                        showResult("err", "Guest not found", "This QR is not in the Aramco Farewells guest list.");
+                        return;
+                    }
+                    if (!result.ok) {
+                        beep(false);
+                        showResult("err", "Check-in failed", body.message || body.Message || "The API did not accept this scan.");
+                        return;
+                    }
+
+                    var name = body.fullName || body.FullName || "Guest";
+                    var status = body.status || body.Status || "";
+                    var count = body.checkInCount || body.CheckInCount || 1;
+                    var returningGuest = !!(body.alreadyCheckedIn || body.AlreadyCheckedIn);
+                    var when = formatTime(body.checkedInOn || body.CheckedInOn);
+                    var type = returningGuest ? "warn" : "ok";
+                    var title = returningGuest ? "Already checked in" : "Checked in";
+                    beep(true);
+                    showResult(type, title,
+                        "<strong>" + name + "</strong><br>" +
+                        "Status: " + status + "<br>" +
+                        "Check-ins: " + count + "<br>" +
+                        when);
+                    addHistory(name, when, returningGuest);
+                }).catch(function(err) {
+                    beep(false);
+                    showResult("err", "Network error", "Could not reach the check-in API.");
+                    console.error(err);
+                }).finally(function() {
+                    busy = false;
+                });
+            }
+
+            function getQrBoxSize(viewfinderWidth, viewfinderHeight) {
+                var edge = Math.min(viewfinderWidth, viewfinderHeight);
+                var size = Math.floor(edge * 0.72);
+                if (size < 140) size = Math.max(100, edge - 32);
+                if (size > edge) size = Math.max(80, edge - 16);
+                return {
+                    width: size,
+                    height: size
+                };
+            }
+
+            function startCamera() {
+                if (running) return;
+                if (!window.Html5Qrcode) {
+                    cameraStatus.textContent = "Scanner library failed to load.";
+                    return;
+                }
+                scanner = scanner || new Html5Qrcode("reader");
+                cameraBtn.disabled = true;
+                cameraStatus.textContent = "Starting camera…";
+                scanner.start({
+                        facingMode: "environment"
+                    }, {
+                        fps: 10,
+                        aspectRatio: 3 / 4,
+                        qrbox: getQrBoxSize
+                    },
+                    function(decodedText) {
+                        recordCheckIn(decodedText);
+                    },
+                    function() {}
+                ).then(function() {
+                    setCameraButton(true);
+                    cameraStatus.textContent = "Point the camera at the guest QR.";
+                }).catch(function(err) {
+                    setCameraButton(false);
+                    cameraStatus.textContent = "Camera permission is required to scan.";
+                    console.error(err);
+                });
+            }
+
+            function stopCamera() {
+                if (!scanner || !running) return;
+                cameraBtn.disabled = true;
+                scanner.stop().then(function() {
+                    setCameraButton(false);
+                    cameraStatus.textContent = "Camera is off. Tap to start.";
+                }).catch(function() {
+                    setCameraButton(false);
+                    cameraStatus.textContent = "Camera is off. Tap to start.";
+                });
+            }
+
+            cameraBtn.addEventListener("click", function() {
+                if (running) stopCamera();
+                else startCamera();
+            });
+
+            var sessionLabel = document.getElementById("sessionLabel");
+            if (sessionLabel) {
+                sessionLabel.textContent = "This session · " + getViewerTimeZoneLabel();
+            }
+        })();
+    </script>
+</body>
+
+</html>

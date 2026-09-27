@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>تأكيد الحضور | أرامكو</title>
+    <link rel="icon" type="image/png" href="assets/icon.png" />
+    <link rel="apple-touch-icon" href="assets/icon.png" />
+    <!--[if mso]>
+  <xml>
+    <o:OfficeDocumentSettings>
+      <o:AllowPNG/>
+      <o:PixelsPerInch>96</o:PixelsPerInch>
+    </o:OfficeDocumentSettings>
+  </xml>
+  <![endif]-->
+    <style>
+        @font-face {
+            font-family: "DIN Next LT Arabic";
+            src: url("assets/fonts/DINNextLTArabic-Regular.ttf") format("truetype");
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: "DIN Next LT Arabic Medium";
+            src: url("assets/fonts/DINNextLTArabic-Medium.ttf") format("truetype");
+            font-weight: 500;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        #guestName {
+            font-family: "DIN Next LT Arabic Medium", "DIN Next LT Arabic", Tahoma, Arial, sans-serif !important;
+            font-weight: 500 !important;
+        }
+
+        :root {
+            --layout-width: 600px;
+            --navy: #002650;
+            --gold: #CBA886;
+            --page-bg: #e8e8e8;
+        }
+
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            background-color: var(--page-bg);
+        }
+
+        img {
+            border: 0;
+            outline: none;
+            text-decoration: none;
+            -ms-interpolation-mode: bicubic;
+        }
+
+        #confirm-card {
+            width: var(--layout-width);
+            max-width: 100%;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-collapse: collapse;
+        }
+
+        .layout-img {
+            display: block;
+            width: 100%;
+            max-width: 100%;
+            height: auto;
+        }
+
+        @media only screen and (max-width: 620px) {
+            .page-pad {
+                padding: 0 !important;
+            }
+
+            #confirm-card {
+                width: 100% !important;
+            }
+        }
+    </style>
+</head>
+
+<body style="margin:0; padding:0; background-color:#e8e8e8; font-family: 'DIN Next LT Arabic', Tahoma, Arial, sans-serif;">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" bgcolor="#e8e8e8" style="margin:0; padding:0; background-color:#e8e8e8; border-collapse:collapse;">
+        <tr>
+            <td class="page-pad" align="center" valign="top" bgcolor="#e8e8e8" style="padding:24px 16px; background-color:#e8e8e8;">
+
+                <table id="confirm-card" role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" width="600">
+
+                    <tr>
+                        <td align="center" bgcolor="#ffffff" style="margin:0; padding:0; line-height:0; font-size:0;">
+                            <img class="layout-img" src="assets/emailInvitation/confirmEmail-v1/email-invite-confirm-header.webp" width="600" alt="أرامكو" style="display:block; width:100%; max-width:100%; height:auto; border:0;" />
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td align="center" bgcolor="#002650" style="padding:16px 24px; background-color:#002650; color:#ffffff; font-family: 'DIN Next LT Arabic Medium', 'DIN Next LT Arabic', Tahoma, Arial, sans-serif; font-weight:500; font-size:20px; text-align:center;">
+                            <span id="guestName" style="color:#ffffff; font-family: 'DIN Next LT Arabic Medium', 'DIN Next LT Arabic', Tahoma, Arial, sans-serif; font-weight:500;">{{GuestName}}</span>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td align="center" bgcolor="#ffffff" style="padding:28px 28px 12px; background-color:#ffffff; color:#002650; font-family: 'DIN Next LT Arabic', Tahoma, Arial, sans-serif; font-size:16px; line-height:1.9; text-align:center;">
+                            شكرًا لتأكيد حضوركم حفل وداع أرامكو.<br />
+                            يرجى الاحتفاظ برمز الاستجابة السريعة (QR Code) أدناه، حيث سيكون مطلوبًا لإتمام إجراءات الدخول.
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td align="center" bgcolor="#ffffff" style="padding:12px 28px; background-color:#ffffff;">
+                            <!-- Local preview uses a dummy QR. Backend will replace this with cid:aramco-farewell-qr@invite -->
+                            <img id="qrImage" src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=ASHRAQ-INVITE-DUMMY" alt="QR Code" width="220" height="220" style="display:block; width:220px; height:220px; border:0; background:#ffffff;" />
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td align="center" bgcolor="#ffffff" style="padding:0 28px 16px; background-color:#ffffff;">
+                            <a id="btnDownloadQrCard" href="#" style="display:inline-block; background-color:#CBA886; color:#002650; font-family: 'DIN Next LT Arabic', Tahoma, Arial, sans-serif; font-size:15px; font-weight:700; text-decoration:none; padding:12px 28px; border-radius:8px;">
+                                تحميل بطاقة الدعوة
+                            </a>
+                            <p style="margin:8px 0 0; color:#4a5d73; font-family: 'DIN Next LT Arabic', Tahoma, Arial, sans-serif; font-size:12px; line-height:1.5;">Download invitation card</p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td align="center" bgcolor="#ffffff" style="padding:0 28px 20px; background-color:#ffffff;">
+                            <a id="btnAppleWallet" href="#" style="display:none; text-decoration:none;" aria-label="إضافة إلى Apple Wallet">
+                                <img src="assets/wallet/add-to-apple-wallet-ar.svg" width="180" height="57" alt="إضافة إلى Apple Wallet" style="display:block; width:180px; height:auto; border:0;" />
+                            </a>
+                            <p id="walletHint" style="display:none; margin:10px 0 0; color:#4a5d73; font-family: 'DIN Next LT Arabic', Tahoma, Arial, sans-serif; font-size:12px; line-height:1.5;">On iPhone, open this page in Safari, then tap Add to Apple Wallet.</p>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td align="center" bgcolor="#ffffff" style="padding:8px 28px 16px; background-color:#ffffff; color:#002650; font-family: 'DIN Next LT Arabic', Tahoma, Arial, sans-serif; font-size:15px; line-height:1.8; text-align:center;">
+                            نتطلع إلى الترحيب بكم.<br />
+                            تفاصيل الموعد والمكان ستصلكم لاحقاً.
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td align="center" bgcolor="#ffffff" style="padding:0 28px 28px; background-color:#ffffff; color:#4a5d73; font-family: 'DIN Next LT Arabic', Tahoma, Arial, sans-serif; font-size:14px; line-height:1.7; text-align:center; direction:ltr;">
+                            Thank you for confirming. Please keep this QR code for entry. Event date and venue will be confirmed separately.
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td align="center" bgcolor="#ffffff" style="margin:0; padding:0; line-height:0; font-size:0;">
+                            <img class="layout-img" src="assets/emailInvitation/confirmEmail-v1/email-invite-confirm-footer.webp" width="600" alt="شراكات لها أثر | Building Impactful Partnership" style="display:block; width:100%; max-width:100%; height:auto; border:0;" />
+                        </td>
+                    </tr>
+
+                </table>
+
+            </td>
+        </tr>
+    </table>
+
+    <script>
+        (function() {
+            var params = new URLSearchParams(window.location.search);
+            var name = (params.get("name") || "").trim();
+            var uniqueId = (params.get("uniqueId") || "").trim();
+            var guestEl = document.getElementById("guestName");
+            var qrImage = document.getElementById("qrImage");
+            var btnWallet = document.getElementById("btnAppleWallet");
+            var btnDownloadQrCard = document.getElementById("btnDownloadQrCard");
+
+            if (name && guestEl) {
+                guestEl.textContent = name;
+            }
+
+            if (uniqueId && qrImage) {
+                qrImage.src = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net/api/AramcoFarewell/qr/" + encodeURIComponent(uniqueId);
+            }
+
+            if (uniqueId && btnDownloadQrCard) {
+                btnDownloadQrCard.href = "/qr-card/" + encodeURIComponent(uniqueId);
+            }
+
+            function isAppleDevice() {
+                var ua = navigator.userAgent || "";
+                var platform = navigator.platform || "";
+                if (/iPhone|iPad|iPod/i.test(ua)) return true;
+                if (platform === "MacIntel" && navigator.maxTouchPoints > 1) return true;
+                if (/Macintosh|Mac OS X/i.test(ua) && !/Android/i.test(ua)) return true;
+                return false;
+            }
+
+            if (uniqueId && btnWallet && isAppleDevice()) {
+                btnWallet.href = "/wallet/" + encodeURIComponent(uniqueId);
+                btnWallet.style.display = "inline-block";
+                var walletHint = document.getElementById("walletHint");
+                if (walletHint) {
+                    walletHint.style.display = "block";
+                    walletHint.textContent = "Safari adds the pass directly. Chrome on iPhone downloads a .pkpass file — open it to add it to Wallet.";
+                }
+            }
+        })();
+    </script>
+</body>
+
+</html>

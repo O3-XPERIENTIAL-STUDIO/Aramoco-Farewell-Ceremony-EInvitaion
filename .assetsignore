@@ -1,0 +1,9 @@
+.git
+.wrangler
+.assetsignore
+wrangler.jsonc
+wallet-worker.js
+dist
+node_modules
+assets/microsite/Microsite-bg.svg
+*.md

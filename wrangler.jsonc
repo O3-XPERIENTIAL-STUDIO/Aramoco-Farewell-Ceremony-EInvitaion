@@ -1,0 +1,12 @@
+{
+  "name": "aramco-farewell-e-invitation",
+  "compatibility_date": "2026-08-17",
+  "main": "wallet-worker.js",
+  "assets": {
+    "directory": "./",
+    "binding": "ASSETS",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page",
+    "run_worker_first": ["/wallet/*", "/qr-card/*"]
+  }
+}

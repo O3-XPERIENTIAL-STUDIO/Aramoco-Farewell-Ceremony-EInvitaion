@@ -1,0 +1,4020 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>entourage Invitation Management System</title>
+    <link rel="icon" type="image/png" href="assets/icon.png" />
+    <link rel="apple-touch-icon" href="assets/icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #0D1117;
+            --sidebar: #161B22;
+            --surface: #161B22;
+            --surface-hover: #21262D;
+            --surface2: #21262D;
+            --surface3: #21262D;
+            --border: #30363D;
+            --border-hover: #484F58;
+            --text: #E6EDF3;
+            --text-dim: #8B949E;
+            --text-muted: #8B949E;
+            --text-disabled: #484F58;
+            --accent: #2F81F7;
+            --accent-hover: #1F6FEB;
+            --accent-glow: rgba(47, 129, 247, 0.18);
+            --gold: #D29922;
+            --gold-glow: rgba(210, 153, 34, 0.16);
+            --green: #3FB950;
+            --green-glow: rgba(63, 185, 80, 0.16);
+            --red: #F85149;
+            --red-glow: rgba(248, 81, 73, 0.16);
+            --amber: #D29922;
+            --amber-glow: rgba(210, 153, 34, 0.16);
+            --blue: #58A6FF;
+            --info: #58A6FF;
+            --chart-1: #58A6FF;
+            --chart-2: #3FB950;
+            --chart-3: #D29922;
+            --chart-4: #F85149;
+            --chart-5: #BC8CFF;
+            --chart-6: #39C5CF;
+            --radius: 14px;
+            --radius-sm: 8px;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: Inter, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+            color-scheme: dark;
+        }
+
+        /* Background grid */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(47, 129, 247, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(47, 129, 247, 0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Ambient glow */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -20%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 900px;
+            height: 600px;
+            background: radial-gradient(ellipse, rgba(47, 129, 247, 0.1) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .wrapper {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 24px 80px;
+        }
+
+        /* ─── HEADER ─────────────────────────────────── */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+
+        .header-eyebrow {
+            font-family: Inter, sans-serif;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--accent);
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-eyebrow::before {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 2px;
+            background: var(--accent);
+            border-radius: 2px;
+        }
+
+        .header-title {
+            font-family: Inter, sans-serif;
+            font-size: 30px;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.8px;
+            line-height: 1.1;
+        }
+
+        .header-title span {
+            background: linear-gradient(135deg, var(--accent), var(--blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            background: rgba(63, 185, 80, 0.1);
+            border: 1px solid rgba(63, 185, 80, 0.25);
+            padding: 7px 14px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--green);
+            letter-spacing: 0.5px;
+        }
+
+        .live-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--green);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(0.8);
+            }
+        }
+
+        /* ─── STATS GRID ─────────────────────────────── */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .stat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px 14px;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s, transform 0.3s, background 0.3s;
+            cursor: default;
+        }
+
+        .stat-card:hover {
+            background: var(--surface-hover);
+            border-color: var(--border-hover);
+            transform: translateY(-2px);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            border-radius: 2px 2px 0 0;
+        }
+
+        .stat-card.total::before {
+            background: linear-gradient(90deg, var(--accent), var(--blue));
+        }
+
+        .stat-card.accepted::before {
+            background: linear-gradient(90deg, var(--green), var(--chart-2));
+        }
+
+        .stat-card.pending::before {
+            background: linear-gradient(90deg, var(--amber), var(--chart-3));
+        }
+
+        .stat-card.declined::before {
+            background: linear-gradient(90deg, var(--red), var(--chart-4));
+        }
+
+        .stat-top {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+
+        .stat-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .stat-card.total .stat-icon {
+            background: var(--accent-glow);
+        }
+
+        .stat-card.accepted .stat-icon {
+            background: var(--green-glow);
+        }
+
+        .stat-card.pending .stat-icon {
+            background: var(--amber-glow);
+        }
+
+        .stat-card.declined .stat-icon {
+            background: var(--red-glow);
+        }
+
+        .stat-value {
+            font-family: Inter, sans-serif;
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: -0.6px;
+        }
+
+        .stat-card.total .stat-value {
+            color: var(--text);
+        }
+
+        .stat-card.accepted .stat-value {
+            color: var(--green);
+        }
+
+        .stat-card.pending .stat-value {
+            color: var(--amber);
+        }
+
+        .stat-card.declined .stat-value {
+            color: var(--red);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: var(--text-muted);
+        }
+
+        .stat-bar {
+            margin-top: 10px;
+            height: 2px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .stat-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .stat-card.total .stat-bar-fill {
+            background: linear-gradient(90deg, var(--accent), var(--blue));
+            width: 100%;
+        }
+
+        .stat-card.accepted .stat-bar-fill {
+            background: var(--green);
+        }
+
+        .stat-card.pending .stat-bar-fill {
+            background: var(--amber);
+        }
+
+        .stat-card.declined .stat-bar-fill {
+            background: var(--red);
+        }
+
+        .stat-percent {
+            font-size: 10px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* ─── SECTION PANELS ─────────────────────────── */
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 20px;
+            transition: border-color 0.2s, background 0.2s;
+        }
+
+        .panel:hover {
+            background: var(--surface-hover);
+            border-color: var(--border-hover);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .panel-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: var(--accent-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+        }
+
+        .panel-title {
+            font-family: Inter, sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text);
+            letter-spacing: 0.3px;
+        }
+
+        /* ─── INPUTS ──────────────────────────────────── */
+        .input-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .input-row input,
+        .input-row select,
+        .filter-row input,
+        .filter-row select {
+            flex: 1;
+            min-width: 140px;
+            padding: 11px 14px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-family: Inter, sans-serif;
+            font-size: 14px;
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .input-row input::placeholder,
+        .filter-row input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .input-row input:focus,
+        .input-row select:focus,
+        .filter-row input:focus,
+        .filter-row select:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .input-row select option,
+        .filter-row select option {
+            background: var(--surface);
+        }
+
+        /* ─── BUTTONS ────────────────────────────────── */
+        .btn {
+            padding: 11px 22px;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-family: Inter, sans-serif;
+            align-items: center;
+            gap: 7px;
+            white-space: nowrap;
+            letter-spacing: 0.2px;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--text);
+            box-shadow: 0 4px 16px var(--accent-glow);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            box-shadow: 0 6px 20px var(--accent-glow);
+            transform: translateY(-1px);
+        }
+
+        .btn-success {
+            background: var(--green-glow);
+            color: var(--green);
+            border: 1px solid rgba(63, 185, 80, 0.25);
+        }
+
+        .btn-success:hover {
+            background: rgba(63, 185, 80, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .btn-ghost {
+            background: var(--surface2);
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+        }
+
+        .btn-ghost:hover {
+            border-color: var(--border-hover);
+            color: var(--text);
+            transform: translateY(-1px);
+        }
+
+        /* ─── IMPORT SECTION ─────────────────────────── */
+        .import-file-input {
+            flex: 1;
+            min-width: 200px;
+            padding: 11px 14px;
+            background: var(--surface2);
+            border: 1px dashed rgba(47, 129, 247, 0.35);
+            border-radius: var(--radius-sm);
+            font-family: Inter, sans-serif;
+            font-size: 13px;
+            color: var(--text-dim);
+            cursor: pointer;
+        }
+
+        .vvip-header-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .vvip-header-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-dim);
+            white-space: nowrap;
+        }
+
+        .vvip-header-preview-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .vvip-header-preview {
+            max-width: 220px;
+            max-height: 120px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            object-fit: contain;
+            background: #fff;
+        }
+
+        .vvip-doc-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border);
+        }
+
+        .vvip-doc-label {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 600;
+            min-width: 110px;
+        }
+
+        .vvip-doc-status {
+            font-size: 12px;
+            color: var(--text-dim);
+        }
+
+        .vvip-doc-status.has-doc {
+            color: var(--green);
+        }
+
+        .bulk-download-hint {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .bulk-download-textarea {
+            width: 100%;
+            min-height: 120px;
+            resize: vertical;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--bg);
+            color: var(--text);
+            font-family: ui-monospace, Consolas, monospace;
+            font-size: 13px;
+            padding: 12px;
+            box-sizing: border-box;
+        }
+
+        .bulk-download-textarea:focus {
+            outline: none;
+            border-color: var(--accent, #2f81f7);
+        }
+
+        .bulk-download-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .bulk-download-status {
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--text-dim);
+            min-height: 1.2em;
+        }
+
+        .bulk-download-status.error {
+            color: #f0516a;
+        }
+
+        .bulk-download-status.ok {
+            color: var(--green);
+        }
+
+        .import-hint {
+            font-size: 12px;
+            color: var(--text-muted);
+            line-height: 1.6;
+            padding-top: 4px;
+        }
+
+        .import-hint strong {
+            color: var(--text-dim);
+        }
+
+        .import-status {
+            font-size: 12px;
+            color: var(--text-dim);
+            white-space: pre-wrap;
+            background: var(--surface2);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            border: 1px solid var(--border);
+            display: none;
+        }
+
+        .import-status.visible {
+            display: block;
+        }
+
+        /* ─── STICKY FILTER ──────────────────────────── */
+        /* ─── STICKY SEARCH TOOLBAR ─────────────────── */
+        .sticky-filter {
+            position: sticky;
+            top: 12px;
+            z-index: 100;
+            /* Deliberately distinct from content cards */
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-top: 3px solid var(--accent);
+            border-radius: 10px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            box-shadow:
+                0 8px 32px rgba(0, 0, 0, 0.45),
+                0 1px 0 rgba(47, 129, 247, 0.2);
+        }
+
+        .sticky-filter input,
+        .sticky-filter select {
+            background: var(--bg) !important;
+            border-color: var(--border) !important;
+        }
+
+        .sticky-filter input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .sticky-filter input:focus,
+        .sticky-filter select:focus {
+            border-color: var(--accent) !important;
+            box-shadow: 0 0 0 3px var(--accent-glow) !important;
+        }
+
+        /* ─── FILTER ROW ─────────────────────────────── */
+        .filter-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-row input {
+            min-width: 200px;
+        }
+
+        /* ─── DIVIDER ─────────────────────────────────── */
+        .divider {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 20px 0;
+        }
+
+        /* ─── USER CARDS ──────────────────────────────── */
+        .user-list {
+            margin-top: 8px;
+        }
+
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .user-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            margin-bottom: 10px;
+            animation: fadeUp 0.3s ease both;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+        }
+
+        .user-card:hover {
+            background: var(--surface-hover);
+            border-color: var(--border-hover);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+        }
+
+        /* Status accent — left vertical bar */
+        .user-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+        }
+
+        .user-card.status-pending::before {
+            background: var(--amber);
+        }
+
+        .user-card.status-accepted::before {
+            background: var(--green);
+        }
+
+        .user-card.status-declined::before {
+            background: var(--red);
+        }
+
+        /* Two-column layout: main body + QR panel */
+        .card-layout {
+            display: flex;
+            align-items: stretch;
+        }
+
+        .card-body {
+            flex: 1;
+            min-width: 0;
+            padding: 20px 22px 20px 26px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        /* ── Row 1: Name + right-side badges ── */
+        .card-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .card-name-row {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            flex-wrap: wrap;
+            flex: 1;
+            min-width: 0;
+        }
+
+        .card-name {
+            font-family: Inter, sans-serif;
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            letter-spacing: -0.2px;
+            line-height: 1.3;
+        }
+
+        .card-badges {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        /* Status pill */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 5px 13px;
+            border-radius: 7px;
+        }
+
+        .status-badge::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .status-pending-badge {
+            background: rgba(210, 153, 34, 0.12);
+            color: var(--amber);
+            border: 1px solid rgba(210, 153, 34, 0.28);
+        }
+
+        .status-pending-badge::before {
+            background: var(--amber);
+        }
+
+        .status-accepted-badge {
+            background: rgba(63, 185, 80, 0.12);
+            color: var(--green);
+            border: 1px solid rgba(63, 185, 80, 0.28);
+        }
+
+        .status-accepted-badge::before {
+            background: var(--green);
+        }
+
+        .status-declined-badge {
+            background: rgba(248, 81, 73, 0.12);
+            color: var(--red);
+            border: 1px solid rgba(248, 81, 73, 0.28);
+        }
+
+        .status-declined-badge::before {
+            background: var(--red);
+        }
+
+        /* Invite type pill — quieter, secondary */
+        .invite-badge {
+            display: inline-flex;
+            align-items: center;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            padding: 3px 9px;
+            border-radius: 999px;
+            opacity: 0.75;
+        }
+
+        .invite-VVIP {
+            background: var(--gold-glow);
+            color: var(--gold);
+            border: 1px solid rgba(210, 153, 34, 0.28);
+        }
+
+        .invite-VIP {
+            background: var(--accent-glow);
+            color: var(--accent);
+            border: 1px solid rgba(47, 129, 247, 0.25);
+        }
+
+        .invite-VIP-EN {
+            background: rgba(47, 129, 247, 0.12);
+            color: #4c8df6;
+            border: 1px solid rgba(47, 129, 247, 0.3);
+        }
+
+        .invite-General {
+            background: var(--surface2);
+            color: var(--text-dim);
+            border: 1px solid var(--border);
+        }
+
+        .invite-Media {
+            background: rgba(47, 129, 247, 0.08);
+            color: var(--accent);
+            border: 1px solid rgba(47, 129, 247, 0.22);
+        }
+
+        .invite-Organizer {
+            background: var(--green-glow);
+            color: var(--green);
+            border: 1px solid rgba(63, 185, 80, 0.22);
+        }
+
+        .invite-default {
+            background: var(--surface2);
+            color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+
+        .invite-DeputyGovernor {
+            background: var(--gold-glow);
+            color: var(--gold);
+            border: 1px solid rgba(210, 153, 34, 0.28);
+        }
+
+        .invite-Guest {
+            background: var(--accent-glow);
+            color: var(--accent);
+            border: 1px solid rgba(47, 129, 247, 0.25);
+        }
+
+        .invite-Students {
+            background: var(--green-glow);
+            color: var(--green);
+            border: 1px solid rgba(63, 185, 80, 0.22);
+        }
+
+        /* ── Row 2: Company · Position inline ── */
+        .card-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            flex-wrap: wrap;
+        }
+
+        .card-meta-company {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .card-meta-sep {
+            color: var(--border-hover);
+            font-size: 14px;
+        }
+
+        .card-meta-position {
+            color: var(--text-dim);
+            font-weight: 400;
+        }
+
+        .card-meta-email {
+            color: var(--text-muted);
+            font-weight: 400;
+            word-break: break-all;
+        }
+
+        .card-times {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px 16px;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .card-times strong {
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+
+        /* ── Row 3: URL bar ── */
+        .url-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 7px 11px;
+            transition: border-color 0.2s;
+        }
+
+        .url-row:hover {
+            border-color: var(--border-hover);
+        }
+
+        .url-icon {
+            font-size: 11px;
+            flex-shrink: 0;
+            opacity: 0.35;
+        }
+
+        .url-text {
+            flex: 1;
+            font-size: 11px;
+            font-family: Inter, sans-serif;
+            color: var(--accent);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .copy-btn {
+            padding: 3px 9px;
+            font-size: 10px;
+            font-weight: 600;
+            background: var(--accent-glow);
+            color: var(--accent);
+            border: 1px solid rgba(47, 129, 247, 0.25);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+            font-family: Inter, sans-serif;
+            letter-spacing: 0.3px;
+        }
+
+        .copy-btn:hover {
+            background: rgba(47, 129, 247, 0.18);
+        }
+
+        /* ── Check-in / activity row ── */
+        .checkin-row {
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .checkin-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+        }
+
+        .checkin-entries {
+            font-size: 12px;
+            color: var(--text-dim);
+            line-height: 1.8;
+        }
+
+        .activity-row {
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            margin-top: 10px;
+        }
+
+        .activity-entries {
+            font-size: 12px;
+            color: var(--text-dim);
+            line-height: 1.7;
+            max-height: 140px;
+            overflow-y: auto;
+        }
+
+        .activity-item {
+            display: flex;
+            gap: 8px;
+            align-items: baseline;
+        }
+
+        .activity-action {
+            font-weight: 600;
+            color: var(--text);
+            flex-shrink: 0;
+        }
+
+        .activity-detail {
+            color: var(--text-dim);
+        }
+
+        .activity-time {
+            margin-left: auto;
+            flex-shrink: 0;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .copy-btn.sms-btn {
+            background: rgba(52, 201, 138, 0.12);
+            color: #2f9e6f;
+            border-color: rgba(52, 201, 138, 0.28);
+        }
+
+        .copy-btn.sms-btn:hover:not(:disabled) {
+            background: rgba(52, 201, 138, 0.2);
+        }
+
+        .copy-btn.sms-sent {
+            opacity: 0.75;
+        }
+
+        .copy-btn:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .card-meta-phone {
+            color: var(--text-dim);
+        }
+
+        /* ── QR side panel ── */
+        /* ── QR Side — desktop: vertical column fixed width ── */
+        .qr-side {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 9px;
+            flex-shrink: 0;
+            width: 148px;
+            padding: 18px 16px;
+            border-left: 1px solid var(--border);
+            background: var(--bg);
+        }
+
+        .qr-frame {
+            width: 100px;
+            height: 100px;
+            background: #E6EDF3;
+            border-radius: 9px;
+            padding: 7px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+        }
+
+        .qr-frame img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .qr-frame img.qr-lazy:not([src]) {
+            width: 100%;
+            height: 100%;
+            background: #D0D7DE;
+            border-radius: 4px;
+        }
+
+        .qr-empty {
+            width: 100%;
+            height: 100%;
+            background: #E6EDF3;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+        }
+
+        .qr-caption {
+            font-size: 10px;
+            color: var(--text-muted);
+            text-align: center;
+            line-height: 1.4;
+            width: 100%;
+        }
+
+        .btn-download {
+            width: 100%;
+            padding: 7px 10px;
+            background: var(--green-glow);
+            color: var(--green);
+            border: 1px solid rgba(63, 185, 80, 0.22);
+            border-radius: 6px;
+            font-family: Inter, sans-serif;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .btn-download+.btn-download {
+            margin-top: 6px;
+        }
+
+        .btn-download:hover {
+            background: rgba(63, 185, 80, 0.16);
+        }
+
+        /* ── Additional guests (below full-width) ── */
+        .guests-section {
+            border-top: 1px solid var(--border);
+            padding: 12px 22px 14px 26px;
+        }
+
+        .guests-title {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 9px;
+        }
+
+        .guests-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .guest-chip {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            padding: 4px 12px;
+            font-size: 12px;
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.4;
+        }
+
+        .empty-state-title {
+            font-family: Inter, sans-serif;
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+
+        .empty-state-text {
+            font-size: 14px;
+        }
+
+        /* Results bar */
+        .results-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 4px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .results-count {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .results-count strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-hover);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-dim);
+        }
+
+        @media (max-width: 640px) {
+            .header-title {
+                font-size: 24px;
+            }
+
+            /* Stack card vertically on mobile */
+            .card-layout {
+                flex-direction: column;
+            }
+
+            /* QR becomes a horizontal footer strip inside the card */
+            .qr-side {
+                width: 100%;
+                flex-direction: row;
+                align-items: center;
+                justify-content: flex-start;
+                gap: 14px;
+                border-left: none;
+                border-top: 1px solid var(--border);
+                padding: 14px 18px;
+            }
+
+            .qr-frame {
+                width: 72px;
+                height: 72px;
+                flex-shrink: 0;
+            }
+
+            /* Text + button stack next to QR */
+            .qr-caption {
+                text-align: left;
+                flex: 1;
+            }
+
+            .btn-download {
+                width: auto;
+                flex-shrink: 0;
+                padding: 7px 14px;
+                white-space: nowrap;
+                font-size: 11px;
+            }
+        }
+
+        /* ─── ADD VIP TABS ───────────────────────────── */
+        .add-tabs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .add-tab {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: left;
+            font-family: Inter, sans-serif;
+            color: var(--text-muted);
+        }
+
+        .add-tab:hover {
+            border-color: var(--border-hover);
+            color: var(--text-dim);
+        }
+
+        .add-tab.active {
+            background: var(--accent-glow);
+            border-color: rgba(47, 129, 247, 0.4);
+            color: var(--text);
+        }
+
+        .add-tab-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        .add-tab-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .add-tab-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: inherit;
+        }
+
+        .add-tab-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 400;
+            line-height: 1.4;
+        }
+
+        .add-tab.active .add-tab-label {
+            color: var(--text);
+        }
+
+        .add-tab.active .add-tab-desc {
+            color: var(--text-dim);
+        }
+
+        .add-pane {
+            animation: fadeUp 0.2s ease;
+        }
+
+        @media (max-width: 520px) {
+            .add-tabs {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .invite-queue-banner {
+            display: none;
+            margin-bottom: 16px;
+            padding: 12px 16px;
+            background: var(--accent-glow);
+            border: 1px solid rgba(47, 129, 247, 0.28);
+            border-radius: var(--radius-sm);
+            animation: fadeUp 0.25s ease;
+        }
+
+        .invite-queue-banner.visible {
+            display: block;
+        }
+
+        .invite-queue-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+            letter-spacing: 0.03em;
+        }
+
+        .invite-queue-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px 12px;
+            font-size: 12px;
+        }
+
+        .invite-queue-stat {
+            color: var(--text-muted);
+        }
+
+        .invite-queue-stat.processing {
+            color: var(--amber);
+        }
+
+        .invite-queue-stat.queued {
+            color: var(--accent);
+        }
+
+        .invite-queue-stat.completed {
+            color: var(--green);
+        }
+
+        .invite-queue-stat.failed {
+            color: var(--red);
+        }
+
+        .copy-btn.mail-failed {
+            border-color: rgba(248, 81, 73, 0.4);
+            color: var(--red);
+        }
+
+        .copy-btn.mail-reminder {
+            border-color: rgba(210, 153, 34, 0.4);
+            color: var(--amber);
+        }
+
+        .copy-btn.mail-reminder:hover:not(:disabled) {
+            background: rgba(210, 153, 34, 0.12);
+        }
+
+        .copy-btn.mail-final-reminder {
+            border-color: rgba(210, 153, 34, 0.5);
+            color: var(--amber);
+        }
+
+        .copy-btn.mail-final-reminder:hover:not(:disabled) {
+            background: rgba(210, 153, 34, 0.12);
+        }
+
+        .seat-badge {
+            display: inline-block;
+            margin-left: 8px;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(203, 168, 134, 0.16);
+            color: var(--gold);
+            font-size: 11px;
+            font-weight: 700;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="wrapper">
+
+        <!-- HEADER -->
+        <div class="header">
+            <div class="header-left">
+                <div class="header-eyebrow">Invitation Management System</div>
+                <h1 class="header-title">entourage <span>Invite</span> Dashboard</h1>
+            </div>
+            <div class="header-right">
+                <span id="lastUpdated" style="font-size:11px;color:var(--text-muted);"></span>
+                <a class="btn btn-ghost" href="seats.html" style="padding:7px 14px;font-size:12px;text-decoration:none;">Seat map</a>
+                <a class="btn btn-ghost" href="scanner.html" style="padding:7px 14px;font-size:12px;text-decoration:none;">Scan QR</a>
+                <button class="btn btn-ghost" onclick="manualRefresh()" style="padding:7px 14px;font-size:12px;display:inline-flex;align-items:center;gap:6px;">
+                    <span id="refreshIcon" style="font-size:14px;display:inline-block;">↻</span> Refresh
+                </button>
+                <div class="live-badge" id="liveBadge" style="transition:background 0.4s,border-color 0.4s;">
+                    <span class="live-dot"></span>
+                    Live
+                </div>
+            </div>
+        </div>
+
+        <div id="inviteQueueBanner" class="invite-queue-banner" aria-live="polite"></div>
+
+        <!-- STATS GRID -->
+        <div class="stats-grid">
+            <div class="stat-card total">
+                <div class="stat-top">
+                    <div class="stat-icon">👥</div>
+                    <div class="stat-value" id="statTotal">0</div>
+                </div>
+                <div class="stat-label">Registration </div>
+                <div class="stat-bar">
+                    <div class="stat-bar-fill" style="width:100%"></div>
+                </div>
+                <div class="stat-percent" id="statTotalSub">All registered guests</div>
+            </div>
+            <div class="stat-card accepted">
+                <div class="stat-top">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-value" id="statAccepted">0</div>
+                </div>
+                <div class="stat-label">Accepted</div>
+                <div class="stat-bar">
+                    <div class="stat-bar-fill" id="statAcceptedBar" style="width:0%"></div>
+                </div>
+                <div class="stat-percent" id="statAcceptedPct">0% of total</div>
+            </div>
+            <div class="stat-card pending">
+                <div class="stat-top">
+                    <div class="stat-icon">⏳</div>
+                    <div class="stat-value" id="statPending">0</div>
+                </div>
+                <div class="stat-label">Pending</div>
+                <div class="stat-bar">
+                    <div class="stat-bar-fill" id="statPendingBar" style="width:0%"></div>
+                </div>
+                <div class="stat-percent" id="statPendingPct">0% of total</div>
+            </div>
+            <div class="stat-card declined">
+                <div class="stat-top">
+                    <div class="stat-icon">❌</div>
+                    <div class="stat-value" id="statDeclined">0</div>
+                </div>
+                <div class="stat-label">Declined</div>
+                <div class="stat-bar">
+                    <div class="stat-bar-fill" id="statDeclinedBar" style="width:0%"></div>
+                </div>
+                <div class="stat-percent" id="statDeclinedPct">0% of total</div>
+            </div>
+        </div>
+
+        <!-- BULK PDF / QR DOWNLOAD -->
+        <div class="panel" id="bulkDownloadPanel">
+            <div class="panel-header">
+                <div class="panel-icon">📦</div>
+                <span class="panel-title">Bulk Download</span>
+            </div>
+            <div class="bulk-download-hint">
+                Paste guest email IDs (one per line, or separated by commas). Download invite PDFs or QR cards as a ZIP.
+            </div>
+            <textarea id="bulkDownloadEmails" class="bulk-download-textarea" rows="6" placeholder="guest1@example.com&#10;guest2@example.com&#10;guest3@example.com"></textarea>
+            <div class="bulk-download-actions">
+                <button type="button" class="btn btn-primary" id="btnBulkPdfZip" onclick="downloadBulkPdfZip()">⬇ Download PDFs (ZIP)</button>
+                <button type="button" class="btn btn-success" id="btnBulkQrZip" onclick="downloadBulkQrZip()">⬇ Download QR codes (ZIP)</button>
+            </div>
+            <div id="bulkDownloadStatus" class="bulk-download-status"></div>
+        </div>
+
+        <!-- ADD VIP UNIFIED PANEL -->
+        <div class="panel">
+            <div class="panel-header">
+                <div class="panel-icon">➕</div>
+                <span class="panel-title">Add VIP Guest</span>
+            </div>
+
+            <!-- Tab switcher -->
+            <div class="add-tabs">
+                <button class="add-tab active" id="tabManual" onclick="switchTab('manual')">
+                    <span class="add-tab-icon">✏️</span>
+                    <div class="add-tab-text">
+                        <span class="add-tab-label">Manual Entry</span>
+                        <span class="add-tab-desc">Add a single guest by filling in details</span>
+                    </div>
+                </button>
+                <button class="add-tab" id="tabBulk" onclick="switchTab('bulk')">
+                    <span class="add-tab-icon">📂</span>
+                    <div class="add-tab-text">
+                        <span class="add-tab-label">Bulk Import</span>
+                        <span class="add-tab-desc">Upload a CSV or Excel file with multiple guests</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Manual form -->
+            <div id="paneManual" class="add-pane">
+                <div class="input-row">
+                    <input type="text" id="fullNameInput" placeholder="Full Name" />
+                    <input type="text" id="companyInput" placeholder="Company" />
+                    <input type="email" id="emailInput" placeholder="Email ID" />
+                    <input type="tel" id="phoneInput" placeholder="Phone Number" />
+                    <input type="text" id="positionInput" placeholder="Position" />
+                    <select id="userTypeSelect" onchange="onManualUserTypeChange()">
+                        <option value="VVIP">VVIP</option>
+                        <option value="VIP">VIP</option>
+                        <option value="VIP-EN">VIP - EN</option>
+                        <option value="General">General</option>
+                        <option value="Media">Media</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="addUser()">
+                        <span>＋</span> Add User
+                    </button>
+                </div>
+                <div id="vvipHeaderUploadRow" class="vvip-header-row" style="display:none;">
+                    <label class="vvip-header-label" for="vvipHeaderInput">Upload header (VVIP invite body image)</label>
+                    <input class="import-file-input" id="vvipHeaderInput" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onchange="onVvipHeaderSelected()" />
+                    <div id="vvipHeaderPreviewWrap" class="vvip-header-preview-wrap" style="display:none;">
+                        <img id="vvipHeaderPreview" class="vvip-header-preview" alt="VVIP header preview" />
+                        <button type="button" class="btn btn-ghost" onclick="clearVvipHeaderUpload()">Clear</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bulk import form -->
+            <div id="paneBulk" class="add-pane" style="display:none;">
+                <div class="input-row" style="margin-bottom:12px">
+                    <input class="import-file-input" id="bulkFileInput" type="file" accept=".csv,.xlsx,.xls" />
+                    <button class="btn btn-primary" onclick="importBulkFile()">⬆ Import File</button>
+                    <button class="btn btn-ghost" onclick="downloadImportTemplate()">⬇ Download Template</button>
+                </div>
+                <div class="import-hint">
+                    Supported: <strong>CSV / Excel</strong>. Required columns: <strong>FullName</strong>,
+                    <strong>EmailId</strong>. Optional: <strong>UserType</strong> (VVIP, VIP, VIP-EN, General, Media),
+                    <strong>Company</strong>, <strong>Position</strong>, <strong>PhoneNumber</strong>.
+                </div>
+                <div id="importStatus" class="import-status"></div>
+            </div>
+        </div>
+
+        <!-- FILTER + SEARCH -->
+        <div class="sticky-filter" id="filterPanel">
+            <div class="filter-row">
+                <input type="text" id="searchInput" placeholder="Search by name, email, phone…" oninput="applyFilters()" />
+                <select id="statusFilter" onchange="onStatusFilterChange()">
+                    <option value="">All Statuses</option>
+                    <option value="pending">Pending</option>
+                    <option value="accepted">Accepted</option>
+                    <option value="declined">Declined</option>
+                </select>
+                <select id="sortOrder" onchange="onSortOrderChange()">
+                    <option value="default">Sort: Newest added</option>
+                    <option value="latest-accepted">Sort: Latest accepted</option>
+                    <option value="latest-declined">Sort: Latest declined</option>
+                </select>
+                <button class="btn btn-success" onclick="exportCSV()">⬇ Export Excel</button>
+            </div>
+        </div>
+
+        <!-- RESULTS COUNT -->
+        <div class="results-bar">
+            <div class="results-count" id="resultsCount">Showing <strong>0</strong> guests</div>
+        </div>
+
+        <!-- USER LIST -->
+        <div class="user-list" id="userList"></div>
+
+    </div>
+
+    <script>
+        const baseURL = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
+        const inviteEmailEndpoint = `${baseURL}/api/AramcoFarewell/send-invitation-email`;
+        const inviteSmsEndpoint = `${baseURL}/api/AramcoFarewell/send-invitation-sms`;
+        const inviteQueueStatusEndpoint = `${baseURL}/api/AramcoFarewell/invitation-email-queue-status`;
+        const inviteJobStatusEndpoint = `${baseURL}/api/AramcoFarewell/invitation-email-status`;
+        const INVITE_QUEUE_POLL_MS = 30000;
+        const REMINDER_EMAIL_SUBJECT = 'A kind reminder to confirm your attendance | Aramco Farewells';
+        const FINAL_REMINDER_EMAIL_SUBJECT = 'Action Required: Please Confirm Your Attendance | Aramco Farewells';
+        const GUEST_FINAL_REMINDER_EMAIL_SUBJECT = 'Action Required: Please Confirm Your Attendance | Aramco Farewells';
+
+        let users = [];
+        let filteredUsers = [];
+        const inviteJobMap = {};
+        const inviteEnqueueQueue = [];
+        let inviteEnqueueProcessing = false;
+        let inviteQueuePollTimer = null;
+
+        function setImportStatus(msg) {
+            const el = document.getElementById('importStatus');
+            if (!el) return;
+            el.textContent = msg || '';
+            el.classList.toggle('visible', !!msg);
+        }
+
+        function normalizeHeader(h) {
+            return (h || '').toString().trim().toLowerCase().replace(/\s+/g, '');
+        }
+
+        function normalizeStatus(value) {
+            const status = (value || '').toString().trim().toLowerCase();
+            if (status === 'accepted') return 'accepted';
+            if (status === 'declined') return 'declined';
+            if (status === 'pending' || status === 'pendng' || status === 'pensinf' || status === 'awaiting') return 'pending';
+            return 'pending';
+        }
+
+        function normalizeUserTypeKey(value) {
+            return (value || '').toString().trim().toLowerCase().replace(/\s+/g, '');
+        }
+
+        function resolveUserType(userType) {
+            const key = normalizeUserTypeKey(userType);
+            if (key === 'vvip' || key === 'tier1' || key === 'deputygovernor' || key === 'deputygoverner') return 'VVIP';
+            // Check VIP-EN before VIP so existing VIP guests stay VIP.
+            if (key === 'vip-en' || key === 'vipen' || key === 'vip_en') return 'VIP-EN';
+            if (key === 'vip') return 'VIP';
+            if (key === 'media') return 'Media';
+            if (key === 'general' || key === 'guest' || key === 'tier2' || key === 'students' || key === 'student' || key === 'tier3') return 'General';
+            return 'General';
+        }
+
+        function resolveUserTier(userType) {
+            return resolveUserType(userType);
+        }
+
+        function getUserTypeLabel(userType) {
+            return resolveUserType(userType);
+        }
+
+        function parseCSV(text) {
+            const rows = [];
+            let row = [],
+                cur = '',
+                inQuotes = false;
+            for (let i = 0; i < text.length; i++) {
+                const ch = text[i],
+                    next = text[i + 1];
+                if (ch === '"' && inQuotes && next === '"') {
+                    cur += '"';
+                    i++;
+                    continue;
+                }
+                if (ch === '"') {
+                    inQuotes = !inQuotes;
+                    continue;
+                }
+                if (!inQuotes && (ch === '\n' || ch === '\r')) {
+                    if (ch === '\r' && next === '\n') i++;
+                    row.push(cur);
+                    cur = '';
+                    if (row.some(c => (c || '').toString().trim() !== '')) rows.push(row);
+                    row = [];
+                    continue;
+                }
+                if (!inQuotes && ch === ',') {
+                    row.push(cur);
+                    cur = '';
+                    continue;
+                }
+                cur += ch;
+            }
+            row.push(cur);
+            if (row.some(c => (c || '').toString().trim() !== '')) rows.push(row);
+            return rows;
+        }
+
+        function rowsToObjects(rows) {
+            if (!rows || rows.length < 2) return [];
+            const header = rows[0].map(normalizeHeader);
+            const idx = {
+                fullName: header.findIndex(h => ['fullname', 'name', 'username', 'vipname'].includes(h)),
+                emailId: header.findIndex(h => ['emailid', 'email', 'mail'].includes(h)),
+                phoneNumber: header.findIndex(h => ['phonenumber', 'phone', 'mobile', 'mobilenumber', 'cellphone', 'contact'].includes(h)),
+                position: header.findIndex(h => ['position', 'userposition', 'designation', 'title'].includes(h)),
+                company: header.findIndex(h => ['company', 'companyname', 'organization', 'org'].includes(h)),
+                userType: header.findIndex(h => ['usertype', 'invitetype', 'type'].includes(h)),
+            };
+            return rows.slice(1).map(r => ({
+                fullName: (idx.fullName >= 0 ? r[idx.fullName] : r[0]) || '',
+                emailId: idx.emailId >= 0 ? r[idx.emailId] : '',
+                phoneNumber: idx.phoneNumber >= 0 ? r[idx.phoneNumber] : '',
+                position: idx.position >= 0 ? r[idx.position] : '',
+                company: idx.company >= 0 ? r[idx.company] : '',
+                userType: idx.userType >= 0 ? r[idx.userType] : '',
+            }));
+        }
+
+        function downloadImportTemplate() {
+            const template = `FullName,EmailId,PhoneNumber,UserType,Company,Position
+John Doe,john.doe@example.com,+966501234567,VIP,ARAMCO,Manager
+Maryam Ali,maryam.ali@example.com,0599449820,VVIP,Saudi Aramco,Director
+Alex Smith,alex.smith@example.com,+966550000002,VIP-EN,Partner Co,Advisor
+Sara Khan,sara.khan@example.com,,General,Partner Co,Advisor
+Omar Media,omar@media.example.com,+966550000001,Media,News Network,Editor
+`;
+            const blob = new Blob([template], {
+                type: 'text/csv;charset=utf-8'
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'aramco_farewell_user_import_template.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function isValidEmail(email) {
+            const value = (email || '').toString().trim();
+            if (!value) return false;
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+        }
+
+        function pickApi(obj, ...keys) {
+            if (!obj) return undefined;
+            for (const key of keys) {
+                if (obj[key] !== undefined && obj[key] !== null) return obj[key];
+            }
+            return undefined;
+        }
+
+        function normalizeJobStatus(status) {
+            return (status || '').toString().trim();
+        }
+
+        function isActiveInviteJobStatus(status) {
+            const value = normalizeJobStatus(status);
+            return value === 'Queued' || value === 'Processing';
+        }
+
+        function getInviteJobKey(emailId, uniqueId) {
+            const id = (uniqueId || '').toString().trim().toLowerCase();
+            if (id) return 'uid:' + id;
+            const email = (emailId || '').toString().trim().toLowerCase();
+            return email ? 'email:' + email : '';
+        }
+
+        function getInviteJobByUser(user) {
+            if (!user) return null;
+            const uidKey = getInviteJobKey('', user.uniqueId);
+            if (uidKey && inviteJobMap[uidKey]) return inviteJobMap[uidKey];
+            return null;
+        }
+
+        function setInviteJob(emailId, jobData) {
+            const uniqueId = (jobData && jobData.uniqueId) || '';
+            const key = getInviteJobKey(emailId, uniqueId);
+            if (!key) return;
+            inviteJobMap[key] = Object.assign({}, inviteJobMap[key] || {}, jobData || {}, {
+                emailId: (emailId || '').toString().trim().toLowerCase(),
+                uniqueId: (uniqueId || '').toString().trim()
+            });
+        }
+
+        function hasActiveInviteJobs() {
+            return Object.values(inviteJobMap).some(job => isActiveInviteJobStatus(job.status));
+        }
+
+        function getSendMailButtonState(user) {
+            const job = getInviteJobByUser(user);
+
+            if (job && job.isReminder && !job.isFinalReminder) {
+                return getReminderJobButtonState(job, user);
+            }
+
+            if (job && !job.isFinalReminder) {
+                const status = normalizeJobStatus(job.status);
+
+                // Stale invite job state should not block reminder for invited pending guests
+                if (!job.isReminder && canSendReminder(user) && !isActiveInviteJobStatus(status)) {
+                    return buildSendReminderButtonState(user);
+                }
+
+                if (status === 'Queued') {
+                    const position = job.queuePosition ? ` (#${job.queuePosition})` : '';
+                    return {
+                        label: `Queued${position}`,
+                        disabled: true,
+                        failed: false,
+                        isReminder: false,
+                        title: job.message || 'Waiting in email queue'
+                    };
+                }
+                if (status === 'Processing') {
+                    return {
+                        label: 'Sending...',
+                        disabled: true,
+                        failed: false,
+                        isReminder: false,
+                        title: job.message || 'Sending invitation email'
+                    };
+                }
+                if (status === 'Failed') {
+                    return {
+                        label: 'Retry Send',
+                        disabled: false,
+                        failed: true,
+                        isReminder: false,
+                        title: job.error || job.message || 'Send failed — click to retry'
+                    };
+                }
+                if (status === 'Completed' || (status === 'Skipped' && job.inviteSend)) {
+                    const jobUid = (job.uniqueId || '').toString().trim().toLowerCase();
+                    const userUid = (user.uniqueId || '').toString().trim().toLowerCase();
+                    const jobBelongsToUser = !jobUid || !userUid || jobUid === userUid;
+                    if (jobBelongsToUser && isInviteMailAlreadySent(user)) {
+                        if (canSendReminder(user)) {
+                            return buildSendReminderButtonState(user);
+                        }
+                        return buildAlreadySentButtonState(user);
+                    }
+                }
+            }
+
+            if (canSendReminder(user)) {
+                return buildSendReminderButtonState(user);
+            }
+
+            if (isInviteMailAlreadySent(user)) {
+                return buildAlreadySentButtonState(user);
+            }
+
+            return {
+                label: 'Send Mail',
+                disabled: false,
+                failed: false,
+                isReminder: false,
+                title: 'Send invitation email'
+            };
+        }
+
+        function getReminderJobButtonState(job, user) {
+            const status = normalizeJobStatus(job.status);
+
+            if (!canSendReminder(user) && !isActiveInviteJobStatus(status)) {
+                return buildAlreadySentButtonState(user);
+            }
+
+            if (status === 'Queued') {
+                const position = job.queuePosition ? ` (#${job.queuePosition})` : '';
+                return {
+                    label: `Reminder queued${position}`,
+                    disabled: true,
+                    failed: false,
+                    isReminder: true,
+                    title: job.message || 'Reminder waiting in email queue'
+                };
+            }
+            if (status === 'Processing') {
+                return {
+                    label: 'Sending reminder...',
+                    disabled: true,
+                    failed: false,
+                    isReminder: true,
+                    title: job.message || 'Sending reminder email'
+                };
+            }
+            if (status === 'Failed' || status === 'Skipped') {
+                return {
+                    label: 'Retry Reminder',
+                    disabled: false,
+                    failed: true,
+                    isReminder: true,
+                    title: job.error || job.message || 'Reminder failed — click to retry'
+                };
+            }
+
+            return buildSendReminderButtonState(user);
+        }
+
+        function buildAlreadySentButtonState(user) {
+            const statusRaw = normalizeStatus(user && user.status ? user.status : 'pending');
+            const sentAt = getInviteMailSentAt(user) || getReminderSentAt(user);
+            let title = 'Invitation email already sent';
+            if (statusRaw === 'accepted') {
+                title = sentAt ?
+                    `Guest accepted — invitation already sent (${new Date(sentAt).toLocaleString()})` :
+                    'Guest accepted — invitation already sent';
+            } else if (statusRaw === 'declined') {
+                title = 'Guest declined — no further emails needed';
+            } else if (sentAt) {
+                title = `Sent on ${new Date(sentAt).toLocaleString()}`;
+            }
+            return {
+                label: 'Already Sent',
+                disabled: true,
+                failed: false,
+                isReminder: false,
+                title: title
+            };
+        }
+
+        function formatSendReminderLabel(reminderCount) {
+            const count = Number(reminderCount || 0);
+            return count > 0 ? `Send Reminder - ${count}` : 'Send Reminder';
+        }
+
+        function buildSendReminderButtonState(user) {
+            const sentAt = getReminderSentAt(user);
+            const dbCount = Number(user && user.reminderCount ? user.reminderCount : 0);
+            const countHint = dbCount > 0 ? `\nReminders sent: ${dbCount}` : '';
+            return {
+                label: formatSendReminderLabel(dbCount),
+                disabled: false,
+                failed: false,
+                isReminder: true,
+                title: sentAt ?
+                    `Queue reminder email.\nSubject: ${REMINDER_EMAIL_SUBJECT}${countHint}\nLast reminder queued: ${new Date(sentAt).toLocaleString()}` : `Queue reminder email.\nSubject: ${REMINDER_EMAIL_SUBJECT}${countHint}`
+            };
+        }
+
+        function canSendReminder(user) {
+            if (!user) return false;
+            if (!(user.inviteSend || user.InviteSend)) return false;
+            if (normalizeStatus(user.status || 'pending') !== 'pending') return false;
+            return !!(user.emailId || '').toString().trim();
+        }
+
+        function isStudentUser(user) {
+            return false;
+        }
+
+        function isGuestUser(user) {
+            if (!user) return false;
+            const type = resolveUserType(user.inviteType || user.userType || '');
+            return type === 'VIP' || type === 'VIP-EN' || type === 'General' || type === 'Media';
+        }
+
+        function canSendFinalReminder(user) {
+            if (!user) return false;
+            if (!isGuestUser(user)) return false;
+            if (normalizeStatus(user.status || 'pending') !== 'pending') return false;
+            return !!(user.emailId || '').toString().trim();
+        }
+
+        function getFinalReminderSubject(user) {
+            return isGuestUser(user) ?
+                GUEST_FINAL_REMINDER_EMAIL_SUBJECT :
+                FINAL_REMINDER_EMAIL_SUBJECT;
+        }
+
+        function getFinalReminderButtonState(user) {
+            if (!canSendFinalReminder(user)) return null;
+
+            const job = getInviteJobByUser(user);
+            if (job && job.isFinalReminder) {
+                const status = normalizeJobStatus(job.status);
+                if (status === 'Queued') {
+                    const position = job.queuePosition ? ` (#${job.queuePosition})` : '';
+                    return {
+                        label: `Final Reminder queued${position}`,
+                        disabled: true,
+                        failed: false,
+                        title: job.message || 'Final reminder waiting in email queue'
+                    };
+                }
+                if (status === 'Processing') {
+                    return {
+                        label: 'Sending Final Reminder...',
+                        disabled: true,
+                        failed: false,
+                        title: job.message || 'Sending final reminder email'
+                    };
+                }
+                if (status === 'Failed' || status === 'Skipped') {
+                    return {
+                        label: 'Retry Final Reminder',
+                        disabled: false,
+                        failed: true,
+                        title: job.error || job.message || 'Final reminder failed — click to retry'
+                    };
+                }
+            }
+
+            const audience = resolveUserType(user.inviteType || user.userType) + ' guests';
+            return {
+                label: 'Final Reminder',
+                disabled: false,
+                failed: false,
+                title: `Queue final reminder email.\nSubject: ${getFinalReminderSubject(user)}\n${audience} with Pending RSVP only.`
+            };
+        }
+
+        function buildInviteEmailPayload(user, options) {
+            const opts = options || {};
+            const isFinalReminder = !!opts.isFinalReminder;
+            const isReminder = !!opts.isReminder && !isFinalReminder;
+            return {
+                fullName: user.userName || '',
+                emailId: user.emailId || '',
+                userType: user.inviteType || '',
+                uniqueId: user.uniqueId || '',
+                isReminder: isReminder,
+                isFinalReminder: isFinalReminder
+            };
+        }
+
+        function findSendMailButton(userKey) {
+            const key = (userKey || '').toString().trim().toLowerCase();
+            if (!key) return null;
+            const buttons = document.querySelectorAll('button[data-mail-key]');
+            for (const btn of buttons) {
+                if ((btn.getAttribute('data-mail-key') || '').toLowerCase() === key) return btn;
+            }
+            return null;
+        }
+
+        function findFinalReminderButton(userKey) {
+            const key = (userKey || '').toString().trim().toLowerCase();
+            if (!key) return null;
+            const buttons = document.querySelectorAll('button[data-final-reminder-key]');
+            for (const btn of buttons) {
+                if ((btn.getAttribute('data-final-reminder-key') || '').toLowerCase() === key) return btn;
+            }
+            return null;
+        }
+
+        function applySendMailButtonState(btn, state) {
+            if (!btn || !state) return;
+            btn.textContent = state.label;
+            btn.title = state.title || '';
+            btn.disabled = !!state.disabled;
+            btn.classList.toggle('mail-failed', !!state.failed);
+            btn.classList.toggle('mail-reminder', !!state.isReminder);
+            btn.classList.remove('mail-final-reminder');
+            if (!btn.classList.contains('copy-btn')) btn.classList.add('copy-btn');
+        }
+
+        function applyFinalReminderButtonState(btn, state) {
+            if (!btn || !state) return;
+            btn.textContent = state.label;
+            btn.title = state.title || '';
+            btn.disabled = !!state.disabled;
+            btn.classList.toggle('mail-failed', !!state.failed);
+            btn.classList.add('mail-final-reminder');
+            if (!btn.classList.contains('copy-btn')) btn.classList.add('copy-btn');
+        }
+
+        function updateSendMailButtonForUser(user) {
+            if (!user) return;
+            const key = getUserMailStatusKey(user);
+            const btn = findSendMailButton(key);
+            if (btn) applySendMailButtonState(btn, getSendMailButtonState(user));
+
+            const finalBtn = findFinalReminderButton(key);
+            const finalState = getFinalReminderButtonState(user);
+            if (finalBtn && finalState) {
+                applyFinalReminderButtonState(finalBtn, finalState);
+            } else if (finalBtn && !finalState) {
+                finalBtn.remove();
+            }
+        }
+
+        function updateInviteQueueBanner(data) {
+            const el = document.getElementById('inviteQueueBanner');
+            if (!el) return;
+
+            const queued = Number(pickApi(data, 'queuedCount', 'QueuedCount') || 0);
+            const processing = Number(pickApi(data, 'processingCount', 'ProcessingCount') || 0);
+            const maxPerMin = Number(pickApi(data, 'maxEmailsPerMinute', 'MaxEmailsPerMinute') || 10);
+            const sentLastMin = Number(pickApi(data, 'sentLastMinute', 'SentLastMinute') || 0);
+            const completed = Number(pickApi(data, 'completedCount', 'CompletedCount') || 0);
+            const failed = Number(pickApi(data, 'failedCount', 'FailedCount') || 0);
+            const active = queued + processing;
+
+            if (active === 0 && completed === 0 && failed === 0) {
+                el.classList.remove('visible');
+                el.innerHTML = '';
+                return;
+            }
+
+            el.classList.add('visible');
+            el.innerHTML = `
+        <div class="invite-queue-title">Email Send Queue</div>
+        <div class="invite-queue-stats">
+          <span class="invite-queue-stat processing">${processing} sending</span>
+          <span class="invite-queue-stat queued">${queued} queued</span>
+          <span class="invite-queue-stat">Rate: ${sentLastMin}/${maxPerMin} per min</span>
+          <span class="invite-queue-stat completed">${completed} sent</span>
+          ${failed ? `<span class="invite-queue-stat failed">${failed} failed</span>` : ''}
+        </div>`;
+        }
+
+        function syncInviteJobsFromOverview(data) {
+            const jobs = pickApi(data, 'jobs', 'Jobs') || [];
+
+            jobs.forEach(job => {
+                const emailId = (pickApi(job, 'emailId', 'EmailId') || '').toString().trim().toLowerCase();
+                const uniqueId = (pickApi(job, 'uniqueId', 'UniqueId') || '').toString().trim();
+                if (!emailId && !uniqueId) return;
+
+                const status = normalizeJobStatus(pickApi(job, 'status', 'Status'));
+                const previous = inviteJobMap[getInviteJobKey(emailId, uniqueId)];
+                const inviteSend = !!pickApi(job, 'inviteSend', 'InviteSend');
+                const queuePosition = Number(pickApi(job, 'queuePosition', 'QueuePosition') || 0);
+                const apiIsReminder = pickApi(job, 'isReminder', 'IsReminder');
+                const apiIsFinalReminder = pickApi(job, 'isFinalReminder', 'IsFinalReminder');
+                const isFinalReminder = apiIsFinalReminder === true || apiIsFinalReminder === 'true' ||
+                    !!(previous && previous.isFinalReminder);
+                const isReminder = isFinalReminder || apiIsReminder === true || apiIsReminder === 'true' ||
+                    !!(previous && previous.isReminder);
+
+                setInviteJob(emailId, {
+                    jobId: pickApi(job, 'jobId', 'JobId') || '',
+                    status: status,
+                    queuePosition: queuePosition,
+                    message: pickApi(job, 'message', 'Message') || '',
+                    error: pickApi(job, 'error', 'Error') || '',
+                    inviteSend: inviteSend,
+                    uniqueId: uniqueId,
+                    fullName: pickApi(job, 'fullName', 'FullName') || '',
+                    isReminder: isReminder,
+                    isFinalReminder: isFinalReminder
+                });
+
+                const user = uniqueId ?
+                    users.find(u => (u.uniqueId || '').toString().trim().toLowerCase() === uniqueId.toLowerCase()) :
+                    null;
+                if (user && status === 'Completed') {
+                    if (isReminder || isFinalReminder) {
+                        markReminderSent(user);
+                        user.reminderCount = Number(user.reminderCount || 0) + 1;
+                    } else if (!user.inviteSend) {
+                        user.inviteSend = true;
+                        markInviteMailSent(user);
+                    }
+                } else if (user && status === 'Skipped' && inviteSend && !isReminder && !isFinalReminder) {
+                    if (!user.inviteSend) {
+                        user.inviteSend = true;
+                        markInviteMailSent(user);
+                    }
+                }
+
+                const statusChanged = !previous || previous.status !== status;
+                const positionChanged = !previous || previous.queuePosition !== queuePosition;
+                if (user && (statusChanged || positionChanged)) {
+                    updateSendMailButtonForUser(user);
+                }
+            });
+        }
+
+        async function refreshInviteQueueStatus() {
+            try {
+                const response = await fetch(inviteQueueStatusEndpoint);
+                if (!response.ok) return;
+
+                const data = await response.json();
+                updateInviteQueueBanner(data);
+                syncInviteJobsFromOverview(data);
+
+                const queued = Number(pickApi(data, 'queuedCount', 'QueuedCount') || 0);
+                const processing = Number(pickApi(data, 'processingCount', 'ProcessingCount') || 0);
+                if (queued + processing > 0 || hasActiveInviteJobs()) {
+                    setEmailQueueActive(true);
+                    if (!inviteQueuePollTimer) {
+                        inviteQueuePollTimer = setInterval(refreshInviteQueueStatus, INVITE_QUEUE_POLL_MS);
+                    }
+                } else {
+                    stopInviteQueuePolling();
+                }
+            } catch (e) {}
+        }
+
+        function startInviteQueuePolling() {
+            refreshInviteQueueStatus();
+        }
+
+        function stopInviteQueuePolling() {
+            if (!inviteQueuePollTimer) return;
+            clearInterval(inviteQueuePollTimer);
+            inviteQueuePollTimer = null;
+            setEmailQueueActive(false);
+            fetchUsers(true);
+        }
+
+        let emailQueueActive = false;
+
+        function setEmailQueueActive(active) {
+            emailQueueActive = !!active;
+        }
+
+        async function sendInvitationEmail(payload) {
+            const response = await fetch(inviteEmailEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            let data = null;
+            try {
+                data = await response.json();
+            } catch (e) {}
+
+            if (!response.ok) {
+                let msg = `${response.status} ${response.statusText}`;
+                if (data) msg = pickApi(data, 'message', 'Message', 'error', 'Error') || msg;
+                throw new Error(msg);
+            }
+
+            return {
+                success: !!pickApi(data, 'success', 'Success'),
+                jobId: pickApi(data, 'jobId', 'JobId') || '',
+                status: normalizeJobStatus(pickApi(data, 'status', 'Status')),
+                emailId: pickApi(data, 'emailId', 'EmailId') || payload.emailId,
+                queuePosition: Number(pickApi(data, 'queuePosition', 'QueuePosition') || 0),
+                message: pickApi(data, 'message', 'Message') || '',
+                inviteSend: !!pickApi(data, 'inviteSend', 'InviteSend'),
+                viewInvitationLink: pickApi(data, 'viewInvitationLink', 'ViewInvitationLink') || ''
+            };
+        }
+
+        function enqueueInvitationRequest(payload) {
+            return new Promise((resolve, reject) => {
+                inviteEnqueueQueue.push({
+                    payload: payload,
+                    resolve: resolve,
+                    reject: reject
+                });
+                processInviteEnqueueQueue();
+            });
+        }
+
+        async function processInviteEnqueueQueue() {
+            if (inviteEnqueueProcessing) return;
+            inviteEnqueueProcessing = true;
+
+            while (inviteEnqueueQueue.length > 0) {
+                const item = inviteEnqueueQueue.shift();
+                try {
+                    const result = await sendInvitationEmail(item.payload);
+                    item.resolve(result);
+                } catch (err) {
+                    item.reject(err);
+                }
+                await new Promise(r => setTimeout(r, 120));
+            }
+
+            inviteEnqueueProcessing = false;
+        }
+
+        const inviteMailStatusKey = 'aramcoFarewellInviteMailStatusMap';
+
+        function getInviteMailStatusMap() {
+            try {
+                const raw = localStorage.getItem(inviteMailStatusKey);
+                return raw ? JSON.parse(raw) : {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function saveInviteMailStatusMap(map) {
+            localStorage.setItem(inviteMailStatusKey, JSON.stringify(map || {}));
+        }
+
+        function getUserMailStatusKey(user) {
+            if (!user) return '';
+            return (user.uniqueId || '').toString().trim().toLowerCase() ||
+                (user.emailId || '').toString().trim().toLowerCase() ||
+                (user.userName || '').toString().trim().toLowerCase();
+        }
+
+        function clearStaleInviteMailCache(currentUsers) {
+            const validKeys = new Set((currentUsers || [])
+                .map(u => getUserMailStatusKey(u))
+                .filter(Boolean));
+
+            [getInviteMailStatusMap, getReminderStatusMap].forEach((reader, index) => {
+                const map = reader();
+                let changed = false;
+                Object.keys(map).forEach(key => {
+                    if (!validKeys.has(key)) {
+                        delete map[key];
+                        changed = true;
+                    }
+                });
+                if (changed) {
+                    if (index === 0) saveInviteMailStatusMap(map);
+                    else saveReminderStatusMap(map);
+                }
+            });
+
+            Object.keys(inviteJobMap).forEach(key => {
+                const job = inviteJobMap[key];
+                const jobUid = (job && job.uniqueId ? job.uniqueId : '').toString().trim().toLowerCase();
+                if (jobUid && !validKeys.has(jobUid)) {
+                    delete inviteJobMap[key];
+                }
+            });
+        }
+
+        function isInviteMailAlreadySent(user) {
+            return !!(user && (user.inviteSend || user.InviteSend));
+        }
+
+        function markInviteMailSent(user) {
+            const key = getUserMailStatusKey(user);
+            if (!key) return;
+            const map = getInviteMailStatusMap();
+            map[key] = {
+                sent: true,
+                sentAt: new Date().toISOString(),
+                emailId: (user.emailId || '').toString().trim(),
+                fullName: (user.userName || '').toString().trim()
+            };
+            saveInviteMailStatusMap(map);
+        }
+
+        function getInviteMailSentAt(user) {
+            const key = getUserMailStatusKey(user);
+            if (!key) return '';
+            const map = getInviteMailStatusMap();
+            return map[key] && map[key].sentAt ? map[key].sentAt : '';
+        }
+
+        const inviteReminderStatusKey = 'aramcoFarewellInviteReminderStatusMap';
+
+        function getReminderStatusMap() {
+            try {
+                return JSON.parse(localStorage.getItem(inviteReminderStatusKey) || '{}') || {};
+            } catch (e) {
+                return {};
+            }
+        }
+
+        function saveReminderStatusMap(map) {
+            localStorage.setItem(inviteReminderStatusKey, JSON.stringify(map || {}));
+        }
+
+        function markReminderSent(user) {
+            const key = getUserMailStatusKey(user);
+            if (!key) return;
+            const map = getReminderStatusMap();
+            const previous = map[key] || {};
+            map[key] = {
+                sent: true,
+                sentAt: new Date().toISOString(),
+                count: Number(previous.count || 0) + 1,
+                emailId: (user.emailId || '').toString().trim(),
+                fullName: (user.userName || '').toString().trim()
+            };
+            saveReminderStatusMap(map);
+        }
+
+        function getReminderSentAt(user) {
+            const key = getUserMailStatusKey(user);
+            if (!key) return '';
+            const map = getReminderStatusMap();
+            return map[key] && map[key].sentAt ? map[key].sentAt : '';
+        }
+
+        async function queueInviteEmailForUser(user, options) {
+            const opts = options || {};
+            const isFinalReminder = !!opts.isFinalReminder;
+            const isReminder = !!opts.isReminder && !isFinalReminder;
+            const btn = opts.button || null;
+
+            if (!user) throw new Error('User not found.');
+            if (!user.emailId) throw new Error('User has no email ID.');
+
+            const existingJob = getInviteJobByUser(user);
+            if (existingJob && isActiveInviteJobStatus(existingJob.status)) {
+                return existingJob;
+            }
+
+            if (isFinalReminder) {
+                if (!canSendFinalReminder(user)) {
+                    throw new Error('Final reminder is only for VIP, VIP-EN, General or Media guests with Pending status.');
+                }
+            } else if (isReminder) {
+                if (!canSendReminder(user)) {
+                    throw new Error('This guest is not eligible for a reminder.');
+                }
+            } else if (isInviteMailAlreadySent(user)) {
+                throw new Error('Invitation email already sent.');
+            }
+
+            const originalText = btn ? btn.textContent : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = isFinalReminder ?
+                    'Queuing Final Reminder...' :
+                    isReminder ?
+                    'Queuing reminder...' :
+                    'Queuing...';
+            }
+
+            try {
+                const result = await enqueueInvitationRequest(buildInviteEmailPayload(user, {
+                    isReminder: isReminder,
+                    isFinalReminder: isFinalReminder
+                }));
+
+                setInviteJob(user.emailId, {
+                    jobId: result.jobId,
+                    status: result.status,
+                    queuePosition: result.queuePosition,
+                    message: result.message,
+                    inviteSend: result.inviteSend,
+                    uniqueId: user.uniqueId || '',
+                    fullName: user.userName || '',
+                    isReminder: isReminder || isFinalReminder,
+                    isFinalReminder: isFinalReminder
+                });
+
+                if (!isReminder && !isFinalReminder && result.status === 'Skipped' && result.inviteSend) {
+                    markInviteMailSent(user);
+                    user.inviteSend = true;
+                }
+                if ((isReminder || isFinalReminder) && result.status === 'Completed') {
+                    markReminderSent(user);
+                    user.reminderCount = Number(user.reminderCount || 0) + 1;
+                }
+
+                if ((isReminder || isFinalReminder) && result.status === 'Skipped') {
+                    updateSendMailButtonForUser(user);
+                    throw new Error(result.message || (isFinalReminder ?
+                        'Final reminder not allowed for this guest.' :
+                        'Reminder not allowed for this guest.'));
+                }
+
+                if (result.status === 'Queued' || result.status === 'Processing' || result.status === 'Completed') {
+                    setEmailQueueActive(true);
+                    startInviteQueuePolling();
+                }
+
+                updateSendMailButtonForUser(user);
+                return result;
+            } catch (e) {
+                if (btn) {
+                    btn.disabled = false;
+                    if (isFinalReminder) {
+                        const finalState = getFinalReminderButtonState(user);
+                        btn.textContent = originalText || (finalState && finalState.label) || 'Final Reminder';
+                    } else {
+                        btn.textContent = originalText || (isReminder ? formatSendReminderLabel(user.reminderCount) : 'Send Mail');
+                    }
+                }
+                throw e;
+            }
+        }
+
+        async function sendInviteForUser(btn, encodedUserKey) {
+            const userKey = decodeURIComponent(encodedUserKey || '');
+            const user = users.find(u => getUserMailStatusKey(u) === userKey);
+            if (!user) {
+                alert('User not found.');
+                return;
+            }
+
+            const mailState = getSendMailButtonState(user);
+            const isReminder = !!mailState.isReminder;
+
+            try {
+                await queueInviteEmailForUser(user, {
+                    button: btn,
+                    isReminder: isReminder
+                });
+            } catch (e) {
+                alert(isReminder ? `Failed to queue reminder: ${e.message}` : `Failed to queue invitation email: ${e.message}`);
+            }
+        }
+
+        async function sendFinalReminderForUser(btn, encodedUserKey) {
+            const userKey = decodeURIComponent(encodedUserKey || '');
+            const user = users.find(u => getUserMailStatusKey(u) === userKey);
+            if (!user) {
+                alert('User not found.');
+                return;
+            }
+
+            if (!canSendFinalReminder(user)) {
+                alert('Final reminder is only for VIP, VIP-EN, General or Media guests with Pending status.');
+                return;
+            }
+
+            try {
+                await queueInviteEmailForUser(user, {
+                    button: btn,
+                    isFinalReminder: true
+                });
+            } catch (e) {
+                alert(`Failed to queue final reminder: ${e.message}`);
+            }
+        }
+
+        function getSendSmsButtonState(user) {
+            const phone = (user && user.phoneNumber || '').toString().trim();
+            if (!phone) {
+                return {
+                    label: 'No Phone',
+                    disabled: true,
+                    sent: false,
+                    title: 'Add a phone number before sending SMS.'
+                };
+            }
+            if (user && user.inviteSmsSend) {
+                return {
+                    label: 'SMS Logged',
+                    disabled: false,
+                    sent: true,
+                    title: `SMS placeholder already logged for ${phone}. Click to log again.`
+                };
+            }
+            return {
+                label: 'Send SMS',
+                disabled: false,
+                sent: false,
+                title: `Queue SMS invite (placeholder until SMS API is configured).\nPhone: ${phone}`
+            };
+        }
+
+        function buildInviteSmsPayload(user, options) {
+            const opts = options || {};
+            return {
+                fullName: user.userName || '',
+                emailId: user.emailId || '',
+                phoneNumber: user.phoneNumber || '',
+                userType: user.inviteType || '',
+                uniqueId: user.uniqueId || '',
+                isReminder: !!opts.isReminder
+            };
+        }
+
+        async function sendSmsForUser(btn, encodedUserKey) {
+            const userKey = decodeURIComponent(encodedUserKey || '');
+            const user = users.find(u => getUserMailStatusKey(u) === userKey);
+            if (!user) {
+                alert('User not found.');
+                return;
+            }
+
+            const state = getSendSmsButtonState(user);
+            if (state.disabled) {
+                alert(state.title || 'Cannot send SMS for this guest.');
+                return;
+            }
+
+            const originalText = btn ? btn.textContent : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Logging…';
+            }
+
+            try {
+                const response = await fetch(inviteSmsEndpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(buildInviteSmsPayload(user))
+                });
+                let body = null;
+                try {
+                    body = await response.json();
+                } catch (e) {}
+                if (!response.ok) {
+                    throw new Error((body && (body.message || body.Message)) || `${response.status} ${response.statusText}`);
+                }
+
+                user.inviteSmsSend = true;
+                if (body && (body.phoneNumber || body.PhoneNumber)) {
+                    user.phoneNumber = body.phoneNumber || body.PhoneNumber;
+                }
+
+                const nowIso = new Date().toISOString();
+                user.activities = user.activities || [];
+                user.activities.unshift({
+                    action: 'SmsPlaceholder',
+                    detail: `SMS invite placeholder to ${user.phoneNumber} (provider not configured yet)`,
+                    actor: 'dashboard',
+                    createdOn: nowIso
+                });
+
+                alert((body && (body.message || body.Message)) || 'SMS placeholder logged.');
+                updateSendSmsButtonForUser(user);
+                renderUsers();
+            } catch (e) {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = originalText || 'Send SMS';
+                }
+                alert(`Failed to send SMS: ${e.message}`);
+            }
+        }
+
+        function findSendSmsButton(userKey) {
+            const key = (userKey || '').toString().trim().toLowerCase();
+            if (!key) return null;
+            const buttons = document.querySelectorAll('button[data-sms-key]');
+            for (const btn of buttons) {
+                if ((btn.getAttribute('data-sms-key') || '').toLowerCase() === key) return btn;
+            }
+            return null;
+        }
+
+        function applySendSmsButtonState(btn, state) {
+            if (!btn || !state) return;
+            btn.textContent = state.label;
+            btn.title = state.title || '';
+            btn.disabled = !!state.disabled;
+            btn.classList.toggle('sms-sent', !!state.sent);
+            btn.classList.add('sms-btn');
+            if (!btn.classList.contains('copy-btn')) btn.classList.add('copy-btn');
+        }
+
+        function updateSendSmsButtonForUser(user) {
+            if (!user) return;
+            const key = getUserMailStatusKey(user);
+            const btn = findSendSmsButton(key);
+            if (btn) applySendSmsButtonState(btn, getSendSmsButtonState(user));
+        }
+
+        function formatActivityLabel(action) {
+            const key = (action || '').toString();
+            const map = {
+                UserAdded: 'Added',
+                EmailSent: 'Email sent',
+                ReminderSent: 'Reminder sent',
+                FinalReminderSent: 'Final reminder',
+                ConfirmationSent: 'Confirmation sent',
+                SmsPlaceholder: 'SMS (placeholder)',
+                SmsSent: 'SMS sent',
+                StatusChanged: 'Status changed',
+                CheckedIn: 'Checked in',
+                PdfDownloaded: 'PDF downloaded',
+                VvipBodyUploaded: 'VVIP header uploaded'
+            };
+            return map[key] || key || 'Note';
+        }
+
+        function buildActivityHtml(user) {
+            const items = Array.isArray(user.activities) ? user.activities : [];
+            if (!items.length) {
+                return '<span style="color:var(--text-muted);font-style:italic">No activity recorded yet</span>';
+            }
+            return items.slice(0, 12).map(a => {
+                const label = formatActivityLabel(a.action || a.Action);
+                const detail = (a.detail || a.Detail || '').toString().trim();
+                const when = formatViewerTime(a.createdOn || a.CreatedOn);
+                return `<div class="activity-item"><span class="activity-action">${label}</span>${detail ? `<span class="activity-detail">${detail}</span>` : ''}<span class="activity-time">${when}</span></div>`;
+            }).join('');
+        }
+
+        async function importBulkFile() {
+            const input = document.getElementById('bulkFileInput');
+            const file = input && input.files && input.files[0];
+            if (!file) {
+                setImportStatus('Please choose a CSV or Excel file first.');
+                return;
+            }
+            setImportStatus(`Reading file: ${file.name}...`);
+            let objects = [];
+            try {
+                const ext = (file.name.split('.').pop() || '').toLowerCase();
+                if (ext === 'csv') {
+                    const text = await file.text();
+                    objects = rowsToObjects(parseCSV(text));
+                } else if (ext === 'xlsx' || ext === 'xls') {
+                    const buffer = await file.arrayBuffer();
+                    const wb = XLSX.read(buffer, {
+                        type: 'array'
+                    });
+                    const sheet = wb.Sheets[wb.SheetNames[0]];
+                    objects = rowsToObjects(XLSX.utils.sheet_to_json(sheet, {
+                        header: 1,
+                        raw: false,
+                        defval: ''
+                    }));
+                } else {
+                    setImportStatus('Unsupported file type.');
+                    return;
+                }
+            } catch (e) {
+                setImportStatus('Failed to parse file. Check format and try again.');
+                return;
+            }
+            const defaultUserType = getUserTypeLabel(document.getElementById("userTypeSelect").value);
+            objects = (objects || []).map(o => ({
+                fullName: (o.fullName || '').toString().trim(),
+                emailId: (o.emailId || '').toString().trim(),
+                phoneNumber: (o.phoneNumber || '').toString().trim(),
+                userType: getUserTypeLabel((o.userType || '').toString().trim() || defaultUserType),
+                company: (o.company || '').toString().trim(),
+                position: (o.position || '').toString().trim(),
+            })).filter(o => o.fullName || o.emailId || o.userType || o.company || o.position || o.phoneNumber);
+            if (!objects.length) {
+                setImportStatus('No valid rows found.');
+                return;
+            }
+            let ok = 0,
+                fail = 0,
+                failures = [];
+            setImportStatus(`Importing ${objects.length} user(s)...\n0/${objects.length} completed`);
+            for (let i = 0; i < objects.length; i++) {
+                const item = objects[i];
+                try {
+                    if (!item.fullName) throw new Error('Missing FullName');
+                    if (!item.emailId) throw new Error('Missing EmailId');
+                    if (!isValidEmail(item.emailId)) throw new Error('Invalid EmailId');
+
+                    const response = await fetch(`${baseURL}/api/AramcoFarewell/create-user`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            fullName: item.fullName,
+                            emailId: item.emailId,
+                            phoneNumber: item.phoneNumber,
+                            userType: item.userType,
+                            company: item.company,
+                            position: item.position
+                        })
+                    });
+                    if (!response.ok) {
+                        let message = `${response.status} ${response.statusText}`;
+                        try {
+                            const body = await response.json();
+                            message = body.message || body.Message || message;
+                        } catch (e) {}
+                        throw new Error(message);
+                    }
+                    ok++;
+                } catch (e) {
+                    fail++;
+                    failures.push(`${i + 1}) ${item.fullName || '(no name)'} - ${e.message}`);
+                }
+                setImportStatus(`Importing ${objects.length} user(s)...\n${i + 1}/${objects.length} completed\nCreated: ${ok} | Create Failed: ${fail}`);
+                await new Promise(r => setTimeout(r, 80));
+            }
+            let msg = `Import finished.\nTotal: ${objects.length} | Created: ${ok} | Create Failed: ${fail}`;
+            if (failures.length) msg += `\n\nFailed:\n${failures.slice(0, 30).join('\n')}${failures.length > 30 ? `\n...and ${failures.length - 30} more` : ''}`;
+            setImportStatus(msg);
+            input.value = '';
+            fetchUsers();
+        }
+
+        function updateStats() {
+            const total = users.length;
+            const accepted = users.filter(u => normalizeStatus(u.status) === 'accepted').length;
+            const pending = users.filter(u => normalizeStatus(u.status) === 'pending').length;
+            const declined = users.filter(u => normalizeStatus(u.status) === 'declined').length;
+
+            document.getElementById('statTotal').textContent = total;
+            document.getElementById('statAccepted').textContent = accepted;
+            document.getElementById('statPending').textContent = pending;
+            document.getElementById('statDeclined').textContent = declined;
+
+            const pct = n => total > 0 ? Math.round((n / total) * 100) : 0;
+            document.getElementById('statAcceptedPct').textContent = `${pct(accepted)}% of total`;
+            document.getElementById('statPendingPct').textContent = `${pct(pending)}% of total`;
+            document.getElementById('statDeclinedPct').textContent = `${pct(declined)}% of total`;
+            document.getElementById('statTotalSub').textContent = `${total} registered guests`;
+
+            document.getElementById('statAcceptedBar').style.width = `${pct(accepted)}%`;
+            document.getElementById('statPendingBar').style.width = `${pct(pending)}%`;
+            document.getElementById('statDeclinedBar').style.width = `${pct(declined)}%`;
+        }
+
+        function parseActivityTimestamp(value) {
+            if (!value) return 0;
+            const ts = new Date(value).getTime();
+            return Number.isFinite(ts) ? ts : 0;
+        }
+
+        function getActivityTimes(user, actionNames) {
+            const wanted = new Set((actionNames || []).map(a => (a || '').toString()));
+            const items = Array.isArray(user?.activities) ? user.activities : [];
+            const times = [];
+            for (const item of items) {
+                const action = (item.action || item.Action || '').toString();
+                if (!wanted.has(action)) continue;
+                const ts = parseActivityTimestamp(item.createdOn || item.CreatedOn);
+                if (ts > 0) times.push(ts);
+            }
+            return times;
+        }
+
+        function getEmailSentAtMs(user) {
+            const times = getActivityTimes(user, ['EmailSent']);
+            if (!times.length) return 0;
+            return Math.min(...times);
+        }
+
+        function getStatusChangedAtMs(user, targetStatus) {
+            const status = targetStatus != null ? targetStatus : user?.status;
+            return getLatestStatusChangeTime(user, status);
+        }
+
+        function formatTimelineValue(ms) {
+            if (!ms) return '—';
+            return formatViewerTime(new Date(ms).toISOString()) || '—';
+        }
+
+        function getLatestStatusChangeTime(user, targetStatus) {
+            const normalizedTarget = normalizeStatus(targetStatus);
+            const items = Array.isArray(user?.activities) ? user.activities : [];
+            let latest = 0;
+
+            for (const item of items) {
+                const action = (item.action || item.Action || '').toString();
+                if (action !== 'StatusChanged') continue;
+
+                const detail = (item.detail || item.Detail || '').toString();
+                const arrow = detail.includes('→') ? '→' : (detail.includes('->') ? '->' : '');
+                if (!arrow) continue;
+
+                const afterArrow = detail.split(arrow).pop().trim();
+                if (normalizeStatus(afterArrow) !== normalizedTarget) continue;
+
+                latest = Math.max(latest, parseActivityTimestamp(item.createdOn || item.CreatedOn));
+            }
+
+            return latest;
+        }
+
+        function applySort(list, sortMode) {
+            if (sortMode === 'latest-accepted') {
+                return list
+                    .filter(u => normalizeStatus(u.status) === 'accepted')
+                    .sort((a, b) => getLatestStatusChangeTime(b, 'accepted') - getLatestStatusChangeTime(a, 'accepted'));
+            }
+            if (sortMode === 'latest-declined') {
+                return list
+                    .filter(u => normalizeStatus(u.status) === 'declined')
+                    .sort((a, b) => getLatestStatusChangeTime(b, 'declined') - getLatestStatusChangeTime(a, 'declined'));
+            }
+            return list;
+        }
+
+        function onSortOrderChange() {
+            const sort = document.getElementById('sortOrder').value;
+            const statusEl = document.getElementById('statusFilter');
+            if (sort === 'latest-accepted') statusEl.value = 'accepted';
+            else if (sort === 'latest-declined') statusEl.value = 'declined';
+            applyFilters();
+        }
+
+        function onStatusFilterChange() {
+            const sortEl = document.getElementById('sortOrder');
+            const status = document.getElementById('statusFilter').value;
+            if (sortEl.value === 'latest-accepted' && status !== 'accepted') sortEl.value = 'default';
+            if (sortEl.value === 'latest-declined' && status !== 'declined') sortEl.value = 'default';
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const search = document.getElementById('searchInput').value.toLowerCase().trim();
+            const status = document.getElementById('statusFilter').value.toLowerCase().trim();
+            const sortMode = document.getElementById('sortOrder').value;
+            filteredUsers = users.filter(u => {
+                const haystack = [
+                    u.userName,
+                    u.emailId,
+                    u.phoneNumber,
+                    u.company,
+                    u.position
+                ].map(v => (v || '').toString().toLowerCase()).join(' ');
+                return (!search || haystack.includes(search)) &&
+                    (!status || normalizeStatus(u.status) === status);
+            });
+            filteredUsers = applySort(filteredUsers, sortMode);
+            renderUsers();
+        }
+
+        function getInviteClass(type) {
+            const key = resolveUserType(type);
+            if (key === 'VVIP') return 'invite-VVIP';
+            if (key === 'VIP') return 'invite-VIP';
+            if (key === 'VIP-EN') return 'invite-VIP-EN';
+            if (key === 'Media') return 'invite-Media';
+            if (key === 'General') return 'invite-General';
+            return 'invite-default';
+        }
+
+        function getInviteLabel(type) {
+            if (!type) return 'N/A';
+            const key = resolveUserType(type);
+            if (key === 'VIP-EN') return 'VIP - EN';
+            return key;
+        }
+
+        function renderUsers() {
+            const container = document.getElementById('userList');
+            container.innerHTML = '';
+
+            const count = filteredUsers.length;
+            document.getElementById('resultsCount').innerHTML = `Showing <strong>${count}</strong> guest${count !== 1 ? 's' : ''}`;
+
+            if (!count) {
+                container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">🔍</div>
+          <div class="empty-state-title">No VIPs Found</div>
+          <div class="empty-state-text">Try adjusting your search or filter criteria.</div>
+        </div>`;
+                return;
+            }
+
+            filteredUsers.forEach((u, idx) => {
+                const statusRaw = normalizeStatus(u.status || 'pending');
+                const card = document.createElement('div');
+                card.className = `user-card status-${statusRaw}`;
+                if (idx < 10) card.style.animationDelay = `${idx * 20}ms`;
+
+                // Company and position from API (sample: { userName, company, position })
+                const position = (u.position || u.Position || u.userPosition || '').toString().trim() || '—';
+                const company = (u.company || u.Company || u.companyName || u.CompanyName || '').toString().trim() || '—';
+                const emailAddress = (u.emailId || u.EmailId || '').toString().trim() || '—';
+                const phoneNumber = (u.phoneNumber || u.PhoneNumber || '').toString().trim();
+                const phoneDisplay = phoneNumber || '—';
+                const emailInviteLink = (u.emailInviteLink || u.urlLink || '').toString().trim();
+                const userMailStatusKey = encodeURIComponent(getUserMailStatusKey(u));
+                const mailBtnState = getSendMailButtonState(u);
+                const sendMailButtonLabel = mailBtnState.label;
+                const sendMailButtonTitle = mailBtnState.title;
+                const sendMailButtonClass = [
+                    'copy-btn',
+                    mailBtnState.failed ? 'mail-failed' : '',
+                    mailBtnState.isReminder ? 'mail-reminder' : ''
+                ].filter(Boolean).join(' ');
+                const smsBtnState = getSendSmsButtonState(u);
+                const sendSmsButtonClass = [
+                    'copy-btn',
+                    'sms-btn',
+                    smsBtnState.sent ? 'sms-sent' : ''
+                ].filter(Boolean).join(' ');
+                const finalReminderState = getFinalReminderButtonState(u);
+                const finalReminderButtonHtml = finalReminderState ? `
+              <button class="copy-btn mail-final-reminder${finalReminderState.failed ? ' mail-failed' : ''}"
+                data-final-reminder-key="${getUserMailStatusKey(u)}"
+                title="${finalReminderState.title}"
+                onclick="sendFinalReminderForUser(this, '${userMailStatusKey}')"
+                ${finalReminderState.disabled ? 'disabled' : ''}>${finalReminderState.label}</button>` : '';
+
+                // Check-in HTML
+                let checkinHTML = '<span style="color:var(--text-muted);font-style:italic">No check-ins recorded</span>';
+                if (u.checkInTimes && Object.keys(u.checkInTimes).length > 0) {
+                    const entries = [];
+                    Object.entries(u.checkInTimes).forEach(([inviteType, timestamps]) => {
+                        if (Array.isArray(timestamps)) {
+                            timestamps.forEach(ts => {
+                                entries.push(`<span>🕓 ${formatViewerTime(ts)} — ${inviteType}</span>`);
+                            });
+                        }
+                    });
+                    if (entries.length) checkinHTML = entries.join('<br>');
+                }
+
+                const activityHTML = buildActivityHtml(u);
+
+                // Additional guests
+                let guestsHTML = '';
+                if (u.additionalGuests && u.additionalGuests.length > 0) {
+                    const chips = u.additionalGuests.map(g => `<div class="guest-chip">${g}</div>`).join('');
+                    guestsHTML = `
+          <div class="guests-section">
+            <div class="guests-title">Additional Guests (${u.additionalGuests.length})</div>
+            <div class="guests-grid">${chips}</div>
+          </div>`;
+                }
+
+                // QR — network QR URLs are lazy-loaded so /users paint is not blocked by N image calls
+                let qrHTML = `<div class="qr-frame"><div class="qr-empty">🎫</div></div><div class="qr-caption">No QR generated</div>`;
+                let dlBtn = '';
+                const safeUid = String(u.uniqueId || '').replace(/'/g, "\\'");
+                const safeName = String(u.userName || '').replace(/'/g, "\\'");
+                const pdfBtn = safeUid ?
+                    `<button class="btn-download" onclick="downloadInvitePdf('${safeUid}','${safeName}')">⬇ Download PDF</button>` :
+                    '';
+                const qrSrc = u.qrCode ?
+                    `data:image/png;base64,${u.qrCode}` :
+                    (u.qrCodeUrl || '');
+                const qrCardSrc = u.qrCardUrl || (u.uniqueId ? `${baseURL}/api/AramcoFarewell/qr-card/${encodeURIComponent(u.uniqueId)}` : qrSrc);
+                if (qrSrc) {
+                    const isInline = qrSrc.indexOf('data:') === 0;
+                    const imgTag = isInline ?
+                        `<img src="${qrSrc}" alt="QR Code" />` :
+                        `<img class="qr-lazy" data-qr-src="${qrSrc}" alt="QR Code" width="120" height="120" decoding="async" />`;
+                    qrHTML = `<div class="qr-frame">${imgTag}</div>
+                  <div class="qr-caption"></div>`;
+                    const safeCard = String(qrCardSrc).replace(/'/g, "\\'");
+                    dlBtn = `<button class="btn-download" onclick="downloadQR('${safeCard}','${safeName}')">⬇ Download QR</button>`;
+                }
+                dlBtn = `${pdfBtn}${dlBtn}`;
+
+                const statusBadgeClass = {
+                    pending: 'status-pending-badge',
+                    accepted: 'status-accepted-badge',
+                    declined: 'status-declined-badge'
+                } [statusRaw] || 'status-pending-badge';
+                const statusLabel = {
+                    pending: 'Pending',
+                    accepted: 'Accepted',
+                    declined: 'Declined'
+                } [statusRaw] || 'Pending';
+                const emailSentLabel = formatTimelineValue(getEmailSentAtMs(u));
+                const statusChangedLabel = formatTimelineValue(getStatusChangedAtMs(u, statusRaw));
+
+                card.innerHTML = `
+        <div class="card-layout">
+          <div class="card-body">
+
+            <div class="card-top">
+              <div class="card-name-row">
+                <div class="card-name">${u.userName || 'VIP Guest'}${u.seatCode ? `<span class="seat-badge">${u.seatCode}</span>` : ''}</div>
+                <span class="invite-badge ${getInviteClass(u.inviteType)}">${getInviteLabel(u.inviteType)}</span>
+              </div>
+              <span class="status-badge ${statusBadgeClass}">${statusLabel}</span>
+            </div>
+
+            <div class="card-meta">
+              <span class="card-meta-company">${company}</span>
+              <span class="card-meta-sep">·</span>
+              <span class="card-meta-position">${position}</span>
+              <span class="card-meta-sep">·</span>
+              <span class="card-meta-email" title="${emailAddress}">${emailAddress}</span>
+              <span class="card-meta-sep">·</span>
+              <span class="card-meta-phone" title="${phoneDisplay}">${phoneDisplay}</span>
+            </div>
+
+            <div class="card-times">
+              <span><strong>Email sent:</strong> ${emailSentLabel}</span>
+              <span><strong>Status changed:</strong> ${statusChangedLabel}</span>
+            </div>
+
+            ${resolveUserType(u.inviteType) === 'VVIP' ? `
+            <div class="vvip-doc-row">
+              <span class="vvip-doc-label">VVIP header</span>
+              <span class="vvip-doc-status ${u.hasVvipHeader ? 'has-doc' : ''}">${u.hasVvipHeader ? 'Custom image' : 'Default'}</span>
+              ${u.hasVvipHeader && u.vvipBodyImageUrl ? `<img class="vvip-header-preview" src="${u.vvipBodyImageUrl}" alt="VVIP header" style="max-width:90px;max-height:54px;" />` : ''}
+              <label class="copy-btn" style="cursor:pointer; margin:0;">
+                ${u.hasVvipHeader ? 'Replace header' : 'Upload header'}
+                <input type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" style="display:none"
+                  onchange="uploadVvipHeaderForUser('${safeUid}', this)" />
+              </label>
+            </div>` : ''}
+
+            <div class="url-row">
+              <span class="url-icon">✉️</span>
+              <div class="url-text" title="${emailInviteLink || ''}">${emailInviteLink || 'No email invite link available'}</div>
+              <button class="copy-btn" onclick="copyURL(this, '${emailInviteLink}')">Copy</button>
+              <button class="copy-btn" onclick="openRSVP('${emailInviteLink}')">View Invitation</button>
+              <button class="${sendMailButtonClass}" data-mail-key="${getUserMailStatusKey(u)}" title="${sendMailButtonTitle}" onclick="sendInviteForUser(this, '${userMailStatusKey}')" ${mailBtnState.disabled ? 'disabled' : ''}>${sendMailButtonLabel}</button>${finalReminderButtonHtml}
+              <button class="${sendSmsButtonClass}" data-sms-key="${getUserMailStatusKey(u)}" title="${smsBtnState.title}" onclick="sendSmsForUser(this, '${userMailStatusKey}')" ${smsBtnState.disabled ? 'disabled' : ''}>${smsBtnState.label}</button>
+            </div>
+
+            <div class="checkin-row">
+              <div class="checkin-label">Check-in History · ${getViewerTimeZoneLabel()}</div>
+              <div class="checkin-entries">${checkinHTML}</div>
+            </div>
+
+            <div class="activity-row">
+              <div class="checkin-label">Activity / Notes</div>
+              <div class="activity-entries">${activityHTML}</div>
+            </div>
+
+          </div>
+
+          <div class="qr-side">
+            ${qrHTML}
+            ${dlBtn}
+          </div>
+        </div>
+
+        ${guestsHTML}`;
+
+                container.appendChild(card);
+            });
+
+            hydrateLazyQrImages(container);
+        }
+
+        let qrLazyObserver = null;
+
+        function hydrateLazyQrImages(root) {
+            const imgs = (root || document).querySelectorAll('img.qr-lazy[data-qr-src]');
+            if (!imgs.length) return;
+
+            if (!('IntersectionObserver' in window)) {
+                imgs.forEach((img) => {
+                    img.src = img.getAttribute('data-qr-src');
+                    img.removeAttribute('data-qr-src');
+                    img.classList.remove('qr-lazy');
+                });
+                return;
+            }
+
+            if (qrLazyObserver) {
+                qrLazyObserver.disconnect();
+            }
+
+            qrLazyObserver = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (!entry.isIntersecting) return;
+                    const img = entry.target;
+                    const src = img.getAttribute('data-qr-src');
+                    if (src) {
+                        img.src = src;
+                        img.removeAttribute('data-qr-src');
+                        img.classList.remove('qr-lazy');
+                    }
+                    qrLazyObserver.unobserve(img);
+                });
+            }, {
+                root: null,
+                rootMargin: '160px 0px',
+                threshold: 0.01
+            });
+
+            imgs.forEach((img) => qrLazyObserver.observe(img));
+        }
+
+        function copyURL(btn, url) {
+            if (!url) return;
+            navigator.clipboard.writeText(url).then(() => {
+                btn.textContent = '✓ Copied';
+                setTimeout(() => btn.textContent = 'Copy', 2000);
+            }).catch(() => {
+                const t = document.createElement('textarea');
+                t.value = url;
+                document.body.appendChild(t);
+                t.select();
+                document.execCommand('copy');
+                document.body.removeChild(t);
+                btn.textContent = '✓ Copied';
+                setTimeout(() => btn.textContent = 'Copy', 2000);
+            });
+        }
+
+        function openRSVP(url) {
+            if (!url) {
+                alert('No RSVP URL available');
+                return;
+            }
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
+
+        function inviteCardFileName(name) {
+            const safe = String(name || 'Guest')
+                .replace(/[<>:"/\\|?*\x00-\x1f]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim();
+            return `${safe || 'Guest'}AramcoFarewellInvite.jpg`;
+        }
+
+        async function downloadInvitePdf(uniqueId, name) {
+            if (!uniqueId) return;
+            // Direct navigation avoids cross-origin fetch/CORS; API returns Content-Disposition: attachment.
+            const url = `${baseURL}/api/AramcoFarewell/invite-pdf/${encodeURIComponent(uniqueId)}`;
+            const a = document.createElement('a');
+            a.href = url;
+            a.target = '_blank';
+            a.rel = 'noopener';
+            a.style.display = 'none';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+
+        function setBulkDownloadStatus(msg, kind) {
+            const el = document.getElementById('bulkDownloadStatus');
+            if (!el) return;
+            el.textContent = msg || '';
+            el.classList.remove('error', 'ok');
+            if (kind) el.classList.add(kind);
+        }
+
+        function getBulkDownloadEmailsText() {
+            return (document.getElementById('bulkDownloadEmails')?.value || '').trim();
+        }
+
+        async function downloadBulkZip(kind) {
+            const emails = getBulkDownloadEmailsText();
+            if (!emails) {
+                setBulkDownloadStatus('Paste at least one email address.', 'error');
+                return;
+            }
+
+            const isPdf = kind === 'pdf';
+            const endpoint = isPdf ?
+                `${baseURL}/api/AramcoFarewell/bulk-download-pdf` :
+                `${baseURL}/api/AramcoFarewell/bulk-download-qr`;
+            const btn = document.getElementById(isPdf ? 'btnBulkPdfZip' : 'btnBulkQrZip');
+            const label = btn ? btn.textContent : '';
+            if (btn) {
+                btn.disabled = true;
+                btn.textContent = 'Preparing ZIP…';
+            }
+            setBulkDownloadStatus(isPdf ? 'Generating PDFs… this can take a minute.' : 'Generating QR cards…', '');
+
+            try {
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/zip, application/json'
+                    },
+                    body: JSON.stringify({
+                        emails
+                    })
+                });
+
+                if (!res.ok) {
+                    let msg = `${res.status} ${res.statusText}`;
+                    try {
+                        const text = await res.text();
+                        if (text) {
+                            try {
+                                const body = JSON.parse(text);
+                                msg = body.message || body.Message || body.title || text;
+                            } catch (e) {
+                                msg = text;
+                            }
+                        }
+                    } catch (e) {}
+                    throw new Error(msg);
+                }
+
+                const blob = await res.blob();
+                const disposition = res.headers.get('Content-Disposition') || '';
+                let filename = isPdf ?
+                    `aramco-farewell-invite-pdfs_${new Date().toISOString().slice(0, 10)}.zip` :
+                    `aramco-farewell-qr-cards_${new Date().toISOString().slice(0, 10)}.zip`;
+                const match = /filename\*?=(?:UTF-8''|")?([^\";]+)/i.exec(disposition);
+                if (match && match[1]) {
+                    filename = decodeURIComponent(match[1].replace(/"/g, '').trim());
+                }
+
+                const objectUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = objectUrl;
+                a.download = filename;
+                a.rel = 'noopener';
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(objectUrl), 2000);
+                setBulkDownloadStatus(`Downloaded ${filename}`, 'ok');
+            } catch (e) {
+                setBulkDownloadStatus(`Download failed: ${e.message}`, 'error');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = label;
+                }
+            }
+        }
+
+        function downloadBulkPdfZip() {
+            return downloadBulkZip('pdf');
+        }
+
+        function downloadBulkQrZip() {
+            return downloadBulkZip('qr');
+        }
+
+        async function downloadQR(src, name) {
+            if (!src) return;
+            const filename = inviteCardFileName(name);
+            const href = src.indexOf('data:') === 0 || src.indexOf('http') === 0 ?
+                src :
+                ('data:image/png;base64,' + src);
+
+            const fallbackDownload = (blob) => {
+                const objectUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = objectUrl;
+                a.download = filename;
+                a.rel = 'noopener';
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+            };
+
+            const isPhone = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || '') ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+            try {
+                const res = await fetch(href, {
+                    mode: 'cors',
+                    cache: 'no-store'
+                });
+                if (!res.ok) throw new Error('QR download failed');
+                const blob = await res.blob();
+                if (isPhone) {
+                    const file = new File([blob], filename, {
+                        type: blob.type || 'image/jpeg'
+                    });
+                    if (navigator.canShare && navigator.canShare({
+                            files: [file]
+                        })) {
+                        try {
+                            await navigator.share({
+                                files: [file],
+                                title: filename
+                            });
+                            return;
+                        } catch (shareErr) {
+                            if (shareErr && shareErr.name === 'AbortError') return;
+                        }
+                    }
+                }
+                fallbackDownload(blob);
+            } catch (err) {
+                console.error(err);
+                alert('Could not download the QR code. Please try again.');
+            }
+        }
+
+        async function addUser() {
+            const fullName = document.getElementById("fullNameInput").value.trim();
+            const company = (document.getElementById("companyInput").value || '').trim();
+            const emailId = document.getElementById("emailInput").value.trim();
+            const phoneNumber = (document.getElementById("phoneInput").value || '').trim();
+            const position = (document.getElementById("positionInput").value || '').trim();
+            const userType = document.getElementById("userTypeSelect").value;
+            const headerInput = document.getElementById("vvipHeaderInput");
+            const headerFile = headerInput && headerInput.files && headerInput.files[0] ? headerInput.files[0] : null;
+
+            if (!fullName) {
+                alert("Enter name");
+                return;
+            }
+            if (!emailId) {
+                alert("Enter email ID");
+                return;
+            }
+            if (resolveUserType(userType) === 'VVIP' && headerFile) {
+                const okType = /\.(jpe?g|png|webp)$/i.test(headerFile.name || '');
+                if (!okType) {
+                    alert("VVIP header must be a JPG, PNG or WEBP image.");
+                    return;
+                }
+            }
+
+            try {
+                const response = await fetch(`${baseURL}/api/AramcoFarewell/create-user`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fullName: fullName,
+                        emailId: emailId,
+                        phoneNumber: phoneNumber,
+                        userType: userType,
+                        company: company,
+                        position: position
+                    })
+                });
+                if (!response.ok) {
+                    let errorMsg = `${response.status} ${response.statusText}`;
+                    try {
+                        const errBody = await response.json();
+                        if (errBody.message) errorMsg = errBody.message;
+                    } catch (e) {}
+                    throw new Error(errorMsg);
+                }
+
+                const created = await response.json();
+                const uniqueId = created.uniqueId || created.UniqueId || '';
+
+                if (resolveUserType(userType) === 'VVIP' && headerFile && uniqueId) {
+                    const form = new FormData();
+                    form.append('file', headerFile);
+                    const uploadRes = await fetch(`${baseURL}/api/AramcoFarewell/vvip-body/${encodeURIComponent(uniqueId)}`, {
+                        method: 'POST',
+                        body: form
+                    });
+                    if (!uploadRes.ok) {
+                        let uploadMsg = `${uploadRes.status} ${uploadRes.statusText}`;
+                        try {
+                            const errBody = await uploadRes.json();
+                            if (errBody.message || errBody.Message) uploadMsg = errBody.message || errBody.Message;
+                        } catch (e) {}
+                        throw new Error(`User created, but header upload failed: ${uploadMsg}`);
+                    }
+                }
+
+                alert(`User "${fullName}" added successfully!`);
+                document.getElementById("fullNameInput").value = '';
+                document.getElementById("companyInput").value = '';
+                document.getElementById("emailInput").value = '';
+                document.getElementById("phoneInput").value = '';
+                document.getElementById("positionInput").value = '';
+                clearVvipHeaderUpload();
+                fetchUsers();
+            } catch (e) {
+                alert(`Error adding user: ${e.message}`);
+            }
+        }
+
+        function onManualUserTypeChange() {
+            const isVvip = resolveUserType(document.getElementById('userTypeSelect').value) === 'VVIP';
+            const headerRow = document.getElementById('vvipHeaderUploadRow');
+            if (headerRow) headerRow.style.display = isVvip ? 'flex' : 'none';
+            if (!isVvip) clearVvipHeaderUpload();
+        }
+
+        function onVvipHeaderSelected() {
+            const input = document.getElementById('vvipHeaderInput');
+            const wrap = document.getElementById('vvipHeaderPreviewWrap');
+            const preview = document.getElementById('vvipHeaderPreview');
+            const file = input && input.files && input.files[0];
+            if (!file || !preview || !wrap) return;
+            preview.src = URL.createObjectURL(file);
+            wrap.style.display = 'flex';
+        }
+
+        function clearVvipHeaderUpload() {
+            const input = document.getElementById('vvipHeaderInput');
+            const wrap = document.getElementById('vvipHeaderPreviewWrap');
+            const preview = document.getElementById('vvipHeaderPreview');
+            if (input) input.value = '';
+            if (preview) preview.removeAttribute('src');
+            if (wrap) wrap.style.display = 'none';
+        }
+
+        async function uploadVvipHeaderForUser(uniqueId, inputEl) {
+            if (!uniqueId || !inputEl || !inputEl.files || !inputEl.files[0]) return;
+            const file = inputEl.files[0];
+            if (!/\.(jpe?g|png|webp)$/i.test(file.name || '')) {
+                alert('VVIP header must be a JPG, PNG or WEBP image.');
+                inputEl.value = '';
+                return;
+            }
+            try {
+                const form = new FormData();
+                form.append('file', file);
+                const res = await fetch(`${baseURL}/api/AramcoFarewell/vvip-body/${encodeURIComponent(uniqueId)}`, {
+                    method: 'POST',
+                    body: form
+                });
+                if (!res.ok) {
+                    let msg = `${res.status} ${res.statusText}`;
+                    try {
+                        const body = await res.json();
+                        if (body.message || body.Message) msg = body.message || body.Message;
+                    } catch (e) {}
+                    throw new Error(msg);
+                }
+                inputEl.value = '';
+                await fetchUsers(true);
+            } catch (e) {
+                alert(`Header upload failed: ${e.message}`);
+                inputEl.value = '';
+            }
+        }
+
+        function getExportTierSortOrder(user) {
+            const type = resolveUserType(user.inviteType);
+            if (type === 'VVIP') return 0;
+            if (type === 'VIP') return 1;
+            if (type === 'VIP-EN') return 2;
+            if (type === 'Media') return 3;
+            if (type === 'General') return 4;
+            return 5;
+        }
+
+        function getExportStatusLabel(user) {
+            const status = normalizeStatus(user.status);
+            if (status === 'accepted') return 'Accepted';
+            if (status === 'declined') return 'Declined';
+            return 'Pending';
+        }
+
+        function sortUsersForExport(list) {
+            return [...list].sort((a, b) => {
+                const tierDiff = getExportTierSortOrder(a) - getExportTierSortOrder(b);
+                if (tierDiff !== 0) return tierDiff;
+                const nameA = (a.userName || '').toString().trim().toLowerCase();
+                const nameB = (b.userName || '').toString().trim().toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+        }
+
+        function xlsxBorder(color) {
+            const side = {
+                style: 'thin',
+                color: {
+                    rgb: color
+                }
+            };
+            return {
+                top: side,
+                bottom: side,
+                left: side,
+                right: side
+            };
+        }
+
+        function getExportStatusXlsxStyle(label) {
+            if (label === 'Accepted') {
+                return {
+                    fill: {
+                        patternType: 'solid',
+                        fgColor: {
+                            rgb: 'E8FAF3'
+                        }
+                    },
+                    font: {
+                        bold: true,
+                        color: {
+                            rgb: '34C98A'
+                        }
+                    },
+                    alignment: {
+                        horizontal: 'center',
+                        vertical: 'center'
+                    },
+                    border: xlsxBorder('34C98A')
+                };
+            }
+            if (label === 'Declined') {
+                return {
+                    fill: {
+                        patternType: 'solid',
+                        fgColor: {
+                            rgb: 'FDECEF'
+                        }
+                    },
+                    font: {
+                        bold: true,
+                        color: {
+                            rgb: 'F0516A'
+                        }
+                    },
+                    alignment: {
+                        horizontal: 'center',
+                        vertical: 'center'
+                    },
+                    border: xlsxBorder('F0516A')
+                };
+            }
+            return {
+                fill: {
+                    patternType: 'solid',
+                    fgColor: {
+                        rgb: 'FEF6E9'
+                    }
+                },
+                font: {
+                    bold: true,
+                    color: {
+                        rgb: 'F0A030'
+                    }
+                },
+                alignment: {
+                    horizontal: 'center',
+                    vertical: 'center'
+                },
+                border: xlsxBorder('F0A030')
+            };
+        }
+
+        function buildGuestExportWorkbook(list) {
+            const headers = ['Username', 'EmailId', 'PhoneNumber', 'Company', 'Position', 'Status', 'EmailSentAt', 'StatusChangedAt', 'InviteSend', 'InviteSmsSend'];
+            const rows = sortUsersForExport(list).map(user => [
+                (user.userName || '').toString().trim(),
+                (user.emailId || '').toString().trim(),
+                (user.phoneNumber || '').toString().trim(),
+                (user.company || '').toString().trim(),
+                (user.position || '').toString().trim(),
+                getExportStatusLabel(user),
+                formatTimelineValue(getEmailSentAtMs(user)),
+                formatTimelineValue(getStatusChangedAtMs(user)),
+                isInviteMailAlreadySent(user) ? 'Yes' : 'No',
+                user.inviteSmsSend ? 'Yes' : 'No'
+            ]);
+
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+            const range = XLSX.utils.decode_range(ws['!ref']);
+            const headerStyle = {
+                fill: {
+                    patternType: 'solid',
+                    fgColor: {
+                        rgb: '1C1F3B'
+                    }
+                },
+                font: {
+                    bold: true,
+                    color: {
+                        rgb: 'FFFFFF'
+                    }
+                },
+                alignment: {
+                    horizontal: 'center',
+                    vertical: 'center'
+                },
+                border: xlsxBorder('CCCCCC')
+            };
+            const cellStyle = {
+                alignment: {
+                    vertical: 'center'
+                },
+                border: xlsxBorder('DDDDDD')
+            };
+
+            for (let c = range.s.c; c <= range.e.c; c++) {
+                const headerCell = XLSX.utils.encode_cell({
+                    r: 0,
+                    c: c
+                });
+                if (ws[headerCell]) ws[headerCell].s = headerStyle;
+            }
+
+            for (let r = 1; r <= range.e.r; r++) {
+                for (let c = range.s.c; c <= range.e.c; c++) {
+                    const addr = XLSX.utils.encode_cell({
+                        r: r,
+                        c: c
+                    });
+                    if (!ws[addr]) continue;
+                    if (c === 5) {
+                        ws[addr].s = getExportStatusXlsxStyle(ws[addr].v);
+                    } else {
+                        ws[addr].s = cellStyle;
+                    }
+                }
+            }
+
+            ws['!cols'] = [{
+                    wch: 28
+                },
+                {
+                    wch: 32
+                },
+                {
+                    wch: 18
+                },
+                {
+                    wch: 24
+                },
+                {
+                    wch: 24
+                },
+                {
+                    wch: 14
+                },
+                {
+                    wch: 22
+                },
+                {
+                    wch: 22
+                },
+                {
+                    wch: 12
+                },
+                {
+                    wch: 14
+                }
+            ];
+
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Guests');
+            return wb;
+        }
+
+        function exportCSV() {
+            try {
+                if (!users.length) {
+                    alert('No users to export.');
+                    return;
+                }
+
+                if (typeof XLSX === 'undefined' || !XLSX.writeFile) {
+                    throw new Error('Excel library not loaded.');
+                }
+
+                const wb = buildGuestExportWorkbook(users);
+                XLSX.writeFile(wb, `aramco_farewell_guests_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+            } catch (e) {
+                alert(`Error exporting Excel: ${e.message}`);
+            }
+        }
+
+        // ── Auto-refresh logic ──────────────────────────
+        let lastDataHash = '';
+        let countdown = 120;
+        let countdownTimer = null;
+        let usersFetchInFlight = false;
+        const REFRESH_SECONDS = 120;
+
+        function hashData(data) {
+            return JSON.stringify(data);
+        }
+
+        function getViewerTimeZone() {
+            try {
+                return Intl.DateTimeFormat().resolvedOptions().timeZone || 'local';
+            } catch (e) {
+                return 'local';
+            }
+        }
+
+        function getViewerTimeZoneLabel() {
+            const zone = getViewerTimeZone();
+            try {
+                const parts = new Intl.DateTimeFormat(undefined, {
+                    timeZoneName: 'shortOffset'
+                }).formatToParts(new Date());
+                const offset = (parts.find(p => p.type === 'timeZoneName') || {}).value || '';
+                return offset ? `${zone} · ${offset}` : zone;
+            } catch (e) {
+                return zone;
+            }
+        }
+
+        function formatViewerTime(value) {
+            if (!value) return '';
+            const raw = String(value).trim();
+            const iso = /Z$|[+-]\d{2}:\d{2}$/.test(raw) ? raw : raw.replace(' ', 'T') + 'Z';
+            const date = new Date(iso);
+            if (Number.isNaN(date.getTime())) return raw;
+            const options = {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: true,
+                timeZoneName: 'shortOffset'
+            };
+            try {
+                return date.toLocaleString(undefined, options);
+            } catch (e) {
+                options.timeZoneName = 'short';
+                return date.toLocaleString(undefined, options);
+            }
+        }
+
+        function mapCheckInTimes(checkIns) {
+            if (!Array.isArray(checkIns) || !checkIns.length) return {};
+            const stamps = checkIns
+                .map(item => item && (item.checkedInOn || item.CheckedInOn))
+                .filter(Boolean);
+            return stamps.length ? {
+                Entry: stamps
+            } : {};
+        }
+
+        function updateLastUpdatedLabel() {
+            const el = document.getElementById('lastUpdated');
+            if (el) {
+                const now = new Date();
+                el.textContent = `Updated ${now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })} · next in ${countdown}s`;
+            }
+        }
+
+        function startCountdown() {
+            clearInterval(countdownTimer);
+            countdown = REFRESH_SECONDS;
+            updateLastUpdatedLabel();
+            countdownTimer = setInterval(() => {
+                countdown--;
+                if (countdown <= 0) {
+                    clearInterval(countdownTimer);
+                    countdownTimer = null;
+                    countdown = REFRESH_SECONDS;
+                    updateLastUpdatedLabel();
+                    fetchUsers(true);
+                    return;
+                }
+                updateLastUpdatedLabel();
+            }, 1000);
+        }
+
+        async function fetchUsers(silent = false) {
+            if (usersFetchInFlight) return;
+            usersFetchInFlight = true;
+
+            const badge = document.getElementById('liveBadge');
+            const icon = document.getElementById('refreshIcon');
+
+            if (!silent) {
+                if (icon) {
+                    icon.style.display = 'inline-block';
+                    icon.style.animation = 'spin 0.7s linear infinite';
+                }
+                if (badge) badge.style.opacity = '0.5';
+            }
+
+            try {
+                const response = await fetch(`${baseURL}/api/AramcoFarewell/users`);
+                if (!response.ok) throw new Error("Failed to fetch");
+                const data = (await response.json()) || [];
+
+                const mappedData = data.map(u => {
+                    const encodedName = encodeURIComponent(u.fullName || '');
+                    const hashKey = u.hashKey || '';
+                    const uniqueId = u.uniqueId || '';
+                    const inviteType = getUserTypeLabel(u.userType);
+                    const resolvedType = resolveUserType(inviteType);
+                    const emailInvitePage = resolvedType === 'VVIP' ?
+                        'emailInviteVvip' :
+                        resolvedType === 'VIP-EN' ?
+                        'emailInviteEn' :
+                        'emailInvite';
+                    const emailInviteUrl = `${emailInvitePage}?name=${encodedName}&uniqueId=${encodeURIComponent(uniqueId)}`;
+                    return {
+                        uniqueId: uniqueId,
+                        userName: u.fullName,
+                        emailId: u.emailId,
+                        phoneNumber: u.phoneNumber || u.PhoneNumber || '',
+                        inviteType: inviteType,
+                        company: u.company || '',
+                        position: u.position || '',
+                        hashKey: hashKey,
+                        status: normalizeStatus(u.status || 'pending'),
+                        createdOn: u.createdOn || u.CreatedOn || null,
+                        inviteSend: !!(u.inviteSend || u.InviteSend),
+                        inviteSmsSend: !!(u.inviteSmsSend || u.InviteSmsSend),
+                        reminderCount: Number(u.reminderCount || u.ReminderCount || 0),
+                        hasVvipHeader: !!(u.vvipBodyImagePath || u.VvipBodyImagePath || u.vvipBodyImageUrl || u.VvipBodyImageUrl),
+                        vvipBodyImageUrl: (() => {
+                            const raw = (u.vvipBodyImageUrl || u.VvipBodyImageUrl || '').toString().trim();
+                            if (!raw) return '';
+                            // Stable API URLs (/vvip-body/{id}) need a bust so Replace header shows the new image.
+                            if (/\/vvip-body\//i.test(raw)) {
+                                const sep = raw.includes('?') ? '&' : '?';
+                                return `${raw}${sep}t=${Date.now()}`;
+                            }
+                            return raw;
+                        })(),
+                        urlLink: emailInviteUrl,
+                        emailInviteLink: emailInviteUrl,
+                        qrCode: u.qrCode || null,
+                        qrCodeUrl: u.qrCodeUrl || (uniqueId ? `${baseURL}/api/AramcoFarewell/qr/${encodeURIComponent(uniqueId)}` : ''),
+                        qrCardUrl: u.qrCardUrl || (uniqueId ? `${baseURL}/api/AramcoFarewell/qr-card/${encodeURIComponent(uniqueId)}` : ''),
+                        seatCode: u.seatCode || u.SeatCode || '',
+                        checkInTimes: mapCheckInTimes(u.checkIns || u.CheckIns),
+                        activities: (u.activities || u.Activities || []).map(a => ({
+                            id: a.id || a.Id,
+                            action: a.action || a.Action || '',
+                            detail: a.detail || a.Detail || '',
+                            actor: a.actor || a.Actor || '',
+                            createdOn: a.createdOn || a.CreatedOn
+                        })),
+                        additionalGuests: []
+                    };
+                });
+
+                const newHash = hashData(mappedData);
+                if (newHash !== lastDataHash) {
+                    users = mappedData;
+                    filteredUsers = users;
+                    lastDataHash = newHash;
+                    clearStaleInviteMailCache(users);
+                    applyFilters();
+                    updateStats();
+                    flashBadge();
+                }
+            } catch (err) {
+                users = JSON.parse(localStorage.getItem("vipUsers")) || [];
+                filteredUsers = users;
+                applyFilters();
+                updateStats();
+            } finally {
+                if (icon) {
+                    icon.style.animation = '';
+                }
+                if (badge) badge.style.opacity = '1';
+                usersFetchInFlight = false;
+                startCountdown();
+            }
+        }
+
+        function flashBadge() {
+            const badge = document.getElementById('liveBadge');
+            if (!badge) return;
+            badge.style.background = 'rgba(63,185,80,0.18)';
+            badge.style.borderColor = 'rgba(63,185,80,0.45)';
+            setTimeout(() => {
+                badge.style.background = '';
+                badge.style.borderColor = '';
+            }, 800);
+        }
+
+        async function manualRefresh() {
+            await fetchUsers(false);
+        }
+
+        function switchTab(tab) {
+            document.getElementById('paneManual').style.display = tab === 'manual' ? '' : 'none';
+            document.getElementById('paneBulk').style.display = tab === 'bulk' ? '' : 'none';
+            document.getElementById('tabManual').classList.toggle('active', tab === 'manual');
+            document.getElementById('tabBulk').classList.toggle('active', tab === 'bulk');
+        }
+
+        // Kick off
+        fetchUsers(false);
+        refreshInviteQueueStatus();
+        onManualUserTypeChange();
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>تأكيد الحضور | أرامكو</title>
+    <link rel="icon" type="image/png" href="assets/icon.png" />
+    <link rel="apple-touch-icon" href="assets/icon.png" />
+    <style>
+        @font-face {
+            font-family: "DIN Next LT Arabic";
+            src: url("assets/fonts/DINNextLTArabic-Regular.ttf") format("truetype");
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        :root {
+            --navy: #002650;
+            --gold: #CBA886;
+            --text: #002650;
+            --muted: #4a5d73;
+            --white: #ffffff;
+            --page-max: 560px;
+            --logo-width: clamp(132px, 34vw, 172px);
+            --footer-inset: 0px;
+            --footer-bottom: 32px;
+            --footer-width: clamp(140px, 32vw, 220px);
+            --page-pad-x: clamp(0.85rem, 3vw, 1.5rem);
+            --safe-top: env(safe-area-inset-top, 0px);
+            --page-pad-top: calc(var(--safe-top) + 1.75rem);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        html,
+        body {
+            min-height: 100%;
+            font-family: "DIN Next LT Arabic", Tahoma, sans-serif;
+            color: var(--white);
+            background-color: #f4f6f8;
+            background-image: url("assets/microsite/Microsite-bg-webp.webp");
+            background-repeat: no-repeat;
+            background-position: center top;
+            background-size: cover;
+            background-attachment: scroll;
+        }
+
+        body {
+            position: relative;
+            isolation: isolate;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            padding: var(--page-pad-top) var(--page-pad-x) 0;
+            overflow-x: hidden;
+        }
+
+        .sunshine {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .sunshine::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: url("assets/microsite/ashreq-brand-sunshine.svg");
+            background-repeat: no-repeat;
+            background-position: right clamp(16px, 5vw, 63px) center;
+            background-size: cover;
+            transform: scale(2);
+            transform-origin: right center;
+            opacity: 0.65;
+            mix-blend-mode: overlay;
+        }
+
+        .page {
+            position: relative;
+            z-index: 1;
+            width: min(100%, var(--page-max));
+            margin: 0 auto;
+            text-align: center;
+            flex: 1 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: clamp(1rem, 2.5vw, 1.5rem);
+            padding-bottom: 1.5rem;
+            animation: fadeUp 0.55s ease both;
+        }
+
+        .brand-logo {
+            width: var(--logo-width);
+            max-width: min(200px, 55vw);
+            margin: 0 auto;
+        }
+
+        .brand-logo img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .intro {
+            max-width: 36rem;
+            color: var(--white);
+            font-size: clamp(0.95rem, 2.4vw, 1.08rem);
+            line-height: 1.9;
+        }
+
+        .intro p + p {
+            margin-top: 0.75rem;
+        }
+
+        .form-card {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+            margin-top: 0.25rem;
+        }
+
+        .field {
+            width: 100%;
+            text-align: right;
+        }
+
+        .field label {
+            display: block;
+            margin-bottom: 0.4rem;
+            color: var(--white);
+            font-size: 0.92rem;
+            font-weight: 600;
+        }
+
+        .field input {
+            width: 100%;
+            appearance: none;
+            border: 0;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.96);
+            color: var(--navy);
+            font-family: inherit;
+            font-size: 1rem;
+            padding: 0.95rem 1rem;
+            outline: none;
+            box-shadow: 0 8px 24px rgba(0, 38, 80, 0.12);
+        }
+
+        .field input::placeholder {
+            color: #7a8da3;
+        }
+
+        .field input:focus {
+            box-shadow: 0 0 0 3px rgba(203, 168, 134, 0.55), 0 8px 24px rgba(0, 38, 80, 0.12);
+        }
+
+        .actions {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-top: 0.5rem;
+        }
+
+        .btn {
+            appearance: none;
+            border: 0;
+            border-radius: 36px;
+            font-family: inherit;
+            font-size: 1rem;
+            font-weight: 700;
+            padding: 0.95rem 1rem;
+            cursor: pointer;
+            transition: transform 0.15s ease, opacity 0.15s ease;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn:disabled {
+            opacity: 0.65;
+            cursor: wait;
+        }
+
+        .btn-accept {
+            background: var(--gold);
+            color: var(--navy);
+        }
+
+        .btn-decline {
+            background: rgba(255, 255, 255, 0.18);
+            color: var(--white);
+            border: 1px solid rgba(255, 255, 255, 0.45);
+        }
+
+        .status-msg {
+            min-height: 1.4rem;
+            color: var(--white);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            opacity: 0.95;
+        }
+
+        .status-msg.error {
+            color: #ffd7d7;
+        }
+
+        .footer-mark {
+            position: relative;
+            z-index: 2;
+            width: 100%;
+            margin-top: auto;
+            padding-top: 1.25rem;
+            padding-bottom: calc(var(--footer-bottom) + env(safe-area-inset-bottom, 0px));
+            padding-right: var(--footer-inset);
+            padding-left: var(--page-pad-x);
+            display: flex;
+            justify-content: flex-end;
+            align-items: flex-end;
+            direction: ltr;
+            pointer-events: none;
+        }
+
+        .footer-mark img {
+            display: block;
+            width: var(--footer-width);
+            max-width: 100%;
+            height: auto;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 420px) {
+            .actions {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sunshine" aria-hidden="true"></div>
+
+    <main class="page">
+        <div class="brand-logo">
+            <img src="assets/microsite/logo-white.svg" alt="أرامكو" />
+        </div>
+
+        <div class="intro">
+            <p>يرجى تعبئة اسمك الكامل وعنوان بريدك الإلكتروني أدناه، ثم تأكيد حضورك من خلال الضغط على زر «تأكيد». وفي حال تعذّر عليك الحضور، يرجى الضغط على زر «اعتذار».</p>
+            <p>شكرًا لك.</p>
+        </div>
+
+        <form class="form-card" id="directRsvpForm" novalidate>
+            <div class="field">
+                <label for="fullName">الاسم الكامل</label>
+                <input id="fullName" name="fullName" type="text" autocomplete="name" required placeholder="الاسم الكامل" />
+            </div>
+            <div class="field">
+                <label for="emailId">البريد الإلكتروني</label>
+                <input id="emailId" name="emailId" type="email" autocomplete="email" required dir="ltr" placeholder="name@example.com" />
+            </div>
+
+            <div class="actions">
+                <button type="submit" class="btn btn-accept" data-status="accept">تأكيد</button>
+                <button type="submit" class="btn btn-decline" data-status="decline">اعتذار</button>
+            </div>
+
+            <p class="status-msg" id="statusMsg" aria-live="polite"></p>
+        </form>
+    </main>
+
+    <div class="footer-mark">
+        <img src="assets/microsite/buildingimpactfull-footer.png" alt="Building Impactful Partnership" />
+    </div>
+
+    <script>
+        (function () {
+            var API_BASE = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
+            var form = document.getElementById("directRsvpForm");
+            var nameInput = document.getElementById("fullName");
+            var emailInput = document.getElementById("emailId");
+            var statusMsg = document.getElementById("statusMsg");
+            var pendingStatus = "accept";
+            var submitting = false;
+
+            form.querySelectorAll("button[data-status]").forEach(function (btn) {
+                btn.addEventListener("click", function () {
+                    pendingStatus = btn.getAttribute("data-status") || "accept";
+                });
+            });
+
+            function setBusy(busy) {
+                submitting = busy;
+                form.querySelectorAll("button[data-status]").forEach(function (btn) {
+                    btn.disabled = busy;
+                });
+            }
+
+            function showError(message) {
+                statusMsg.textContent = message || "تعذر إرسال الطلب. حاول مرة أخرى.";
+                statusMsg.classList.add("error");
+            }
+
+            function isValidEmail(value) {
+                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+            }
+
+            form.addEventListener("submit", function (event) {
+                event.preventDefault();
+                if (submitting) return;
+
+                var fullName = (nameInput.value || "").trim();
+                var emailId = (emailInput.value || "").trim();
+                var status = pendingStatus === "decline" ? "decline" : "accept";
+
+                statusMsg.textContent = "";
+                statusMsg.classList.remove("error");
+
+                if (!fullName) {
+                    showError("يرجى إدخال الاسم الكامل.");
+                    nameInput.focus();
+                    return;
+                }
+                if (!emailId || !isValidEmail(emailId)) {
+                    showError("يرجى إدخال بريد إلكتروني صحيح.");
+                    emailInput.focus();
+                    return;
+                }
+
+                setBusy(true);
+                statusMsg.textContent = "جاري الإرسال…";
+
+                fetch(API_BASE + "/api/AramcoFarewell/direct-rsvp", {
+                    method: "POST",
+                    mode: "cors",
+                    cache: "no-store",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    },
+                    body: JSON.stringify({
+                        fullName: fullName,
+                        emailId: emailId,
+                        status: status
+                    })
+                }).then(function (res) {
+                    return res.text().then(function (text) {
+                        var body = {};
+                        try { body = text ? JSON.parse(text) : {}; } catch (e) {}
+                        return { ok: res.ok, status: res.status, body: body };
+                    });
+                }).then(function (result) {
+                    if (!result.ok || !result.body || !result.body.uniqueId) {
+                        var msg = (result.body && (result.body.message || result.body.Message)) || "";
+                        if (result.status === 409) {
+                            showError(msg || "تم تسجيل ردك مسبقاً.");
+                        } else {
+                            showError(msg || "تعذر إرسال الطلب. حاول مرة أخرى.");
+                        }
+                        setBusy(false);
+                        return;
+                    }
+
+                    var uniqueId = result.body.uniqueId;
+                    var next = new URLSearchParams();
+                    next.set("name", fullName);
+                    next.set("uniqueId", uniqueId);
+                    next.set("status", status);
+                    window.location.href = "rsvp?" + next.toString();
+                }).catch(function () {
+                    showError("تعذر الاتصال بالخادم. تحقق من الإنترنت وحاول مرة أخرى.");
+                    setBusy(false);
+                });
+            });
+        })();
+    </script>
+</body>
+
+</html>

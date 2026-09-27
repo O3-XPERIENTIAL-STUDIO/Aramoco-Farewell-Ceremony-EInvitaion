@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>تأكيد الدعوة | أرامكو</title>
+    <link rel="icon" type="image/png" href="assets/icon.png" />
+    <link rel="apple-touch-icon" href="assets/icon.png" />
+    <style>
+        @font-face {
+            font-family: "DIN Next LT Arabic";
+            src: url("assets/fonts/DINNextLTArabic-Regular.ttf") format("truetype");
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @font-face {
+            font-family: "DIN Next LT Arabic Medium";
+            src: url("assets/fonts/DINNextLTArabic-Medium.ttf") format("truetype");
+            font-weight: 500;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        :root {
+            --navy: #002650;
+            --gold: #CBA886;
+            --text: #002650;
+            --muted: #4a5d73;
+            --white: #ffffff;
+            --page-max: 720px;
+            --logo-width: clamp(132px, 34vw, 172px);
+            --footer-inset: 0px;
+            --footer-bottom: 32px;
+            --footer-width: clamp(140px, 32vw, 220px);
+            --page-pad-x: clamp(0.85rem, 3vw, 1.5rem);
+            --safe-top: env(safe-area-inset-top, 0px);
+            --page-pad-top: calc(var(--safe-top) + 1.75rem);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            overflow-x: hidden;
+            overflow-y: auto;
+        }
+
+        html,
+        body {
+            min-height: 100%;
+            font-family: "DIN Next LT Arabic", Tahoma, sans-serif;
+            color: var(--white);
+            background-color: #f4f6f8;
+            background-image: url("assets/microsite/Microsite-bg-webp.webp");
+            background-repeat: no-repeat;
+            background-position: center top;
+            background-size: cover;
+            background-attachment: scroll;
+            /* bg scrolls with page */
+        }
+
+        body {
+            position: relative;
+            isolation: isolate;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            padding: var(--page-pad-top) var(--page-pad-x) 0;
+            overflow-x: hidden;
+            /* footer sits in normal flow at bottom — never overlays content */
+        }
+
+        /* Sunshine scrolls with page/bg (not fixed to viewport) */
+        .sunshine {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .sunshine::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: url("assets/microsite/ashreq-brand-sunshine.svg");
+            background-repeat: no-repeat;
+            background-position: right clamp(16px, 5vw, 63px) center;
+            background-size: cover;
+            transform: scale(2);
+            transform-origin: right center;
+            opacity: 0.65;
+            mix-blend-mode: overlay;
+        }
+
+        .page {
+            position: relative;
+            z-index: 1;
+            width: min(100%, var(--page-max));
+            max-width: 100%;
+            margin: 0 auto;
+            text-align: center;
+            flex: 1 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            gap: clamp(1rem, 2.5vw, 1.5rem);
+            padding-top: 0;
+            padding-bottom: 1.5rem;
+            animation: fadeUp 0.6s ease both;
+        }
+
+        .guest-name {
+            width: 100%;
+            background: transparent;
+            color: var(--navy);
+            font-family: "DIN Next LT Arabic Medium", "DIN Next LT Arabic", Tahoma, sans-serif;
+            font-size: clamp(1rem, 3.2vw, 1.75rem);
+            font-weight: 500;
+            line-height: 1.5;
+            padding: clamp(0.5rem, 1.5vw, 0.75rem) clamp(0.85rem, 2.5vw, 1.25rem);
+            word-break: break-word;
+        }
+
+        .copy,
+        .decline-copy {
+            max-width: 38rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            color: var(--white);
+        }
+
+        .copy p,
+        .decline-copy p {
+            font-size: clamp(0.95rem, 2.4vw, 1.1rem);
+            line-height: 1.9;
+            color: var(--white);
+        }
+
+        .copy .highlight,
+        .copy .muted,
+        .copy strong {
+            color: var(--white);
+            font-weight: 600;
+        }
+
+        .copy .muted {
+            font-size: clamp(0.9rem, 2.2vw, 1.02rem);
+            font-weight: 400;
+            opacity: 0.92;
+        }
+
+        .decline-copy .en {
+            direction: ltr;
+            text-align: center;
+            font-family: "DIN Next LT Arabic", Tahoma, sans-serif;
+            color: var(--white);
+            opacity: 0.92;
+        }
+
+        .decline-copy a {
+            color: var(--white);
+            font-weight: 700;
+            text-decoration: underline;
+            text-underline-offset: 3px;
+        }
+
+        #viewAccept,
+        #viewDecline {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: clamp(1rem, 2.5vw, 1.5rem);
+        }
+
+        .qr-wrap {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .qr-frame {
+            background: var(--white);
+            padding: 0.85rem;
+            box-shadow: 0 10px 30px rgba(0, 38, 80, 0.12);
+        }
+
+        .qr-frame img {
+            display: block;
+            width: min(200px, 55vw);
+            height: auto;
+        }
+
+        .btn-download {
+            appearance: none;
+            border: 0;
+            background: var(--gold);
+            color: var(--white);
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 700;
+            padding: 0.85rem 1.75rem;
+            border-radius: 36px;
+            cursor: pointer;
+            transition: transform 0.2s ease, background 0.2s ease;
+        }
+
+        .btn-download:disabled {
+            opacity: 0.65;
+            cursor: wait;
+        }
+
+        #viewConfirm {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: clamp(1rem, 2.5vw, 1.5rem);
+        }
+
+        .confirm-copy {
+            max-width: 38rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            color: var(--white);
+            text-align: center;
+        }
+
+        .confirm-copy p {
+            font-size: clamp(0.95rem, 2.4vw, 1.1rem);
+            line-height: 1.9;
+            color: var(--white);
+        }
+
+        .confirm-copy .en {
+            direction: ltr;
+            font-family: "DIN Next LT Arabic", Tahoma, sans-serif;
+            opacity: 0.9;
+            font-size: clamp(0.88rem, 2.1vw, 1rem);
+        }
+
+        .confirm-error {
+            color: #ffd0d0;
+            font-size: 0.9rem;
+            min-height: 1.25rem;
+        }
+
+        .btn-wallet {
+            appearance: none;
+            display: inline-block;
+            border: 0;
+            background: transparent;
+            padding: 0;
+            line-height: 0;
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        .btn-wallet img {
+            display: block;
+            width: 180px;
+            height: auto;
+        }
+
+        .btn-wallet.hidden {
+            display: none;
+        }
+
+        .wallet-hint {
+            margin-top: 0.65rem;
+            font-size: 0.8rem;
+            line-height: 1.45;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        .brand-logo {
+            position: relative;
+            flex-shrink: 0;
+            width: var(--logo-width);
+            max-width: min(200px, 55vw);
+            margin: 0 auto;
+            z-index: 1;
+        }
+
+        .brand-logo img {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+
+        .footer-mark {
+            position: relative;
+            z-index: 2;
+            /* full-width row so physical right padding works even if translate flips dir */
+            width: 100%;
+            max-width: 100%;
+            margin-top: auto;
+            margin-inline: 0;
+            padding-top: 1.25rem;
+            padding-bottom: calc(var(--footer-bottom) + env(safe-area-inset-bottom, 0px));
+            padding-right: var(--footer-inset);
+            padding-left: var(--page-pad-x);
+            flex-shrink: 0;
+            display: flex;
+            justify-content: flex-end;
+            align-items: flex-end;
+            direction: ltr;
+            pointer-events: none;
+        }
+
+        .footer-mark img {
+            display: block;
+            width: var(--footer-width);
+            max-width: 100%;
+            height: auto;
+            margin: 0;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 640px) {
+            :root {
+                --logo-width: clamp(140px, 40vw, 180px);
+            }
+
+            .copy,
+            .decline-copy {
+                max-width: 100%;
+            }
+
+            .btn-download {
+                width: min(100%, 260px);
+                font-size: 0.9rem;
+                padding: 0.75rem 1.25rem;
+            }
+        }
+
+        @media (max-width: 420px) {
+            :root {
+                --logo-width: clamp(148px, 46vw, 200px);
+            }
+
+            .guest-name {
+                font-size: 0.95rem;
+            }
+
+            .qr-frame img {
+                width: min(160px, 50vw);
+            }
+        }
+
+        @media (max-height: 700px) {
+            .page {
+                justify-content: flex-start;
+                gap: 0.85rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sunshine" aria-hidden="true"></div>
+    <main class="page">
+        <div class="brand-logo">
+            <img src="assets/microsite/logo-white.svg" alt="أرامكو" />
+        </div>
+
+        <div class="guest-name" id="guestName">السيد/السيدة [الاسم الكامل]</div>
+
+        <!-- CONFIRM (shown until guest taps in a real browser) -->
+        <section id="viewConfirm" class="hidden" aria-live="polite">
+            <div class="confirm-copy">
+                <p id="confirmTextAr">يرجى تأكيد اختياركم أدناه.</p>
+                <p class="en" id="confirmTextEn">Please confirm your choice below.</p>
+            </div>
+            <button type="button" class="btn-download" id="btnConfirmRsvp">تأكيد</button>
+            <p class="confirm-error" id="confirmError" aria-live="polite"></p>
+        </section>
+
+        <!-- ACCEPT -->
+        <section id="viewAccept" class="hidden" aria-live="polite">
+            <div class="copy">
+                <p>
+                    شكرًا لتأكيد حضوركم حفل وداع أرامكو
+                    يرجى الاحتفاظ برمز الاستجابة السريعة (QR Code) المرفق
+                    أدناه، حيث سيكون مطلوبًا لإتمام إجراءات الدخول.
+                </p>
+                <p>
+                    نتطلع إلى الترحيب بكم.
+                    تفاصيل الموعد والمكان ستصلكم لاحقاً.
+                </p>
+                <p class="muted">
+                    كما تم إرسال رسالة تأكيد إلى بريدكم الإلكتروني تتضمن تفاصيل الموقع كاملة، بالإضافة إلى رمز الاستجابة السريعة الخاص بكم.
+                </p>
+            </div>
+
+            <div class="qr-wrap">
+                <div class="qr-frame">
+                    <img id="qrImage" src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=ARAMCO-FAREWELL-INVITE-DUMMY" alt="رمز QR للدخول" width="240" height="240" />
+                </div>
+                <button type="button" class="btn-download" id="btnDownloadQr">تحميل رمز QR</button>
+                <a class="btn-wallet hidden" id="btnAppleWallet" href="#" aria-label="إضافة إلى Apple Wallet">
+                    <img src="assets/wallet/add-to-apple-wallet-ar.svg" width="180" height="57" alt="إضافة إلى Apple Wallet" />
+                </a>
+                <p class="wallet-hint hidden" id="walletHint">Safari adds the pass directly. Chrome and Outlook download a .pkpass file — open it to add it to Wallet.</p>
+            </div>
+        </section>
+
+        <!-- DECLINE -->
+        <section id="viewDecline" class="hidden" aria-live="polite">
+            <div class="decline-copy">
+                <p>
+                    شكرًا لتجاوبكم. نتطلع إلى الترحيب بكم في فعالياتنا القادمة، وفي حال تغيّرت ظروفكم، يسعدنا تواصلكم مع فريق الفعالية.
+                </p>
+                <p class="en">
+                    Thank you for your response. We hope to see you at a future event. If your plans change, please contact the event team.
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <div class="footer-mark notranslate" lang="ar" translate="no" dir="ltr">
+        <img src="assets/microsite/buildingimpactfull-footer.png" alt="شراكات لها أثر | Building Impactful Partnership" draggable="false" />
+    </div>
+
+    <script>
+        (function() {
+            var API_BASE = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
+            var params = new URLSearchParams(window.location.search);
+            var status = (params.get("status") || "").trim().toLowerCase();
+            var name = (params.get("name") || "").trim();
+            var uniqueId = (params.get("uniqueId") || params.get("UniqueId") || params.get("id") || "").trim();
+            var qr = (params.get("qr") || "").trim();
+
+            var guestEl = document.getElementById("guestName");
+            var viewConfirm = document.getElementById("viewConfirm");
+            var viewAccept = document.getElementById("viewAccept");
+            var viewDecline = document.getElementById("viewDecline");
+            var qrImage = document.getElementById("qrImage");
+            var btnDownload = document.getElementById("btnDownloadQr");
+            var btnWallet = document.getElementById("btnAppleWallet");
+            var walletHint = document.getElementById("walletHint");
+            var btnConfirm = document.getElementById("btnConfirmRsvp");
+            var confirmTextAr = document.getElementById("confirmTextAr");
+            var confirmTextEn = document.getElementById("confirmTextEn");
+            var confirmError = document.getElementById("confirmError");
+
+            var isAcceptIntent = status === "accept" || status === "accepted";
+            var isDeclineIntent = status === "decline" || status === "declined";
+            var apiStatus = isAcceptIntent ? "Accepted" : (isDeclineIntent ? "Declined" : "");
+            var storageKey = uniqueId && apiStatus ? ("aramco-farewell-rsvp-commit:" + uniqueId + ":" + apiStatus) : "";
+            var commitInFlight = false;
+
+            if (name && guestEl) {
+                guestEl.textContent = name;
+            }
+
+            function hideAllViews() {
+                if (viewConfirm) viewConfirm.classList.add("hidden");
+                if (viewAccept) viewAccept.classList.add("hidden");
+                if (viewDecline) viewDecline.classList.add("hidden");
+            }
+
+            function showConfirmView() {
+                hideAllViews();
+                if (!viewConfirm) return;
+                viewConfirm.classList.remove("hidden");
+                if (isAcceptIntent) {
+                    if (confirmTextAr) confirmTextAr.textContent = "لتأكيد حضوركم، اضغطوا الزر أدناه.";
+                    if (confirmTextEn) confirmTextEn.textContent = "To confirm your attendance, tap the button below.";
+                    if (btnConfirm) btnConfirm.textContent = "تأكيد الحضور";
+                    document.title = "تأكيد الحضور | أرامكو";
+                } else if (isDeclineIntent) {
+                    if (confirmTextAr) confirmTextAr.textContent = "لتأكيد اعتذاركم عن الحضور، اضغطوا الزر أدناه.";
+                    if (confirmTextEn) confirmTextEn.textContent = "To confirm you cannot attend, tap the button below.";
+                    if (btnConfirm) btnConfirm.textContent = "تأكيد الاعتذار";
+                    document.title = "تأكيد الاعتذار | أرامكو";
+                }
+            }
+
+            function showResultView(nextStatus) {
+                hideAllViews();
+                if (nextStatus === "accept" || nextStatus === "accepted") {
+                    viewAccept.classList.remove("hidden");
+                    document.title = "تم تأكيد الحضور | أرامكو";
+                } else if (nextStatus === "decline" || nextStatus === "declined") {
+                    viewDecline.classList.remove("hidden");
+                    document.title = "اعتذار عن الحضور | أرامكو";
+                } else {
+                    showConfirmView();
+                }
+            }
+
+            function isAppleDevice() {
+                var ua = navigator.userAgent || "";
+                var platform = navigator.platform || "";
+                if (/iPhone|iPad|iPod/i.test(ua)) return true;
+                if (platform === "MacIntel" && navigator.maxTouchPoints > 1) return true;
+                if (/Macintosh|Mac OS X/i.test(ua) && !/Android/i.test(ua)) return true;
+                return false;
+            }
+
+            function applyWallet(unique) {
+                if (!btnWallet || !unique || !isAppleDevice()) return;
+                btnWallet.href = "/wallet/" + encodeURIComponent(unique);
+                btnWallet.classList.remove("hidden");
+                if (walletHint) {
+                    walletHint.classList.remove("hidden");
+                    walletHint.textContent = "Safari adds the pass directly. Chrome on iPhone downloads a .pkpass file — open it to add it to Wallet.";
+                }
+            }
+
+            function applyQr(url) {
+                if (!qrImage || !url) return;
+                qrImage.src = url;
+            }
+
+            if (qr) {
+                applyQr(/^https?:\/\//i.test(qr) ?
+                    qr :
+                    "https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=" + encodeURIComponent(qr));
+            } else if (uniqueId) {
+                applyQr(API_BASE + "/api/AramcoFarewell/qr/" + encodeURIComponent(uniqueId));
+            }
+
+            if (uniqueId) {
+                applyWallet(uniqueId);
+            }
+
+            function alreadyCommitted() {
+                if (!storageKey) return false;
+                try {
+                    return sessionStorage.getItem(storageKey) === "1";
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            // Email/link scanners only GET this page — no API call on load.
+            // Status is saved only after a real tap on the confirm button in the browser.
+            if (!apiStatus) {
+                showConfirmView();
+                if (confirmError) confirmError.textContent = "Invalid RSVP link.";
+                if (btnConfirm) btnConfirm.disabled = true;
+            } else if (alreadyCommitted()) {
+                showResultView(status);
+            } else {
+                showConfirmView();
+            }
+
+            function updateBackendStatus() {
+                if (!uniqueId || !apiStatus || commitInFlight) return;
+                commitInFlight = true;
+                if (btnConfirm) {
+                    btnConfirm.disabled = true;
+                    btnConfirm.textContent = "جاري التأكيد…";
+                }
+                if (confirmError) confirmError.textContent = "";
+
+                fetch(API_BASE + "/api/AramcoFarewell/user-status", {
+                    method: "POST",
+                    mode: "cors",
+                    cache: "no-store",
+                    headers: {
+                        "Accept": "application/json",
+                        "Content-Type": "application/json",
+                        "X-AramcoFarewell-Rsvp-Commit": "1"
+                    },
+                    body: JSON.stringify({
+                        uniqueId: uniqueId,
+                        status: apiStatus
+                    })
+                }).then(function(res) {
+                    return res.text().then(function(text) {
+                        var body = {};
+                        try {
+                            body = text ? JSON.parse(text) : {};
+                        } catch (e) {}
+                        return {
+                            ok: res.ok,
+                            body: body
+                        };
+                    });
+                }).then(function(result) {
+                    commitInFlight = false;
+                    if (result.ok) {
+                        try {
+                            if (storageKey) sessionStorage.setItem(storageKey, "1");
+                        } catch (e) {}
+                        if (result.body && result.body.qrCodeUrl) {
+                            applyQr(result.body.qrCodeUrl);
+                        }
+                        var shown = (result.body && result.body.status)
+                            ? String(result.body.status).toLowerCase()
+                            : status;
+                        showResultView(shown);
+                        return;
+                    }
+                    if (btnConfirm) {
+                        btnConfirm.disabled = false;
+                        btnConfirm.textContent = isAcceptIntent ? "تأكيد الحضور" : "تأكيد الاعتذار";
+                    }
+                    if (confirmError) {
+                        confirmError.textContent = (result.body && result.body.message)
+                            ? String(result.body.message)
+                            : "تعذر حفظ الرد. حاول مرة أخرى.";
+                    }
+                    console.error("RSVP update failed", result.body);
+                }).catch(function(err) {
+                    commitInFlight = false;
+                    if (btnConfirm) {
+                        btnConfirm.disabled = false;
+                        btnConfirm.textContent = isAcceptIntent ? "تأكيد الحضور" : "تأكيد الاعتذار";
+                    }
+                    if (confirmError) confirmError.textContent = "تعذر الاتصال. حاول مرة أخرى.";
+                    console.error("RSVP update request failed", err);
+                });
+            }
+
+            if (btnConfirm) {
+                btnConfirm.addEventListener("click", function(ev) {
+                    // Ignore synthetic clicks from bots/scripts; require a real user gesture.
+                    if (ev && ev.isTrusted === false) return;
+                    if (typeof navigator !== "undefined" && navigator.webdriver) return;
+                    updateBackendStatus();
+                });
+            }
+
+            function inviteCardFileName(guestName) {
+                var safe = String(guestName || "Guest")
+                    .replace(/[<>:"/\\|?*\x00-\x1f]/g, "")
+                    .replace(/\s+/g, " ")
+                    .trim();
+                return (safe || "Guest") + "AramcoFarewellInvite.jpg";
+            }
+
+            function isPhone() {
+                var ua = navigator.userAgent || "";
+                if (/iPhone|iPad|iPod|Android/i.test(ua)) return true;
+                return navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+            }
+
+            function fallbackDownload(blob, filename) {
+                var objectUrl = URL.createObjectURL(blob);
+                var link = document.createElement("a");
+                link.href = objectUrl;
+                link.download = filename;
+                link.rel = "noopener";
+                link.style.display = "none";
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setTimeout(function() {
+                    URL.revokeObjectURL(objectUrl);
+                }, 1500);
+            }
+
+            function saveInviteImage(blob, filename) {
+                if (isPhone()) {
+                    var file = new File([blob], filename, {
+                        type: blob.type || "image/jpeg"
+                    });
+                    if (navigator.canShare && navigator.canShare({
+                            files: [file]
+                        })) {
+                        return navigator.share({
+                            files: [file],
+                            title: filename
+                        }).catch(function(err) {
+                            if (err && err.name === "AbortError") return;
+                            fallbackDownload(blob, filename);
+                        });
+                    }
+                }
+                fallbackDownload(blob, filename);
+            }
+
+            if (btnDownload) {
+                btnDownload.addEventListener("click", function() {
+                    var src = uniqueId ?
+                        API_BASE + "/api/AramcoFarewell/qr-card/" + encodeURIComponent(uniqueId) :
+                        (qrImage && qrImage.src);
+                    if (!src) return;
+                    fetch(src, {
+                            mode: "cors",
+                            cache: "no-store"
+                        })
+                        .then(function(res) {
+                            if (!res.ok) throw new Error("QR download failed");
+                            return res.blob();
+                        })
+                        .then(function(blob) {
+                            return saveInviteImage(blob, inviteCardFileName(name));
+                        })
+                        .catch(function(err) {
+                            console.error(err);
+                            alert("Could not download the QR code. Please try again.");
+                        });
+                });
+            }
+        })();
+    </script>
+</body>
+
+</html>

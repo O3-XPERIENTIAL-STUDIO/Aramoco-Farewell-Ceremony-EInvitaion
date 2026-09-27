@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "dgSpecHash": "iZUUKFbftY0=",
+  "success": true,
+  "projectFilePath": "c:\\ENTOURAGE\\PROJECTS\\CLIENT\\2026\\Ashraq\\Ashreq_e-Invitation\\assets\\seats\\CadPrep\\CadPrep.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\mmuthu\\AppData\\Local\\Temp\\cursor-sandbox-cache\\df3eb157ea4364a73457eff9d827aabe\\nuget\\acadsharp\\3.7.1\\acadsharp.3.7.1.nupkg.sha512",
+    "C:\\Users\\mmuthu\\AppData\\Local\\Temp\\cursor-sandbox-cache\\df3eb157ea4364a73457eff9d827aabe\\nuget\\microsoft.netcore.app.ref\\8.0.29\\microsoft.netcore.app.ref.8.0.29.nupkg.sha512",
+    "C:\\Users\\mmuthu\\AppData\\Local\\Temp\\cursor-sandbox-cache\\df3eb157ea4364a73457eff9d827aabe\\nuget\\microsoft.windowsdesktop.app.ref\\8.0.29\\microsoft.windowsdesktop.app.ref.8.0.29.nupkg.sha512",
+    "C:\\Users\\mmuthu\\AppData\\Local\\Temp\\cursor-sandbox-cache\\df3eb157ea4364a73457eff9d827aabe\\nuget\\microsoft.aspnetcore.app.ref\\8.0.29\\microsoft.aspnetcore.app.ref.8.0.29.nupkg.sha512",
+    "C:\\Users\\mmuthu\\AppData\\Local\\Temp\\cursor-sandbox-cache\\df3eb157ea4364a73457eff9d827aabe\\nuget\\microsoft.netcore.app.host.win-x64\\8.0.29\\microsoft.netcore.app.host.win-x64.8.0.29.nupkg.sha512"
+  ],
+  "logs": []
+}
