@@ -97,10 +97,10 @@
 
         #guestPosition {
             margin-top: 4px !important;
-            font-size: 30px !important;
+            font-size: 15px !important;
             font-weight: 400 !important;
             font-style: italic !important;
-            line-height: 36px !important;
+            line-height: 20px !important;
         }
 
         #guestPosition.is-empty {
@@ -161,9 +161,13 @@
                 padding-left: 40px !important;
             }
 
-            #guestName,
-            #guestPosition {
+            #guestName {
                 font-size: 24px !important;
+            }
+
+            #guestPosition {
+                font-size: 12px !important;
+                line-height: 16px !important;
             }
         }
     </style>
@@ -173,29 +177,29 @@
     <table id="invite-card" role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="#313131" width="560" style="width:100%; max-width:560px; margin:0 auto; border-collapse:collapse; table-layout:fixed; background-color:#313131;">
         <tr>
             <td colspan="2" bgcolor="#313131" style="padding:0; background-color:#313131; line-height:0; font-size:0;">
-                <img src="assets/emailInvitation/emailInvite-v5/email-invite-header.webp" width="560" alt="Aramco" style="display:block; width:100%; height:auto; border:0;" />
+                <img src="assets/emailInvitation/emailInvite-v7/email-invite-header.webp" width="560" alt="Aramco" style="display:block; width:100%; height:auto; border:0;" />
             </td>
         </tr>
         <tr>
             <td colspan="2" class="name-cell" align="left" valign="middle" bgcolor="#313131" style="min-height:92px; padding:16px 24px 16px 70px; margin:0; background:#313131; background-color:#313131; background-image:none;">
                 <span id="guestName" style="display:block; margin:0; color:#ffffff; -webkit-text-fill-color:#ffffff; background:transparent; font-family:'Manifa Pro', Tahoma, Arial, sans-serif; font-size:30px; font-weight:700; font-style:normal; line-height:36px; text-align:left;">Dear Guest</span>
-                <span id="guestPosition" class="is-empty" style="display:none; margin:4px 0 0; color:#ffffff; -webkit-text-fill-color:#ffffff; background:transparent; font-family:'Manifa Pro', Tahoma, Arial, sans-serif; font-size:30px; font-weight:400; font-style:italic; line-height:36px; text-align:left;"></span>
+                <span id="guestPosition" class="is-empty" style="display:none; margin:4px 0 0; color:#ffffff; -webkit-text-fill-color:#ffffff; background:transparent; font-family:'Manifa Pro', Tahoma, Arial, sans-serif; font-size:15px; font-weight:400; font-style:italic; line-height:20px; text-align:left;"></span>
             </td>
         </tr>
         <tr>
             <td colspan="2" bgcolor="#313131" style="padding:0; background-color:#313131; line-height:0; font-size:0;">
-                <img src="assets/emailInvitation/emailInvite-v5/email-invite-info.webp" width="560" alt="Farewell ceremony details" style="display:block; width:100%; height:auto; border:0;" />
+                <img src="assets/emailInvitation/emailInvite-v7/email-invite-info.webp" width="560" alt="Farewell ceremony details" style="display:block; width:100%; height:auto; border:0;" />
             </td>
         </tr>
         <tr>
             <td width="280" bgcolor="#313131" style="padding:0; width:50%; background-color:#313131; line-height:0; font-size:0;">
                 <a id="btnAccept" href="https://aramcocorporateevents.com/rsvp?status=accept&amp;uniqueId=" style="display:block; text-decoration:none;">
-                    <img src="assets/emailInvitation/emailInvite-v5/email-invite-accept.webp" width="280" alt="Accept" style="display:block; width:100%; height:auto; border:0;" />
+                    <img src="assets/emailInvitation/emailInvite-v7/email-invite-accept.webp" width="280" alt="Accept" style="display:block; width:100%; height:auto; border:0;" />
                 </a>
             </td>
             <td width="280" bgcolor="#313131" style="padding:0; width:50%; background-color:#313131; line-height:0; font-size:0;">
                 <a id="btnDecline" href="https://aramcocorporateevents.com/rsvp?status=decline&amp;uniqueId=" style="display:block; text-decoration:none;">
-                    <img src="assets/emailInvitation/emailInvite-v5/email-invite-decline.webp" width="280" alt="Decline" style="display:block; width:100%; height:auto; border:0;" />
+                    <img src="assets/emailInvitation/emailInvite-v7/email-invite-decline.webp" width="280" alt="Decline" style="display:block; width:100%; height:auto; border:0;" />
                 </a>
             </td>
         </tr>
@@ -209,7 +213,11 @@
             var uniqueId = (params.get("uniqueId") || "").trim();
 
             var guestEl = document.getElementById("guestName");
-            if (name && guestEl) guestEl.textContent = name;
+            if (guestEl) {
+                var shownName = name || "Guest";
+                if (!/^dear\b/i.test(shownName)) shownName = "Dear " + shownName;
+                guestEl.textContent = shownName;
+            }
 
             var positionEl = document.getElementById("guestPosition");
             if (positionEl) {
