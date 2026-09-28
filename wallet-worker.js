@@ -95,7 +95,7 @@ function landingHtml(uniqueId) {
   const pkpassUrl = `/wallet/${safeId}.pkpass`;
   const qrUrl = `${API_BASE}/api/AramcoFarewell/qr/${safeId}`;
   return `<!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
