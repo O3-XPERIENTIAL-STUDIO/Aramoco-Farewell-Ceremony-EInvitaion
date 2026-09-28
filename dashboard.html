@@ -4170,7 +4170,8 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor
                     const encodedName = encodeURIComponent(u.fullName || '');
                     const hashKey = u.hashKey || '';
                     const uniqueId = u.uniqueId || '';
-                    const emailInviteUrl = `${publicSiteUrl}/emailInvite?name=${encodedName}&uniqueId=${encodeURIComponent(uniqueId)}`;
+                    const encodedPosition = encodeURIComponent((u.position || '').toString().trim());
+                    const emailInviteUrl = `${publicSiteUrl}/emailInvite?name=${encodedName}&position=${encodedPosition}&uniqueId=${encodeURIComponent(uniqueId)}`;
                     return {
                         uniqueId: uniqueId,
                         userName: u.fullName,

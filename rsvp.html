@@ -326,7 +326,7 @@
                 <p id="confirmTextAr"></p>
                 <p class="en" id="confirmTextEn">Please confirm your attendance.</p>
             </div>
-            <button type="button" class="btn-download" id="btnConfirmRsvp">Confirm</button>
+            <button type="button" class="btn-download" id="btnConfirmRsvp">Accept</button>
             <p class="confirm-error" id="confirmError" aria-live="polite"></p>
         </section>
 
@@ -401,20 +401,23 @@
                 if (viewDecline) viewDecline.classList.add("hidden");
             }
 
+            function confirmButtonLabel() {
+                return isDeclineIntent ? "Decline" : "Accept";
+            }
+
             function showConfirmView() {
                 hideAllViews();
                 if (guestEl) guestEl.classList.remove("hidden");
                 if (!viewConfirm) return;
                 viewConfirm.classList.remove("hidden");
+                if (btnConfirm) btnConfirm.textContent = confirmButtonLabel();
                 if (isAcceptIntent) {
                     if (confirmTextAr) confirmTextAr.textContent = "";
                     if (confirmTextEn) confirmTextEn.textContent = "Please confirm your attendance.";
-                    if (btnConfirm) btnConfirm.textContent = "Confirm";
                     document.title = "Confirm attendance | Aramco";
                 } else if (isDeclineIntent) {
                     if (confirmTextAr) confirmTextAr.textContent = "";
                     if (confirmTextEn) confirmTextEn.textContent = "Please confirm that you cannot attend.";
-                    if (btnConfirm) btnConfirm.textContent = "Confirm";
                     document.title = "Confirm decline | Aramco";
                 }
             }
@@ -494,7 +497,7 @@
                 commitInFlight = true;
                 if (btnConfirm) {
                     btnConfirm.disabled = true;
-                    btnConfirm.textContent = "Confirming…";
+                    btnConfirm.textContent = isDeclineIntent ? "Declining…" : "Accepting…";
                 }
                 if (confirmError) confirmError.textContent = "";
 
@@ -536,7 +539,7 @@
                     }
                     if (btnConfirm) {
                         btnConfirm.disabled = false;
-                        btnConfirm.textContent = "Confirm";
+                        btnConfirm.textContent = confirmButtonLabel();
                     }
                     var failText = (result.body && result.body.message)
                         ? String(result.body.message)
@@ -548,7 +551,7 @@
                     commitInFlight = false;
                     if (btnConfirm) {
                         btnConfirm.disabled = false;
-                        btnConfirm.textContent = "Confirm";
+                        btnConfirm.textContent = confirmButtonLabel();
                     }
                     if (confirmError) confirmError.textContent = "Could not connect. Please try again.";
                     if (acceptError) acceptError.textContent = "Could not connect. Please try again.";

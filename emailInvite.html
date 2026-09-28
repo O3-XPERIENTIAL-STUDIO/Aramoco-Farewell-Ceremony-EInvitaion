@@ -62,19 +62,20 @@
         }
 
         .name-cell {
-            position: relative !important;
-            height: 0 !important;
-            padding: 0 0 16.4276% 0 !important;
+            min-height: 92px !important;
+            height: auto !important;
+            padding: 16px 24px 16px 70px !important;
             background-color: #313131 !important;
             background-image: none !important;
             color-scheme: light only;
         }
 
-        #guestName {
-            position: absolute !important;
-            left: 70px !important;
-            top: 50% !important;
-            transform: translateY(-50%) !important;
+        #guestName,
+        #guestPosition {
+            position: static !important;
+            left: auto !important;
+            top: auto !important;
+            transform: none !important;
             display: block !important;
             width: auto !important;
             margin: 0 !important;
@@ -84,10 +85,26 @@
             color: #ffffff !important;
             -webkit-text-fill-color: #ffffff !important;
             font-family: "Manifa Pro", Tahoma, Arial, sans-serif !important;
+            text-align: left !important;
+        }
+
+        #guestName {
             font-size: 30px !important;
             font-weight: 700 !important;
+            font-style: normal !important;
             line-height: 36px !important;
-            text-align: left !important;
+        }
+
+        #guestPosition {
+            margin-top: 4px !important;
+            font-size: 30px !important;
+            font-weight: 400 !important;
+            font-style: italic !important;
+            line-height: 36px !important;
+        }
+
+        #guestPosition.is-empty {
+            display: none !important;
         }
 
         .rsvp-btn {
@@ -112,7 +129,8 @@
                 -webkit-text-fill-color: #ffffff !important;
             }
 
-            #guestName {
+            #guestName,
+            #guestPosition {
                 background: transparent !important;
                 background-color: transparent !important;
                 color: #ffffff !important;
@@ -127,7 +145,9 @@
         }
 
         [data-ogsc] #guestName,
-        [data-ogsb] #guestName {
+        [data-ogsb] #guestName,
+        [data-ogsc] #guestPosition,
+        [data-ogsb] #guestPosition {
             background-color: transparent !important;
             color: #ffffff !important;
         }
@@ -137,8 +157,12 @@
                 padding: 0;
             }
 
-            #guestName {
-                left: 40px !important;
+            .name-cell {
+                padding-left: 40px !important;
+            }
+
+            #guestName,
+            #guestPosition {
                 font-size: 24px !important;
             }
         }
@@ -153,8 +177,9 @@
             </td>
         </tr>
         <tr>
-            <td colspan="2" class="name-cell" align="left" valign="middle" bgcolor="#313131" style="position:relative; height:0; padding:0 0 16.4276% 0; margin:0; background:#313131; background-color:#313131; background-image:none;">
-                <span id="guestName" style="position:absolute; left:80px; top:50%; transform:translateY(-50%); display:block; margin:0; color:#ffffff; -webkit-text-fill-color:#ffffff; background:transparent; font-family:'Manifa Pro', Tahoma, Arial, sans-serif; font-size:30px; font-weight:700; line-height:36px; text-align:left;">Dear Guest</span>
+            <td colspan="2" class="name-cell" align="left" valign="middle" bgcolor="#313131" style="min-height:92px; padding:16px 24px 16px 70px; margin:0; background:#313131; background-color:#313131; background-image:none;">
+                <span id="guestName" style="display:block; margin:0; color:#ffffff; -webkit-text-fill-color:#ffffff; background:transparent; font-family:'Manifa Pro', Tahoma, Arial, sans-serif; font-size:30px; font-weight:700; font-style:normal; line-height:36px; text-align:left;">Dear Guest</span>
+                <span id="guestPosition" class="is-empty" style="display:none; margin:4px 0 0; color:#ffffff; -webkit-text-fill-color:#ffffff; background:transparent; font-family:'Manifa Pro', Tahoma, Arial, sans-serif; font-size:30px; font-weight:400; font-style:italic; line-height:36px; text-align:left;"></span>
             </td>
         </tr>
         <tr>
@@ -180,10 +205,20 @@
         (function() {
             var params = new URLSearchParams(window.location.search);
             var name = (params.get("name") || "").trim();
+            var position = (params.get("position") || "").trim();
             var uniqueId = (params.get("uniqueId") || "").trim();
 
             var guestEl = document.getElementById("guestName");
             if (name && guestEl) guestEl.textContent = name;
+
+            var positionEl = document.getElementById("guestPosition");
+            if (positionEl) {
+                positionEl.textContent = position;
+                if (position) {
+                    positionEl.classList.remove("is-empty");
+                    positionEl.style.display = "block";
+                }
+            }
 
             var RSVP_BASE = "https://aramcocorporateevents.com/rsvp";
 

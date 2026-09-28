@@ -16,6 +16,14 @@
 
 @font-face {
     font-family: "Manifa Pro";
+    src: url("../fonts/manifa/ManifaPro2-RegularItalics.woff2") format("woff2");
+    font-weight: 400;
+    font-style: italic;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Manifa Pro";
     src: url("../fonts/manifa/ManifaPro2-SemiBold.woff2") format("woff2");
     font-weight: 500;
     font-style: normal;
