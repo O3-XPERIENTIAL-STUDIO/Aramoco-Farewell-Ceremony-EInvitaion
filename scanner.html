@@ -3,21 +3,14 @@
 
 <head>
     <meta charset="UTF-8" />
+    <link rel="stylesheet" href="assets/css/manifa.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>QR Check-in | Aramco Farewells</title>
+    <title>E-Badge Check-in | Aramco Farewells</title>
     <link rel="icon" type="image/png" href="assets/icon.png" />
     <link rel="apple-touch-icon" href="assets/icon.png" />
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
-        @font-face {
-            font-family: "DIN Next LT Arabic";
-            src: url("assets/fonts/DINNextLTArabic-Regular.ttf") format("truetype");
-            font-weight: 400;
-            font-style: normal;
-            font-display: swap;
-        }
-
-        :root {
+:root {
             --navy: #002650;
             --gold: #CBA886;
             --white: #ffffff;
@@ -36,7 +29,7 @@
         html,
         body {
             min-height: 100%;
-            font-family: "DIN Next LT Arabic", Tahoma, sans-serif;
+            font-family: "Manifa Pro", Tahoma, sans-serif;
             background: #06111d;
             color: var(--white);
         }
@@ -233,7 +226,7 @@
             <div class="brand">
                 <div>
                     <h1>EventPass</h1>
-                    <p>Scan guest QR to record check-in</p>
+                    <p>Scan guest E-Badge to record check-in</p>
                 </div>
 
             </div>
@@ -367,7 +360,7 @@
             function recordCheckIn(raw) {
                 var uniqueId = extractUniqueId(raw);
                 if (!uniqueId) {
-                    showResult("err", "No QR value", "The scan did not contain a guest id.");
+                    showResult("err", "No E-Badge value", "The scan did not contain a guest id.");
                     return Promise.resolve();
                 }
 
@@ -405,7 +398,7 @@
                     var body = result.body || {};
                     if (result.status === 404) {
                         beep(false);
-                        showResult("err", "Guest not found", "This QR is not in the Aramco Farewells guest list.");
+                        showResult("err", "Guest not found", "This E-Badge is not in the Aramco Farewells guest list.");
                         return;
                     }
                     if (!result.ok) {
@@ -470,7 +463,7 @@
                     function() {}
                 ).then(function() {
                     setCameraButton(true);
-                    cameraStatus.textContent = "Point the camera at the guest QR.";
+                    cameraStatus.textContent = "Point the camera at the guest E-Badge.";
                 }).catch(function(err) {
                     setCameraButton(false);
                     cameraStatus.textContent = "Camera permission is required to scan.";

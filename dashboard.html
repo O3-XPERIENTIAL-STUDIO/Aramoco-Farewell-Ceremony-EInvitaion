@@ -3,13 +3,11 @@
 
 <head>
     <meta charset="UTF-8" />
+    <link rel="stylesheet" href="assets/css/manifa.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>entourage Invitation Management System</title>
     <link rel="icon" type="image/png" href="assets/icon.png" />
     <link rel="apple-touch-icon" href="assets/icon.png" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <style>
@@ -62,7 +60,7 @@
         }
 
         body {
-            font-family: Inter, sans-serif;
+            font-family: "Manifa Pro", Tahoma, sans-serif;
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
@@ -116,7 +114,7 @@
         }
 
         .header-eyebrow {
-            font-family: Inter, sans-serif;
+            font-family: "Manifa Pro", Tahoma, sans-serif;
             font-size: 11px;
             font-weight: 600;
             letter-spacing: 3px;
@@ -138,7 +136,7 @@
         }
 
         .header-title {
-            font-family: Inter, sans-serif;
+            font-family: "Manifa Pro", Tahoma, sans-serif;
             font-size: 30px;
             font-weight: 700;
             color: var(--text);
@@ -293,7 +291,7 @@
         }
 
         .stat-value {
-            font-family: Inter, sans-serif;
+            font-family: "Manifa Pro", Tahoma, sans-serif;
             font-size: 24px;
             font-weight: 700;
             line-height: 1;
@@ -395,7 +393,7 @@
         }
 
         .panel-title {
-            font-family: Inter, sans-serif;
+            font-family: "Manifa Pro", Tahoma, sans-serif;
             font-size: 13px;
             font-weight: 600;
             color: var(--text);
@@ -502,7 +500,7 @@
             background: var(--surface2);
             border: 1px solid var(--border);
             border-radius: var(--radius-sm);
-            font-family: Inter, sans-serif;
+            font-family: "Manifa Pro", Tahoma, sans-serif;
             font-size: 14px;
             color: var(--text);
             outline: none;
@@ -532,7 +530,7 @@
             padding: 11px 22px;
             border: none;
             border-radius: var(--radius-sm);
-            font-family: Inter, sans-serif;
+            font-family: "Manifa Pro", Tahoma, sans-serif;
             align-items: center;
             gap: 7px;
             white-space: nowrap;
@@ -582,7 +580,7 @@
             background: var(--surface2);
             border: 1px dashed rgba(47, 129, 247, 0.35);
             border-radius: var(--radius-sm);
-            font-family: Inter, sans-serif;
+            font-family: "Manifa Pro", Tahoma, sans-serif;
             font-size: 13px;
             color: var(--text-dim);
             cursor: pointer;
@@ -873,7 +871,7 @@
         }
 
         .card-name {
-            font-family: Inter, sans-serif;
+            font-family: "Manifa Pro", Tahoma, sans-serif;
             font-size: 16px;
             font-weight: 600;
             color: var(--text);
@@ -1081,7 +1079,7 @@
         .url-text {
             flex: 1;
             font-size: 11px;
-            font-family: Inter, sans-serif;
+            font-family: "Manifa Pro", Tahoma, sans-serif;
             color: var(--accent);
             white-space: nowrap;
             overflow: hidden;
@@ -1099,7 +1097,7 @@
             cursor: pointer;
             transition: all 0.2s;
             flex-shrink: 0;
-            font-family: Inter, sans-serif;
+            font-family: "Manifa Pro", Tahoma, sans-serif;
             letter-spacing: 0.3px;
         }
 
@@ -1256,7 +1254,7 @@
             color: var(--green);
             border: 1px solid rgba(63, 185, 80, 0.22);
             border-radius: 6px;
-            font-family: Inter, sans-serif;
+            font-family: "Manifa Pro", Tahoma, sans-serif;
             font-size: 10px;
             font-weight: 600;
             letter-spacing: 0.3px;
@@ -1319,7 +1317,7 @@
         }
 
         .empty-state-title {
-            font-family: Inter, sans-serif;
+            font-family: "Manifa Pro", Tahoma, sans-serif;
             font-size: 17px;
             font-weight: 600;
             color: var(--text-dim);
@@ -1432,7 +1430,7 @@
             cursor: pointer;
             transition: all 0.2s;
             text-align: left;
-            font-family: Inter, sans-serif;
+            font-family: "Manifa Pro", Tahoma, sans-serif;
             color: var(--text-muted);
         }
 
@@ -1588,7 +1586,7 @@
             <div class="header-right">
                 <span id="lastUpdated" style="font-size:11px;color:var(--text-muted);"></span>
                 <a class="btn btn-ghost" href="seats.html" style="padding:7px 14px;font-size:12px;text-decoration:none;">Seat map</a>
-                <a class="btn btn-ghost" href="scanner.html" style="padding:7px 14px;font-size:12px;text-decoration:none;">Scan QR</a>
+                <a class="btn btn-ghost" href="scanner.html" style="padding:7px 14px;font-size:12px;text-decoration:none;">Scan E-Badge</a>
                 <button class="btn btn-ghost" onclick="manualRefresh()" style="padding:7px 14px;font-size:12px;display:inline-flex;align-items:center;gap:6px;">
                     <span id="refreshIcon" style="font-size:14px;display:inline-block;">↻</span> Refresh
                 </button>
@@ -1656,12 +1654,12 @@
                 <span class="panel-title">Bulk Download</span>
             </div>
             <div class="bulk-download-hint">
-                Paste guest email IDs (one per line, or separated by commas). Download invite PDFs or QR cards as a ZIP.
+                Paste guest email IDs (one per line, or separated by commas). Download invite PDFs or E-Badges as a ZIP.
             </div>
             <textarea id="bulkDownloadEmails" class="bulk-download-textarea" rows="6" placeholder="guest1@example.com&#10;guest2@example.com&#10;guest3@example.com"></textarea>
             <div class="bulk-download-actions">
                 <button type="button" class="btn btn-primary" id="btnBulkPdfZip" onclick="downloadBulkPdfZip()">⬇ Download PDFs (ZIP)</button>
-                <button type="button" class="btn btn-success" id="btnBulkQrZip" onclick="downloadBulkQrZip()">⬇ Download QR codes (ZIP)</button>
+                <button type="button" class="btn btn-success" id="btnBulkQrZip" onclick="downloadBulkQrZip()">⬇ Download E-Badges (ZIP)</button>
             </div>
             <div id="bulkDownloadStatus" class="bulk-download-status"></div>
         </div>
@@ -3268,7 +3266,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor
                 <div class="guest-group-actions">
                     <button class="btn btn-primary" type="button" onclick="focusAddForGroup(${Number(group.id)})">＋ Add guest</button>
                     <button class="btn btn-primary" type="button" onclick="downloadGroupZip(${Number(group.id)}, 'pdf')">⬇ PDFs</button>
-                    <button class="btn btn-success" type="button" onclick="downloadGroupZip(${Number(group.id)}, 'qr')">⬇ QR codes</button>
+                    <button class="btn btn-success" type="button" onclick="downloadGroupZip(${Number(group.id)}, 'qr')">⬇ E-Badges</button>
                     <button class="btn btn-ghost" type="button" onclick="sendGroupInvites(${Number(group.id)})">✉ Send unsent</button>
                 </div>`;
             return header;
@@ -3407,7 +3405,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor
                 }
 
                 // QR — network QR URLs are lazy-loaded so /users paint is not blocked by N image calls
-                let qrHTML = `<div class="qr-frame"><div class="qr-empty">🎫</div></div><div class="qr-caption">No QR generated</div>`;
+                let qrHTML = `<div class="qr-frame"><div class="qr-empty">🎫</div></div><div class="qr-caption">No E-Badge</div>`;
                 let dlBtn = '';
                 const safeUid = String(u.uniqueId || '').replace(/'/g, "\\'");
                 const safeName = String(u.userName || '').replace(/'/g, "\\'");
@@ -3421,12 +3419,12 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor
                 if (qrSrc) {
                     const isInline = qrSrc.indexOf('data:') === 0;
                     const imgTag = isInline ?
-                        `<img src="${qrSrc}" alt="QR Code" />` :
-                        `<img class="qr-lazy" data-qr-src="${qrSrc}" alt="QR Code" width="120" height="120" decoding="async" />`;
+                        `<img src="${qrSrc}" alt="E-Badge" />` :
+                        `<img class="qr-lazy" data-qr-src="${qrSrc}" alt="E-Badge" width="120" height="120" decoding="async" />`;
                     qrHTML = `<div class="qr-frame">${imgTag}</div>
                   <div class="qr-caption"></div>`;
                     const safeCard = String(qrCardSrc).replace(/'/g, "\\'");
-                    dlBtn = `<button class="btn-download" onclick="downloadQR('${safeCard}','${safeName}')">⬇ Download QR</button>`;
+                    dlBtn = `<button class="btn-download" onclick="downloadQR('${safeCard}','${safeName}')">⬇ Download E-Badge</button>`;
                 }
                 dlBtn = `${pdfBtn}${dlBtn}`;
 
@@ -3635,7 +3633,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor
                 btn.disabled = true;
                 btn.textContent = 'Preparing ZIP…';
             }
-            setBulkDownloadStatus(isPdf ? 'Generating PDFs… this can take a minute.' : 'Generating QR cards…', '');
+            setBulkDownloadStatus(isPdf ? 'Generating PDFs… this can take a minute.' : 'Generating E-Badges…', '');
 
             try {
                 const res = await fetch(endpoint, {
@@ -3755,7 +3753,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor
                 fallbackDownload(blob);
             } catch (err) {
                 console.error(err);
-                alert('Could not download the QR code. Please try again.');
+                alert('Could not download the E-Badge. Please try again.');
             }
         }
 

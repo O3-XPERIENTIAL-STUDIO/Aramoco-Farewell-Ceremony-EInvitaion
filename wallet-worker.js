@@ -9,6 +9,17 @@ export default {
       return proxyQrCard(decodeURIComponent(cardMatch[1]));
     }
 
+    const badgeMatch = url.pathname.match(/^\/e-badge\/([^/]+?)\/?$/i);
+    if (badgeMatch) {
+      return new Response(ebadgeHtml(decodeURIComponent(badgeMatch[1])), {
+        status: 200,
+        headers: {
+          "Content-Type": "text/html; charset=utf-8",
+          "Cache-Control": "no-store"
+        }
+      });
+    }
+
     const match = url.pathname.match(/^\/wallet\/([^/]+?)(\.pkpass)?\/?$/i);
     if (!match) {
       return env.ASSETS.fetch(request);
@@ -90,6 +101,35 @@ async function proxyQrCard(uniqueId) {
   });
 }
 
+function ebadgeHtml(uniqueId) {
+  const safeId = encodeURIComponent(uniqueId);
+  const imageUrl = `${API_BASE}/api/AramcoFarewell/qr-card/${safeId}`;
+  return `<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>E-Badge | Aramco Farewells</title>
+  <link rel="stylesheet" href="/assets/css/manifa.css" />
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { min-height:100vh; font-family:"Manifa Pro", Tahoma, Arial, sans-serif; background:#e8e8e8; color:#313131; padding:24px 16px 40px; }
+    .wrap { max-width:420px; margin:0 auto; text-align:center; }
+    h1 { font-size:1.25rem; font-weight:700; margin-bottom:16px; }
+    img { display:block; width:100%; height:auto; background:#313131; }
+    a { display:inline-block; margin-top:16px; color:#0AAEED; font-weight:700; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>E-Badge</h1>
+    <img src="${imageUrl}" alt="E-Badge" />
+    <a href="${imageUrl}?download=1">Save E-Badge</a>
+  </div>
+</body>
+</html>`;
+}
+
 function landingHtml(uniqueId) {
   const safeId = encodeURIComponent(uniqueId);
   const pkpassUrl = `/wallet/${safeId}.pkpass`;
@@ -101,10 +141,11 @@ function landingHtml(uniqueId) {
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Add to Apple Wallet | أرامكو</title>
   <link rel="icon" type="image/png" href="/assets/icon.png" />
+  <link rel="stylesheet" href="/assets/css/manifa.css" />
   <style>
     :root { --navy:#002650; --gold:#CBA886; --muted:#4a5d73; }
     * { box-sizing:border-box; margin:0; padding:0; }
-    body { min-height:100vh; font-family:Tahoma,Arial,sans-serif; background:#f4f6f8; color:var(--navy); padding:24px 16px 40px; }
+    body { min-height:100vh; font-family:"Manifa Pro", Tahoma, Arial, sans-serif; background:#f4f6f8; color:var(--navy); padding:24px 16px 40px; }
     .card { max-width:420px; margin:0 auto; background:#fff; border-radius:16px; padding:28px 22px; text-align:center; box-shadow:0 8px 30px rgba(0,38,80,.08); }
     h1 { font-size:1.15rem; margin-bottom:8px; }
     p { font-size:.92rem; line-height:1.6; color:var(--muted); margin-bottom:12px; }
@@ -118,9 +159,9 @@ function landingHtml(uniqueId) {
 </head>
 <body>
   <div class="card">
-    <h1>تذكرة الدخول | Entry pass</h1>
-    <p>أضف البطاقة إلى Apple Wallet، أو احتفظ برمز QR للدخول.</p>
-    <img class="qr" src="${qrUrl}" alt="QR code" width="220" height="220" />
+    <h1>E-Badge</h1>
+    <p>Add this pass to Apple Wallet, or keep the E-Badge code below for registration.</p>
+    <img class="qr" src="${qrUrl}" alt="E-Badge code" width="220" height="220" />
     <a class="btn-wallet" id="btnWallet" href="${pkpassUrl}" aria-label="إضافة إلى Apple Wallet">
       <img src="/assets/wallet/add-to-apple-wallet-ar.svg" width="180" height="57" alt="إضافة إلى Apple Wallet" />
     </a>

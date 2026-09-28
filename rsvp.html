@@ -3,28 +3,15 @@
 
 <head>
     <meta charset="UTF-8" />
+    <link rel="stylesheet" href="assets/css/manifa.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>تأكيد الدعوة | أرامكو</title>
+    <title>RSVP | Aramco Farewells</title>
     <link rel="icon" type="image/png" href="assets/icon.png" />
     <link rel="apple-touch-icon" href="assets/icon.png" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <style>
-        @font-face {
-            font-family: "DIN Next LT Arabic";
-            src: url("assets/fonts/DINNextLTArabic-Regular.ttf") format("truetype");
-            font-weight: 400;
-            font-style: normal;
-            font-display: swap;
-        }
 
-        @font-face {
-            font-family: "DIN Next LT Arabic Medium";
-            src: url("assets/fonts/DINNextLTArabic-Medium.ttf") format("truetype");
-            font-weight: 500;
-            font-style: normal;
-            font-display: swap;
-        }
-
-        :root {
+:root {
             --navy: #002650;
             --gold: #CBA886;
             --text: #002650;
@@ -54,15 +41,13 @@
         html,
         body {
             min-height: 100%;
-            font-family: "DIN Next LT Arabic", Tahoma, sans-serif;
+            font-family: "Manifa Pro", Tahoma, sans-serif;
             color: var(--white);
-            background-color: #f4f6f8;
-            background-image: url("assets/microsite/Microsite-bg-webp.webp");
+            background-color: #313131;
+            background-image: url("assets/rsvp/rsvp-bg.png");
             background-repeat: no-repeat;
-            background-position: center top;
-            background-size: cover;
-            background-attachment: scroll;
-            /* bg scrolls with page */
+            background-position: center bottom;
+            background-size: auto 100vh;
         }
 
         body {
@@ -75,32 +60,6 @@
             padding: var(--page-pad-top) var(--page-pad-x) 0;
             overflow-x: hidden;
             /* footer sits in normal flow at bottom — never overlays content */
-        }
-
-        /* Sunshine scrolls with page/bg (not fixed to viewport) */
-        .sunshine {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            z-index: 0;
-            overflow: hidden;
-            pointer-events: none;
-        }
-
-        .sunshine::before {
-            content: "";
-            position: absolute;
-            inset: 0;
-            background-image: url("assets/microsite/ashreq-brand-sunshine.svg");
-            background-repeat: no-repeat;
-            background-position: right clamp(16px, 5vw, 63px) center;
-            background-size: cover;
-            transform: scale(2);
-            transform-origin: right center;
-            opacity: 0.65;
-            mix-blend-mode: overlay;
         }
 
         .page {
@@ -116,7 +75,7 @@
             align-items: center;
             justify-content: flex-start;
             gap: clamp(1rem, 2.5vw, 1.5rem);
-            padding-top: 0;
+            padding-top: clamp(4.5rem, 12vw, 5.5rem);
             padding-bottom: 1.5rem;
             animation: fadeUp 0.6s ease both;
         }
@@ -124,8 +83,8 @@
         .guest-name {
             width: 100%;
             background: transparent;
-            color: var(--navy);
-            font-family: "DIN Next LT Arabic Medium", "DIN Next LT Arabic", Tahoma, sans-serif;
+            color: var(--white);
+            font-family: "Manifa Pro", Tahoma, sans-serif;
             font-size: clamp(1rem, 3.2vw, 1.75rem);
             font-weight: 500;
             line-height: 1.5;
@@ -165,7 +124,7 @@
         .decline-copy .en {
             direction: ltr;
             text-align: center;
-            font-family: "DIN Next LT Arabic", Tahoma, sans-serif;
+            font-family: "Manifa Pro", Tahoma, sans-serif;
             color: var(--white);
             opacity: 0.92;
         }
@@ -208,16 +167,25 @@
 
         .btn-download {
             appearance: none;
+            display: inline-block;
             border: 0;
-            background: var(--gold);
-            color: var(--white);
+            background: #ffffff;
+            color: #313131;
             font-family: inherit;
             font-size: 0.95rem;
             font-weight: 700;
             padding: 0.85rem 1.75rem;
             border-radius: 36px;
             cursor: pointer;
+            text-decoration: none;
             transition: transform 0.2s ease, background 0.2s ease;
+        }
+
+        .qr-wrap p {
+            max-width: 38rem;
+            font-size: clamp(0.95rem, 2.4vw, 1.1rem);
+            line-height: 1.9;
+            color: var(--white);
         }
 
         .btn-download:disabled {
@@ -250,7 +218,7 @@
 
         .confirm-copy .en {
             direction: ltr;
-            font-family: "DIN Next LT Arabic", Tahoma, sans-serif;
+            font-family: "Manifa Pro", Tahoma, sans-serif;
             opacity: 0.9;
             font-size: clamp(0.88rem, 2.1vw, 1rem);
         }
@@ -259,23 +227,6 @@
             color: #ffd0d0;
             font-size: 0.9rem;
             min-height: 1.25rem;
-        }
-
-        .btn-wallet {
-            appearance: none;
-            display: inline-block;
-            border: 0;
-            background: transparent;
-            padding: 0;
-            line-height: 0;
-            cursor: pointer;
-            text-decoration: none;
-        }
-
-        .btn-wallet img {
-            display: block;
-            width: 180px;
-            height: auto;
         }
 
         .btn-wallet.hidden {
@@ -291,46 +242,18 @@
         }
 
         .brand-logo {
-            position: relative;
-            flex-shrink: 0;
-            width: var(--logo-width);
-            max-width: min(200px, 55vw);
-            margin: 0 auto;
-            z-index: 1;
+            position: fixed;
+            top: calc(env(safe-area-inset-top, 0px) + 18px);
+            right: clamp(16px, 4vw, 32px);
+            width: clamp(128px, 34vw, 180px);
+            margin: 0;
+            z-index: 3;
         }
 
         .brand-logo img {
             display: block;
             width: 100%;
             height: auto;
-        }
-
-        .footer-mark {
-            position: relative;
-            z-index: 2;
-            /* full-width row so physical right padding works even if translate flips dir */
-            width: 100%;
-            max-width: 100%;
-            margin-top: auto;
-            margin-inline: 0;
-            padding-top: 1.25rem;
-            padding-bottom: calc(var(--footer-bottom) + env(safe-area-inset-bottom, 0px));
-            padding-right: var(--footer-inset);
-            padding-left: var(--page-pad-x);
-            flex-shrink: 0;
-            display: flex;
-            justify-content: flex-end;
-            align-items: flex-end;
-            direction: ltr;
-            pointer-events: none;
-        }
-
-        .footer-mark img {
-            display: block;
-            width: var(--footer-width);
-            max-width: 100%;
-            height: auto;
-            margin: 0;
         }
 
         .hidden {
@@ -390,70 +313,53 @@
 </head>
 
 <body>
-    <div class="sunshine" aria-hidden="true"></div>
+    <div class="brand-logo">
+        <img src="assets/rsvp/logo.png" alt="Aramco" />
+    </div>
     <main class="page">
-        <div class="brand-logo">
-            <img src="assets/microsite/logo-white.svg" alt="أرامكو" />
-        </div>
 
-        <div class="guest-name" id="guestName">السيد/السيدة [الاسم الكامل]</div>
+        <div class="guest-name hidden" id="guestName"></div>
 
         <!-- CONFIRM (shown until guest taps in a real browser) -->
         <section id="viewConfirm" class="hidden" aria-live="polite">
             <div class="confirm-copy">
-                <p id="confirmTextAr">يرجى تأكيد اختياركم أدناه.</p>
-                <p class="en" id="confirmTextEn">Please confirm your choice below.</p>
+                <p id="confirmTextAr"></p>
+                <p class="en" id="confirmTextEn">Please confirm your attendance.</p>
             </div>
-            <button type="button" class="btn-download" id="btnConfirmRsvp">تأكيد</button>
+            <button type="button" class="btn-download" id="btnConfirmRsvp">Confirm</button>
             <p class="confirm-error" id="confirmError" aria-live="polite"></p>
         </section>
 
         <!-- ACCEPT -->
         <section id="viewAccept" class="hidden" aria-live="polite">
             <div class="copy">
-                <p>
-                    شكرًا لتأكيد حضوركم حفل وداع أرامكو
-                    يرجى الاحتفاظ برمز الاستجابة السريعة (QR Code) المرفق
-                    أدناه، حيث سيكون مطلوبًا لإتمام إجراءات الدخول.
-                </p>
-                <p>
-                    نتطلع إلى الترحيب بكم.
-                    تفاصيل الموعد والمكان ستصلكم لاحقاً.
-                </p>
-                <p class="muted">
-                    كما تم إرسال رسالة تأكيد إلى بريدكم الإلكتروني تتضمن تفاصيل الموقع كاملة، بالإضافة إلى رمز الاستجابة السريعة الخاص بكم.
-                </p>
+                <p id="dearLine">Dear Guest,</p>
+                <p>Thank you for confirming your attendance! Please note that your invitation is personal and strictly non-transferable.</p>
             </div>
 
             <div class="qr-wrap">
                 <div class="qr-frame">
-                    <img id="qrImage" src="https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=ARAMCO-FAREWELL-INVITE-DUMMY" alt="رمز QR للدخول" width="240" height="240" />
+                    <img id="qrImage" alt="QR code to open your E-Badge" width="240" height="240" />
                 </div>
-                <button type="button" class="btn-download" id="btnDownloadQr">تحميل رمز QR</button>
-                <a class="btn-wallet hidden" id="btnAppleWallet" href="#" aria-label="إضافة إلى Apple Wallet">
-                    <img src="assets/wallet/add-to-apple-wallet-ar.svg" width="180" height="57" alt="إضافة إلى Apple Wallet" />
-                </a>
-                <p class="wallet-hint hidden" id="walletHint">Safari adds the pass directly. Chrome and Outlook download a .pkpass file — open it to add it to Wallet.</p>
+                <p>Please scan the QR Code above from your mobile device to access your E-Badge or click the link below</p>
+                <a class="btn-download" id="btnViewEbadge" href="#">View your E-Badge</a>
+                <a class="btn-download btn-wallet hidden" id="btnAppleWallet" href="#">Add to Apple Wallet</a>
+                <p class="wallet-hint hidden" id="walletHint">Safari adds the pass directly. Chrome on iPhone downloads a .pkpass file — open it to add it to Wallet.</p>
+                <p>To ensure a smooth entry, we recommend saving the QR code or E-Badge to your mobile device for quick scanning at the registration area. Please note that your E-Badge will be updated with your table details closer to the date of the event.</p>
+                <p>For any inquiries, feel free to contact us at Corporate Protocol.</p>
+                <p>Warm regards!</p>
+                <p class="confirm-error" id="acceptError" aria-live="polite"></p>
             </div>
         </section>
 
         <!-- DECLINE -->
         <section id="viewDecline" class="hidden" aria-live="polite">
             <div class="decline-copy">
-                <p>
-                    شكرًا لتجاوبكم. نتطلع إلى الترحيب بكم في فعالياتنا القادمة، وفي حال تغيّرت ظروفكم، يسعدنا تواصلكم مع فريق الفعالية.
-                </p>
-                <p class="en">
-                    Thank you for your response. We hope to see you at a future event. If your plans change, please contact the event team.
-                </p>
+                <p>Thank you for your response. We hope to see you at a future event. If your plans change, please contact the event team.</p>
             </div>
         </section>
 
     </main>
-
-    <div class="footer-mark notranslate" lang="ar" translate="no" dir="ltr">
-        <img src="assets/microsite/buildingimpactfull-footer.png" alt="شراكات لها أثر | Building Impactful Partnership" draggable="false" />
-    </div>
 
     <script>
         (function() {
@@ -469,13 +375,15 @@
             var viewAccept = document.getElementById("viewAccept");
             var viewDecline = document.getElementById("viewDecline");
             var qrImage = document.getElementById("qrImage");
-            var btnDownload = document.getElementById("btnDownloadQr");
+            var dearLine = document.getElementById("dearLine");
+            var btnViewEbadge = document.getElementById("btnViewEbadge");
             var btnWallet = document.getElementById("btnAppleWallet");
             var walletHint = document.getElementById("walletHint");
             var btnConfirm = document.getElementById("btnConfirmRsvp");
             var confirmTextAr = document.getElementById("confirmTextAr");
             var confirmTextEn = document.getElementById("confirmTextEn");
             var confirmError = document.getElementById("confirmError");
+            var acceptError = document.getElementById("acceptError");
 
             var isAcceptIntent = status === "accept" || status === "accepted";
             var isDeclineIntent = status === "decline" || status === "declined";
@@ -483,9 +391,9 @@
             var storageKey = uniqueId && apiStatus ? ("aramco-farewell-rsvp-commit:" + uniqueId + ":" + apiStatus) : "";
             var commitInFlight = false;
 
-            if (name && guestEl) {
-                guestEl.textContent = name;
-            }
+            var displayName = name || "Guest";
+            if (guestEl) guestEl.textContent = displayName;
+            if (dearLine) dearLine.textContent = "Dear " + displayName + ",";
 
             function hideAllViews() {
                 if (viewConfirm) viewConfirm.classList.add("hidden");
@@ -495,18 +403,19 @@
 
             function showConfirmView() {
                 hideAllViews();
+                if (guestEl) guestEl.classList.remove("hidden");
                 if (!viewConfirm) return;
                 viewConfirm.classList.remove("hidden");
                 if (isAcceptIntent) {
-                    if (confirmTextAr) confirmTextAr.textContent = "لتأكيد حضوركم، اضغطوا الزر أدناه.";
-                    if (confirmTextEn) confirmTextEn.textContent = "To confirm your attendance, tap the button below.";
-                    if (btnConfirm) btnConfirm.textContent = "تأكيد الحضور";
-                    document.title = "تأكيد الحضور | أرامكو";
+                    if (confirmTextAr) confirmTextAr.textContent = "";
+                    if (confirmTextEn) confirmTextEn.textContent = "Please confirm your attendance.";
+                    if (btnConfirm) btnConfirm.textContent = "Confirm";
+                    document.title = "Confirm attendance | Aramco";
                 } else if (isDeclineIntent) {
-                    if (confirmTextAr) confirmTextAr.textContent = "لتأكيد اعتذاركم عن الحضور، اضغطوا الزر أدناه.";
-                    if (confirmTextEn) confirmTextEn.textContent = "To confirm you cannot attend, tap the button below.";
-                    if (btnConfirm) btnConfirm.textContent = "تأكيد الاعتذار";
-                    document.title = "تأكيد الاعتذار | أرامكو";
+                    if (confirmTextAr) confirmTextAr.textContent = "";
+                    if (confirmTextEn) confirmTextEn.textContent = "Please confirm that you cannot attend.";
+                    if (btnConfirm) btnConfirm.textContent = "Confirm";
+                    document.title = "Confirm decline | Aramco";
                 }
             }
 
@@ -514,10 +423,11 @@
                 hideAllViews();
                 if (nextStatus === "accept" || nextStatus === "accepted") {
                     viewAccept.classList.remove("hidden");
-                    document.title = "تم تأكيد الحضور | أرامكو";
+                    if (guestEl) guestEl.classList.add("hidden");
+                    document.title = "Attendance confirmed | Aramco";
                 } else if (nextStatus === "decline" || nextStatus === "declined") {
                     viewDecline.classList.remove("hidden");
-                    document.title = "اعتذار عن الحضور | أرامكو";
+                    document.title = "Decline confirmed | Aramco";
                 } else {
                     showConfirmView();
                 }
@@ -542,17 +452,17 @@
                 }
             }
 
-            function applyQr(url) {
-                if (!qrImage || !url) return;
-                qrImage.src = url;
-            }
+            var PUBLIC_SITE = "https://aramcocorporateevents.com";
+            var ebadgePath = uniqueId ? ("/e-badge/" + encodeURIComponent(uniqueId)) : "";
+            var ebadgeUrl = uniqueId ? (PUBLIC_SITE + ebadgePath) : "";
+            if (btnViewEbadge && ebadgePath) btnViewEbadge.href = ebadgePath;
 
-            if (qr) {
-                applyQr(/^https?:\/\//i.test(qr) ?
-                    qr :
-                    "https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=" + encodeURIComponent(qr));
-            } else if (uniqueId) {
-                applyQr(API_BASE + "/api/AramcoFarewell/qr/" + encodeURIComponent(uniqueId));
+            if (qrImage && ebadgeUrl && window.QRious) {
+                qrImage.src = new QRious({
+                    value: ebadgeUrl,
+                    size: 480,
+                    level: "Q"
+                }).toDataURL();
             }
 
             if (uniqueId) {
@@ -568,8 +478,7 @@
                 }
             }
 
-            // Email/link scanners only GET this page — no API call on load.
-            // Status is saved only after a real tap on the confirm button in the browser.
+            // Accept and Decline only open this page. Status changes after Confirm.
             if (!apiStatus) {
                 showConfirmView();
                 if (confirmError) confirmError.textContent = "Invalid RSVP link.";
@@ -585,7 +494,7 @@
                 commitInFlight = true;
                 if (btnConfirm) {
                     btnConfirm.disabled = true;
-                    btnConfirm.textContent = "جاري التأكيد…";
+                    btnConfirm.textContent = "Confirming…";
                 }
                 if (confirmError) confirmError.textContent = "";
 
@@ -619,9 +528,6 @@
                         try {
                             if (storageKey) sessionStorage.setItem(storageKey, "1");
                         } catch (e) {}
-                        if (result.body && result.body.qrCodeUrl) {
-                            applyQr(result.body.qrCodeUrl);
-                        }
                         var shown = (result.body && result.body.status)
                             ? String(result.body.status).toLowerCase()
                             : status;
@@ -630,21 +536,22 @@
                     }
                     if (btnConfirm) {
                         btnConfirm.disabled = false;
-                        btnConfirm.textContent = isAcceptIntent ? "تأكيد الحضور" : "تأكيد الاعتذار";
+                        btnConfirm.textContent = "Confirm";
                     }
-                    if (confirmError) {
-                        confirmError.textContent = (result.body && result.body.message)
-                            ? String(result.body.message)
-                            : "تعذر حفظ الرد. حاول مرة أخرى.";
-                    }
+                    var failText = (result.body && result.body.message)
+                        ? String(result.body.message)
+                        : "Could not save your reply. Please try again.";
+                    if (confirmError) confirmError.textContent = failText;
+                    if (acceptError) acceptError.textContent = failText;
                     console.error("RSVP update failed", result.body);
                 }).catch(function(err) {
                     commitInFlight = false;
                     if (btnConfirm) {
                         btnConfirm.disabled = false;
-                        btnConfirm.textContent = isAcceptIntent ? "تأكيد الحضور" : "تأكيد الاعتذار";
+                        btnConfirm.textContent = "Confirm";
                     }
-                    if (confirmError) confirmError.textContent = "تعذر الاتصال. حاول مرة أخرى.";
+                    if (confirmError) confirmError.textContent = "Could not connect. Please try again.";
+                    if (acceptError) acceptError.textContent = "Could not connect. Please try again.";
                     console.error("RSVP update request failed", err);
                 });
             }
@@ -658,78 +565,6 @@
                 });
             }
 
-            function inviteCardFileName(guestName) {
-                var safe = String(guestName || "Guest")
-                    .replace(/[<>:"/\\|?*\x00-\x1f]/g, "")
-                    .replace(/\s+/g, " ")
-                    .trim();
-                return (safe || "Guest") + "AramcoFarewellInvite.jpg";
-            }
-
-            function isPhone() {
-                var ua = navigator.userAgent || "";
-                if (/iPhone|iPad|iPod|Android/i.test(ua)) return true;
-                return navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
-            }
-
-            function fallbackDownload(blob, filename) {
-                var objectUrl = URL.createObjectURL(blob);
-                var link = document.createElement("a");
-                link.href = objectUrl;
-                link.download = filename;
-                link.rel = "noopener";
-                link.style.display = "none";
-                document.body.appendChild(link);
-                link.click();
-                link.remove();
-                setTimeout(function() {
-                    URL.revokeObjectURL(objectUrl);
-                }, 1500);
-            }
-
-            function saveInviteImage(blob, filename) {
-                if (isPhone()) {
-                    var file = new File([blob], filename, {
-                        type: blob.type || "image/jpeg"
-                    });
-                    if (navigator.canShare && navigator.canShare({
-                            files: [file]
-                        })) {
-                        return navigator.share({
-                            files: [file],
-                            title: filename
-                        }).catch(function(err) {
-                            if (err && err.name === "AbortError") return;
-                            fallbackDownload(blob, filename);
-                        });
-                    }
-                }
-                fallbackDownload(blob, filename);
-            }
-
-            if (btnDownload) {
-                btnDownload.addEventListener("click", function() {
-                    var src = uniqueId ?
-                        API_BASE + "/api/AramcoFarewell/qr-card/" + encodeURIComponent(uniqueId) :
-                        (qrImage && qrImage.src);
-                    if (!src) return;
-                    fetch(src, {
-                            mode: "cors",
-                            cache: "no-store"
-                        })
-                        .then(function(res) {
-                            if (!res.ok) throw new Error("QR download failed");
-                            return res.blob();
-                        })
-                        .then(function(blob) {
-                            return saveInviteImage(blob, inviteCardFileName(name));
-                        })
-                        .catch(function(err) {
-                            console.error(err);
-                            alert("Could not download the QR code. Please try again.");
-                        });
-                });
-            }
         })();
     </script>
 </body>
