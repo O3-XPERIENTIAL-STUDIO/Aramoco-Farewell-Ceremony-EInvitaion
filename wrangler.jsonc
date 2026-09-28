@@ -8,5 +8,9 @@
     "html_handling": "auto-trailing-slash",
     "not_found_handling": "404-page",
     "run_worker_first": ["/wallet/*", "/qr-card/*"]
-  }
+  },
+  "routes": [
+    { "pattern": "aramcocorporatevents.com", "custom_domain": true },
+    { "pattern": "www.aramcocorporatevents.com", "custom_domain": true }
+  ]
 }

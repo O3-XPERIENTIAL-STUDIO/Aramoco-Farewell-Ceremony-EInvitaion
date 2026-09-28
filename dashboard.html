@@ -402,6 +402,89 @@
             letter-spacing: 0.3px;
         }
 
+        .guest-group {
+            margin-bottom: 22px;
+        }
+
+        .guest-group-head {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 0;
+            padding: 14px 16px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            background: var(--surface);
+        }
+
+        .guest-group.is-open .guest-group-head {
+            margin-bottom: 12px;
+        }
+
+        .guest-group-toggle {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            flex: 1;
+            min-width: 180px;
+            margin: 0;
+            padding: 0;
+            border: 0;
+            background: none;
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+        }
+
+        .guest-group-chevron {
+            width: 8px;
+            height: 8px;
+            margin-top: 6px;
+            border-right: 2px solid currentColor;
+            border-bottom: 2px solid currentColor;
+            transform: rotate(-45deg);
+            flex: none;
+        }
+
+        .guest-group.is-open .guest-group-chevron {
+            margin-top: 4px;
+            transform: rotate(45deg);
+        }
+
+        .guest-group-cards {
+            display: none;
+        }
+
+        .guest-group.is-open .guest-group-cards {
+            display: block;
+        }
+
+        .guest-group-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .guest-group-meta {
+            margin-top: 4px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .guest-group-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .guest-group-empty {
+            padding: 14px 4px 6px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
         /* ─── INPUTS ──────────────────────────────────── */
         .input-row {
             display: flex;
@@ -1583,6 +1666,24 @@
             <div id="bulkDownloadStatus" class="bulk-download-status"></div>
         </div>
 
+        <!-- GROUPS -->
+        <div class="panel" id="groupPanel">
+            <div class="panel-header">
+                <div class="panel-icon">👥</div>
+                <span class="panel-title">Guest groups</span>
+            </div>
+            <div class="bulk-download-hint">
+                Create a group for one member and one date. Every guest is added to a group.
+            </div>
+            <div class="input-row">
+                <input type="text" id="groupNameInput" placeholder="Group name" />
+                <input type="text" id="groupMemberInput" placeholder="Member / host" />
+                <input type="date" id="groupDateInput" />
+                <button class="btn btn-primary" type="button" onclick="createGroup()">＋ Create group</button>
+            </div>
+            <div id="groupStatus" class="import-status"></div>
+        </div>
+
         <!-- ADD VIP UNIFIED PANEL -->
         <div class="panel">
             <div class="panel-header">
@@ -1608,6 +1709,12 @@
                 </button>
             </div>
 
+            <div class="input-row" style="margin-bottom:12px">
+                <select id="guestGroupSelect">
+                    <option value="">Select group</option>
+                </select>
+            </div>
+
             <!-- Manual form -->
             <div id="paneManual" class="add-pane">
                 <div class="input-row">
@@ -1616,24 +1723,9 @@
                     <input type="email" id="emailInput" placeholder="Email ID" />
                     <input type="tel" id="phoneInput" placeholder="Phone Number" />
                     <input type="text" id="positionInput" placeholder="Position" />
-                    <select id="userTypeSelect" onchange="onManualUserTypeChange()">
-                        <option value="VVIP">VVIP</option>
-                        <option value="VIP">VIP</option>
-                        <option value="VIP-EN">VIP - EN</option>
-                        <option value="General">General</option>
-                        <option value="Media">Media</option>
-                    </select>
                     <button class="btn btn-primary" onclick="addUser()">
                         <span>＋</span> Add User
                     </button>
-                </div>
-                <div id="vvipHeaderUploadRow" class="vvip-header-row" style="display:none;">
-                    <label class="vvip-header-label" for="vvipHeaderInput">Upload header (VVIP invite body image)</label>
-                    <input class="import-file-input" id="vvipHeaderInput" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" onchange="onVvipHeaderSelected()" />
-                    <div id="vvipHeaderPreviewWrap" class="vvip-header-preview-wrap" style="display:none;">
-                        <img id="vvipHeaderPreview" class="vvip-header-preview" alt="VVIP header preview" />
-                        <button type="button" class="btn btn-ghost" onclick="clearVvipHeaderUpload()">Clear</button>
-                    </div>
                 </div>
             </div>
 
@@ -1646,8 +1738,8 @@
                 </div>
                 <div class="import-hint">
                     Supported: <strong>CSV / Excel</strong>. Required columns: <strong>FullName</strong>,
-                    <strong>EmailId</strong>. Optional: <strong>UserType</strong> (VVIP, VIP, VIP-EN, General, Media),
-                    <strong>Company</strong>, <strong>Position</strong>, <strong>PhoneNumber</strong>.
+                    <strong>EmailId</strong>. Optional: <strong>Company</strong>, <strong>Position</strong>,
+                    <strong>PhoneNumber</strong>. Every guest is General.
                 </div>
                 <div id="importStatus" class="import-status"></div>
             </div>
@@ -1657,6 +1749,9 @@
         <div class="sticky-filter" id="filterPanel">
             <div class="filter-row">
                 <input type="text" id="searchInput" placeholder="Search by name, email, phone…" oninput="applyFilters()" />
+                <select id="groupFilter" onchange="applyFilters()">
+                    <option value="">All groups</option>
+                </select>
                 <select id="statusFilter" onchange="onStatusFilterChange()">
                     <option value="">All Statuses</option>
                     <option value="pending">Pending</option>
@@ -1684,6 +1779,7 @@
 
     <script>
         const baseURL = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
+        const publicSiteUrl = "http://aramcocorporatevents.com";
         const inviteEmailEndpoint = `${baseURL}/api/AramcoFarewell/send-invitation-email`;
         const inviteSmsEndpoint = `${baseURL}/api/AramcoFarewell/send-invitation-sms`;
         const inviteQueueStatusEndpoint = `${baseURL}/api/AramcoFarewell/invitation-email-queue-status`;
@@ -1695,6 +1791,10 @@
 
         let users = [];
         let filteredUsers = [];
+        let guestGroups = [];
+        let lastGroupsHash = '';
+        const openGroupIds = new Set();
+        let lastGroupFilterOpened = '';
         const inviteJobMap = {};
         const inviteEnqueueQueue = [];
         let inviteEnqueueProcessing = false;
@@ -1724,13 +1824,6 @@
         }
 
         function resolveUserType(userType) {
-            const key = normalizeUserTypeKey(userType);
-            if (key === 'vvip' || key === 'tier1' || key === 'deputygovernor' || key === 'deputygoverner') return 'VVIP';
-            // Check VIP-EN before VIP so existing VIP guests stay VIP.
-            if (key === 'vip-en' || key === 'vipen' || key === 'vip_en') return 'VIP-EN';
-            if (key === 'vip') return 'VIP';
-            if (key === 'media') return 'Media';
-            if (key === 'general' || key === 'guest' || key === 'tier2' || key === 'students' || key === 'student' || key === 'tier3') return 'General';
             return 'General';
         }
 
@@ -1801,12 +1894,10 @@
         }
 
         function downloadImportTemplate() {
-            const template = `FullName,EmailId,PhoneNumber,UserType,Company,Position
-John Doe,john.doe@example.com,+966501234567,VIP,ARAMCO,Manager
-Maryam Ali,maryam.ali@example.com,0599449820,VVIP,Saudi Aramco,Director
-Alex Smith,alex.smith@example.com,+966550000002,VIP-EN,Partner Co,Advisor
-Sara Khan,sara.khan@example.com,,General,Partner Co,Advisor
-Omar Media,omar@media.example.com,+966550000001,Media,News Network,Editor
+            const template = `FullName,EmailId,PhoneNumber,Company,Position
+John Doe,john.doe@example.com,+966501234567,ARAMCO,Manager
+Maryam Ali,maryam.ali@example.com,0599449820,Saudi Aramco,Director
+Sara Khan,sara.khan@example.com,,Partner Co,Advisor
 `;
             const blob = new Blob([template], {
                 type: 'text/csv;charset=utf-8'
@@ -2793,17 +2884,21 @@ Omar Media,omar@media.example.com,+966550000001,Media,News Network,Editor
                 setImportStatus('Failed to parse file. Check format and try again.');
                 return;
             }
-            const defaultUserType = getUserTypeLabel(document.getElementById("userTypeSelect").value);
             objects = (objects || []).map(o => ({
                 fullName: (o.fullName || '').toString().trim(),
                 emailId: (o.emailId || '').toString().trim(),
                 phoneNumber: (o.phoneNumber || '').toString().trim(),
-                userType: getUserTypeLabel((o.userType || '').toString().trim() || defaultUserType),
+                userType: 'General',
                 company: (o.company || '').toString().trim(),
                 position: (o.position || '').toString().trim(),
             })).filter(o => o.fullName || o.emailId || o.userType || o.company || o.position || o.phoneNumber);
             if (!objects.length) {
                 setImportStatus('No valid rows found.');
+                return;
+            }
+            const groupId = selectedGroupId();
+            if (!groupId) {
+                setImportStatus('Choose a group before importing. Every guest must belong to one group.');
                 return;
             }
             let ok = 0,
@@ -2828,7 +2923,8 @@ Omar Media,omar@media.example.com,+966550000001,Media,News Network,Editor
                             phoneNumber: item.phoneNumber,
                             userType: item.userType,
                             company: item.company,
-                            position: item.position
+                            position: item.position,
+                            groupId: groupId
                         })
                     });
                     if (!response.ok) {
@@ -2963,9 +3059,149 @@ Omar Media,omar@media.example.com,+966550000001,Media,News Network,Editor
             applyFilters();
         }
 
+        function escapeHtml(value) {
+            return (value || '').toString()
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+
+        function formatGroupLabel(group) {
+            if (!group) return 'Ungrouped';
+            const date = (group.eventDate || '').toString().slice(0, 10);
+            return [group.name, group.memberName, date].filter(Boolean).join(' · ');
+        }
+
+        function setGroupStatus(msg) {
+            const el = document.getElementById('groupStatus');
+            if (!el) return;
+            el.textContent = msg || '';
+            el.classList.toggle('visible', !!msg);
+        }
+
+        function fillGroupSelects() {
+            const guestSel = document.getElementById('guestGroupSelect');
+            const filterSel = document.getElementById('groupFilter');
+            const guestValue = guestSel ? guestSel.value : '';
+            const filterValue = filterSel ? filterSel.value : '';
+            const options = guestGroups.map(group =>
+                `<option value="${group.id}">${escapeHtml(formatGroupLabel(group))}</option>`).join('');
+            if (guestSel) {
+                guestSel.innerHTML = `<option value="">Select group</option>${options}`;
+                if (guestValue && [...guestSel.options].some(option => option.value === guestValue)) {
+                    guestSel.value = guestValue;
+                }
+            }
+            if (filterSel) {
+                const ungrouped = users.some(user => !user.groupId) ?
+                    '<option value="0">Ungrouped</option>' :
+                    '';
+                filterSel.innerHTML = `<option value="">All groups</option>${options}${ungrouped}`;
+                if (filterValue && [...filterSel.options].some(option => option.value === filterValue)) {
+                    filterSel.value = filterValue;
+                }
+            }
+        }
+
+        function selectedGroupId() {
+            const value = Number(document.getElementById('guestGroupSelect')?.value || 0);
+            return value > 0 ? value : 0;
+        }
+
+        function toggleGuestGroup(groupKey) {
+            const key = String(groupKey);
+            if (openGroupIds.has(key)) openGroupIds.delete(key);
+            else openGroupIds.add(key);
+            const section = document.querySelector('.guest-group[data-group-key="' + key + '"]');
+            if (section) section.classList.toggle('is-open', openGroupIds.has(key));
+        }
+
+        function focusAddForGroup(groupId) {
+            const sel = document.getElementById('guestGroupSelect');
+            if (sel) sel.value = String(groupId);
+            openGroupIds.add(String(groupId));
+            const section = document.querySelector('.guest-group[data-group-key="' + groupId + '"]');
+            if (section) section.classList.add('is-open');
+            switchTab('manual');
+            const name = document.getElementById('fullNameInput');
+            if (name) name.focus();
+            document.getElementById('paneManual')?.scrollIntoView({
+                behavior: 'smooth',
+                block: 'center'
+            });
+        }
+
+        async function createGroup() {
+            const name = (document.getElementById('groupNameInput')?.value || '').trim();
+            const memberName = (document.getElementById('groupMemberInput')?.value || '').trim();
+            const eventDate = (document.getElementById('groupDateInput')?.value || '').trim();
+            if (!name || !memberName || !eventDate) {
+                setGroupStatus('Enter a group name, member, and date.');
+                return;
+            }
+            setGroupStatus('Creating group...');
+            try {
+                const response = await fetch(`${baseURL}/api/AramcoFarewell/groups`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name,
+                        memberName,
+                        eventDate
+                    })
+                });
+                let body = {};
+                try {
+                    body = await response.json();
+                } catch (e) {}
+                if (!response.ok) {
+                    throw new Error(body.message || body.Message || `${response.status} ${response.statusText}`);
+                }
+                document.getElementById('groupNameInput').value = '';
+                document.getElementById('groupMemberInput').value = '';
+                document.getElementById('groupDateInput').value = '';
+                if (body.id || body.Id) {
+                    const sel = document.getElementById('guestGroupSelect');
+                    if (sel) sel.dataset.pendingId = String(body.id || body.Id);
+                }
+                setGroupStatus(`Group "${name}" created.`);
+                await fetchUsers(false);
+            } catch (e) {
+                setGroupStatus(`Could not create group: ${e.message}`);
+            }
+        }
+
+        async function sendGroupInvites(groupId) {
+            const pending = users.filter(user =>
+                Number(user.groupId) === Number(groupId) &&
+                user.emailId &&
+                !isInviteMailAlreadySent(user));
+            if (!pending.length) {
+                alert('No guests in this group are waiting for an invitation.');
+                return;
+            }
+            if (!confirm(`Send invitations to ${pending.length} guest(s) who have not been invited yet?`)) return;
+            let ok = 0;
+            let fail = 0;
+            for (const user of pending) {
+                try {
+                    await queueInviteEmailForUser(user, {});
+                    ok++;
+                } catch (e) {
+                    fail++;
+                }
+            }
+            alert(`Invitations queued: ${ok}. Failed: ${fail}.`);
+            fetchUsers(true);
+        }
+
         function applyFilters() {
             const search = document.getElementById('searchInput').value.toLowerCase().trim();
             const status = document.getElementById('statusFilter').value.toLowerCase().trim();
+            const groupFilter = (document.getElementById('groupFilter')?.value || '').trim();
             const sortMode = document.getElementById('sortOrder').value;
             filteredUsers = users.filter(u => {
                 const haystack = [
@@ -2973,10 +3209,15 @@ Omar Media,omar@media.example.com,+966550000001,Media,News Network,Editor
                     u.emailId,
                     u.phoneNumber,
                     u.company,
-                    u.position
+                    u.position,
+                    u.groupName,
+                    u.groupMemberName
                 ].map(v => (v || '').toString().toLowerCase()).join(' ');
+                const groupOk = !groupFilter ||
+                    (groupFilter === '0' ? !u.groupId : String(u.groupId) === groupFilter);
                 return (!search || haystack.includes(search)) &&
-                    (!status || normalizeStatus(u.status) === status);
+                    (!status || normalizeStatus(u.status) === status) &&
+                    groupOk;
             });
             filteredUsers = applySort(filteredUsers, sortMode);
             renderUsers();
@@ -2999,24 +3240,110 @@ Omar Media,omar@media.example.com,+966550000001,Media,News Network,Editor
             return key;
         }
 
+        function buildGroupHeader(bucket) {
+            const header = document.createElement('div');
+            header.className = 'guest-group-head';
+            const key = bucket.group ? String(bucket.group.id) : '0';
+            if (!bucket.group) {
+                header.innerHTML = `
+                    <button class="guest-group-toggle" type="button" onclick="toggleGuestGroup('${key}')">
+                        <span class="guest-group-chevron" aria-hidden="true"></span>
+                        <span>
+                            <div class="guest-group-title">Ungrouped</div>
+                            <div class="guest-group-meta">${bucket.users.length} guest${bucket.users.length === 1 ? '' : 's'}</div>
+                        </span>
+                    </button>`;
+                return header;
+            }
+            const group = bucket.group;
+            const unsent = bucket.users.filter(user => user.emailId && !isInviteMailAlreadySent(user)).length;
+            header.innerHTML = `
+                <button class="guest-group-toggle" type="button" onclick="toggleGuestGroup('${key}')">
+                    <span class="guest-group-chevron" aria-hidden="true"></span>
+                    <span>
+                        <div class="guest-group-title">${escapeHtml(group.name)}</div>
+                        <div class="guest-group-meta">${escapeHtml(group.memberName || '')} · ${(group.eventDate || '').toString().slice(0, 10)} · ${bucket.users.length} guest${bucket.users.length === 1 ? '' : 's'} · ${unsent} not invited</div>
+                    </span>
+                </button>
+                <div class="guest-group-actions">
+                    <button class="btn btn-primary" type="button" onclick="focusAddForGroup(${Number(group.id)})">＋ Add guest</button>
+                    <button class="btn btn-primary" type="button" onclick="downloadGroupZip(${Number(group.id)}, 'pdf')">⬇ PDFs</button>
+                    <button class="btn btn-success" type="button" onclick="downloadGroupZip(${Number(group.id)}, 'qr')">⬇ QR codes</button>
+                    <button class="btn btn-ghost" type="button" onclick="sendGroupInvites(${Number(group.id)})">✉ Send unsent</button>
+                </div>`;
+            return header;
+        }
+
         function renderUsers() {
             const container = document.getElementById('userList');
             container.innerHTML = '';
 
             const count = filteredUsers.length;
+            const groupFilter = (document.getElementById('groupFilter')?.value || '').trim();
+            const searchActive = !!((document.getElementById('searchInput')?.value || '').trim() ||
+                (document.getElementById('statusFilter')?.value || '').trim());
             document.getElementById('resultsCount').innerHTML = `Showing <strong>${count}</strong> guest${count !== 1 ? 's' : ''}`;
 
-            if (!count) {
+            const buckets = [];
+            guestGroups.forEach(group => {
+                if (groupFilter && groupFilter !== String(group.id)) return;
+                const members = filteredUsers.filter(user => Number(user.groupId) === Number(group.id));
+                if (searchActive && !members.length) return;
+                buckets.push({
+                    group,
+                    users: members
+                });
+            });
+            if (!groupFilter || groupFilter === '0') {
+                const loose = filteredUsers.filter(user => !user.groupId);
+                if (loose.length) buckets.push({
+                    group: null,
+                    users: loose
+                });
+            }
+            const placed = new Set(buckets.flatMap(bucket => bucket.users.map(user => user.uniqueId)));
+            filteredUsers.filter(user => user.uniqueId && !placed.has(user.uniqueId)).forEach(user => {
+                if (groupFilter && groupFilter !== String(user.groupId || 0)) return;
+                const bucket = {
+                    group: user.groupId ? {
+                        id: user.groupId,
+                        name: user.groupName || 'Group',
+                        memberName: user.groupMemberName || '',
+                        eventDate: user.groupEventDate || ''
+                    } : null,
+                    users: [user]
+                };
+                buckets.push(bucket);
+            });
+
+            if (!buckets.length) {
                 container.innerHTML = `
         <div class="empty-state">
           <div class="empty-state-icon">🔍</div>
-          <div class="empty-state-title">No VIPs Found</div>
-          <div class="empty-state-text">Try adjusting your search or filter criteria.</div>
+          <div class="empty-state-title">${guestGroups.length ? 'No guests found' : 'Create a group first'}</div>
+          <div class="empty-state-text">${guestGroups.length ? 'Try another group, search, or status.' : 'Add a group, then add guests into it.'}</div>
         </div>`;
                 return;
             }
 
-            filteredUsers.forEach((u, idx) => {
+            if (groupFilter && groupFilter !== lastGroupFilterOpened) {
+                openGroupIds.add(groupFilter);
+                lastGroupFilterOpened = groupFilter;
+            }
+            if (!groupFilter) lastGroupFilterOpened = '';
+
+            buckets.forEach(bucket => {
+                const section = document.createElement('section');
+                const key = bucket.group ? String(bucket.group.id) : '0';
+                section.className = 'guest-group' + (openGroupIds.has(key) ? ' is-open' : '');
+                section.dataset.groupKey = key;
+                section.appendChild(buildGroupHeader(bucket));
+                const list = document.createElement('div');
+                list.className = 'guest-group-cards';
+                if (!bucket.users.length) {
+                    list.innerHTML = '<div class="guest-group-empty">No guests in this group yet.</div>';
+                }
+                bucket.users.forEach((u, idx) => {
                 const statusRaw = normalizeStatus(u.status || 'pending');
                 const card = document.createElement('div');
                 card.className = `user-card status-${statusRaw}`;
@@ -3122,8 +3449,7 @@ Omar Media,omar@media.example.com,+966550000001,Media,News Network,Editor
 
             <div class="card-top">
               <div class="card-name-row">
-                <div class="card-name">${u.userName || 'VIP Guest'}${u.seatCode ? `<span class="seat-badge">${u.seatCode}</span>` : ''}</div>
-                <span class="invite-badge ${getInviteClass(u.inviteType)}">${getInviteLabel(u.inviteType)}</span>
+                <div class="card-name">${u.userName || 'Guest'}${u.seatCode ? `<span class="seat-badge">${u.seatCode}</span>` : ''}</div>
               </div>
               <span class="status-badge ${statusBadgeClass}">${statusLabel}</span>
             </div>
@@ -3142,18 +3468,6 @@ Omar Media,omar@media.example.com,+966550000001,Media,News Network,Editor
               <span><strong>Email sent:</strong> ${emailSentLabel}</span>
               <span><strong>Status changed:</strong> ${statusChangedLabel}</span>
             </div>
-
-            ${resolveUserType(u.inviteType) === 'VVIP' ? `
-            <div class="vvip-doc-row">
-              <span class="vvip-doc-label">VVIP header</span>
-              <span class="vvip-doc-status ${u.hasVvipHeader ? 'has-doc' : ''}">${u.hasVvipHeader ? 'Custom image' : 'Default'}</span>
-              ${u.hasVvipHeader && u.vvipBodyImageUrl ? `<img class="vvip-header-preview" src="${u.vvipBodyImageUrl}" alt="VVIP header" style="max-width:90px;max-height:54px;" />` : ''}
-              <label class="copy-btn" style="cursor:pointer; margin:0;">
-                ${u.hasVvipHeader ? 'Replace header' : 'Upload header'}
-                <input type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" style="display:none"
-                  onchange="uploadVvipHeaderForUser('${safeUid}', this)" />
-              </label>
-            </div>` : ''}
 
             <div class="url-row">
               <span class="url-icon">✉️</span>
@@ -3184,7 +3498,10 @@ Omar Media,omar@media.example.com,+966550000001,Media,News Network,Editor
 
         ${guestsHTML}`;
 
-                container.appendChild(card);
+                list.appendChild(card);
+                });
+                section.appendChild(list);
+                container.appendChild(section);
             });
 
             hydrateLazyQrImages(container);
@@ -3289,8 +3606,20 @@ Omar Media,omar@media.example.com,+966550000001,Media,News Network,Editor
             return (document.getElementById('bulkDownloadEmails')?.value || '').trim();
         }
 
-        async function downloadBulkZip(kind) {
-            const emails = getBulkDownloadEmailsText();
+        async function downloadGroupZip(groupId, kind) {
+            const emails = users
+                .filter(user => Number(user.groupId) === Number(groupId) && (user.emailId || '').trim())
+                .map(user => user.emailId.trim())
+                .join('\n');
+            if (!emails) {
+                alert('This group has no guests with an email address.');
+                return;
+            }
+            return downloadBulkZip(kind, emails);
+        }
+
+        async function downloadBulkZip(kind, emailsOverride) {
+            const emails = (emailsOverride != null ? emailsOverride : getBulkDownloadEmailsText()).trim();
             if (!emails) {
                 setBulkDownloadStatus('Paste at least one email address.', 'error');
                 return;
@@ -3300,7 +3629,7 @@ Omar Media,omar@media.example.com,+966550000001,Media,News Network,Editor
             const endpoint = isPdf ?
                 `${baseURL}/api/AramcoFarewell/bulk-download-pdf` :
                 `${baseURL}/api/AramcoFarewell/bulk-download-qr`;
-            const btn = document.getElementById(isPdf ? 'btnBulkPdfZip' : 'btnBulkQrZip');
+            const btn = emailsOverride != null ? null : document.getElementById(isPdf ? 'btnBulkPdfZip' : 'btnBulkQrZip');
             const label = btn ? btn.textContent : '';
             if (btn) {
                 btn.disabled = true;
@@ -3436,9 +3765,7 @@ Omar Media,omar@media.example.com,+966550000001,Media,News Network,Editor
             const emailId = document.getElementById("emailInput").value.trim();
             const phoneNumber = (document.getElementById("phoneInput").value || '').trim();
             const position = (document.getElementById("positionInput").value || '').trim();
-            const userType = document.getElementById("userTypeSelect").value;
-            const headerInput = document.getElementById("vvipHeaderInput");
-            const headerFile = headerInput && headerInput.files && headerInput.files[0] ? headerInput.files[0] : null;
+            const groupId = selectedGroupId();
 
             if (!fullName) {
                 alert("Enter name");
@@ -3448,12 +3775,9 @@ Omar Media,omar@media.example.com,+966550000001,Media,News Network,Editor
                 alert("Enter email ID");
                 return;
             }
-            if (resolveUserType(userType) === 'VVIP' && headerFile) {
-                const okType = /\.(jpe?g|png|webp)$/i.test(headerFile.name || '');
-                if (!okType) {
-                    alert("VVIP header must be a JPG, PNG or WEBP image.");
-                    return;
-                }
+            if (!groupId) {
+                alert("Choose a group. Every guest must belong to one group.");
+                return;
             }
 
             try {
@@ -3466,9 +3790,10 @@ Omar Media,omar@media.example.com,+966550000001,Media,News Network,Editor
                         fullName: fullName,
                         emailId: emailId,
                         phoneNumber: phoneNumber,
-                        userType: userType,
+                        userType: 'General',
                         company: company,
-                        position: position
+                        position: position,
+                        groupId: groupId
                     })
                 });
                 if (!response.ok) {
@@ -3480,93 +3805,15 @@ Omar Media,omar@media.example.com,+966550000001,Media,News Network,Editor
                     throw new Error(errorMsg);
                 }
 
-                const created = await response.json();
-                const uniqueId = created.uniqueId || created.UniqueId || '';
-
-                if (resolveUserType(userType) === 'VVIP' && headerFile && uniqueId) {
-                    const form = new FormData();
-                    form.append('file', headerFile);
-                    const uploadRes = await fetch(`${baseURL}/api/AramcoFarewell/vvip-body/${encodeURIComponent(uniqueId)}`, {
-                        method: 'POST',
-                        body: form
-                    });
-                    if (!uploadRes.ok) {
-                        let uploadMsg = `${uploadRes.status} ${uploadRes.statusText}`;
-                        try {
-                            const errBody = await uploadRes.json();
-                            if (errBody.message || errBody.Message) uploadMsg = errBody.message || errBody.Message;
-                        } catch (e) {}
-                        throw new Error(`User created, but header upload failed: ${uploadMsg}`);
-                    }
-                }
-
                 alert(`User "${fullName}" added successfully!`);
                 document.getElementById("fullNameInput").value = '';
                 document.getElementById("companyInput").value = '';
                 document.getElementById("emailInput").value = '';
                 document.getElementById("phoneInput").value = '';
                 document.getElementById("positionInput").value = '';
-                clearVvipHeaderUpload();
                 fetchUsers();
             } catch (e) {
                 alert(`Error adding user: ${e.message}`);
-            }
-        }
-
-        function onManualUserTypeChange() {
-            const isVvip = resolveUserType(document.getElementById('userTypeSelect').value) === 'VVIP';
-            const headerRow = document.getElementById('vvipHeaderUploadRow');
-            if (headerRow) headerRow.style.display = isVvip ? 'flex' : 'none';
-            if (!isVvip) clearVvipHeaderUpload();
-        }
-
-        function onVvipHeaderSelected() {
-            const input = document.getElementById('vvipHeaderInput');
-            const wrap = document.getElementById('vvipHeaderPreviewWrap');
-            const preview = document.getElementById('vvipHeaderPreview');
-            const file = input && input.files && input.files[0];
-            if (!file || !preview || !wrap) return;
-            preview.src = URL.createObjectURL(file);
-            wrap.style.display = 'flex';
-        }
-
-        function clearVvipHeaderUpload() {
-            const input = document.getElementById('vvipHeaderInput');
-            const wrap = document.getElementById('vvipHeaderPreviewWrap');
-            const preview = document.getElementById('vvipHeaderPreview');
-            if (input) input.value = '';
-            if (preview) preview.removeAttribute('src');
-            if (wrap) wrap.style.display = 'none';
-        }
-
-        async function uploadVvipHeaderForUser(uniqueId, inputEl) {
-            if (!uniqueId || !inputEl || !inputEl.files || !inputEl.files[0]) return;
-            const file = inputEl.files[0];
-            if (!/\.(jpe?g|png|webp)$/i.test(file.name || '')) {
-                alert('VVIP header must be a JPG, PNG or WEBP image.');
-                inputEl.value = '';
-                return;
-            }
-            try {
-                const form = new FormData();
-                form.append('file', file);
-                const res = await fetch(`${baseURL}/api/AramcoFarewell/vvip-body/${encodeURIComponent(uniqueId)}`, {
-                    method: 'POST',
-                    body: form
-                });
-                if (!res.ok) {
-                    let msg = `${res.status} ${res.statusText}`;
-                    try {
-                        const body = await res.json();
-                        if (body.message || body.Message) msg = body.message || body.Message;
-                    } catch (e) {}
-                    throw new Error(msg);
-                }
-                inputEl.value = '';
-                await fetchUsers(true);
-            } catch (e) {
-                alert(`Header upload failed: ${e.message}`);
-                inputEl.value = '';
             }
         }
 
@@ -3904,28 +4151,32 @@ Omar Media,omar@media.example.com,+966550000001,Media,News Network,Editor
             }
 
             try {
-                const response = await fetch(`${baseURL}/api/AramcoFarewell/users`);
+                const [response, groupsResponse] = await Promise.all([
+                    fetch(`${baseURL}/api/AramcoFarewell/users`),
+                    fetch(`${baseURL}/api/AramcoFarewell/groups`)
+                ]);
                 if (!response.ok) throw new Error("Failed to fetch");
                 const data = (await response.json()) || [];
+                const groupData = groupsResponse.ok ? ((await groupsResponse.json()) || []) : [];
+                guestGroups = groupData.map(group => ({
+                    id: group.id || group.Id,
+                    name: group.name || group.Name || '',
+                    memberName: group.memberName || group.MemberName || '',
+                    eventDate: (group.eventDate || group.EventDate || '').toString().slice(0, 10),
+                    guestCount: Number(group.guestCount || group.GuestCount || 0)
+                }));
 
                 const mappedData = data.map(u => {
                     const encodedName = encodeURIComponent(u.fullName || '');
                     const hashKey = u.hashKey || '';
                     const uniqueId = u.uniqueId || '';
-                    const inviteType = getUserTypeLabel(u.userType);
-                    const resolvedType = resolveUserType(inviteType);
-                    const emailInvitePage = resolvedType === 'VVIP' ?
-                        'emailInviteVvip' :
-                        resolvedType === 'VIP-EN' ?
-                        'emailInviteEn' :
-                        'emailInvite';
-                    const emailInviteUrl = `${emailInvitePage}?name=${encodedName}&uniqueId=${encodeURIComponent(uniqueId)}`;
+                    const emailInviteUrl = `${publicSiteUrl}/emailInvite?name=${encodedName}&uniqueId=${encodeURIComponent(uniqueId)}`;
                     return {
                         uniqueId: uniqueId,
                         userName: u.fullName,
                         emailId: u.emailId,
                         phoneNumber: u.phoneNumber || u.PhoneNumber || '',
-                        inviteType: inviteType,
+                        inviteType: 'General',
                         company: u.company || '',
                         position: u.position || '',
                         hashKey: hashKey,
@@ -3951,6 +4202,10 @@ Omar Media,omar@media.example.com,+966550000001,Media,News Network,Editor
                         qrCodeUrl: u.qrCodeUrl || (uniqueId ? `${baseURL}/api/AramcoFarewell/qr/${encodeURIComponent(uniqueId)}` : ''),
                         qrCardUrl: u.qrCardUrl || (uniqueId ? `${baseURL}/api/AramcoFarewell/qr-card/${encodeURIComponent(uniqueId)}` : ''),
                         seatCode: u.seatCode || u.SeatCode || '',
+                        groupId: u.groupId || u.GroupId || null,
+                        groupName: u.groupName || u.GroupName || '',
+                        groupMemberName: u.groupMemberName || u.GroupMemberName || '',
+                        groupEventDate: (u.groupEventDate || u.GroupEventDate || '').toString().slice(0, 10),
                         checkInTimes: mapCheckInTimes(u.checkIns || u.CheckIns),
                         activities: (u.activities || u.Activities || []).map(a => ({
                             id: a.id || a.Id,
@@ -3964,11 +4219,20 @@ Omar Media,omar@media.example.com,+966550000001,Media,News Network,Editor
                 });
 
                 const newHash = hashData(mappedData);
-                if (newHash !== lastDataHash) {
+                const groupsHash = JSON.stringify(guestGroups);
+                if (newHash !== lastDataHash || groupsHash !== lastGroupsHash) {
                     users = mappedData;
                     filteredUsers = users;
                     lastDataHash = newHash;
+                    lastGroupsHash = groupsHash;
                     clearStaleInviteMailCache(users);
+                    fillGroupSelects();
+                    const pendingGroup = document.getElementById('guestGroupSelect')?.dataset.pendingId;
+                    if (pendingGroup) {
+                        const sel = document.getElementById('guestGroupSelect');
+                        if ([...sel.options].some(option => option.value === pendingGroup)) sel.value = pendingGroup;
+                        delete sel.dataset.pendingId;
+                    }
                     applyFilters();
                     updateStats();
                     flashBadge();
@@ -4013,7 +4277,6 @@ Omar Media,omar@media.example.com,+966550000001,Media,News Network,Editor
         // Kick off
         fetchUsers(false);
         refreshInviteQueueStatus();
-        onManualUserTypeChange();
     </script>
 </body>
 

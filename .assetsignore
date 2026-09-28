@@ -7,3 +7,4 @@ dist
 node_modules
 assets/microsite/Microsite-bg.svg
 *.md
+AramcoWallet/
