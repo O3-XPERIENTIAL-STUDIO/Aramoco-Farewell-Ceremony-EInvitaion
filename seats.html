@@ -56,7 +56,17 @@
         .mini { border: 0; background: transparent; color: var(--muted); font-size: 11px; font-weight: 700; }
         .viewport { position: relative; overflow: hidden; min-width: 0; min-height: 0; background-color: #f3f5f8; background-image: linear-gradient(rgba(55,70,95,.14) 1px, transparent 1px), linear-gradient(90deg, rgba(55,70,95,.14) 1px, transparent 1px); touch-action: none; }
         .canvas-nav { position: absolute; z-index: 6; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; padding: 6px; background: rgba(28,24,21,.94); border: 1px solid rgba(237,231,222,.18); border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,.28); }
-        .canvas-nav .tool { min-width: 88px; text-align: center; background: transparent; color: #ede7de; }
+        .canvas-nav .tool { min-width: 72px; text-align: center; background: transparent; color: #ede7de; }
+        body.sides-hidden .tools, body.hide-left .tools,
+        body.sides-hidden .props, body.hide-right .props { display: none; }
+        body.sides-hidden .workspace { grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: minmax(0, 1fr) !important; grid-template-areas: "canvas" !important; }
+        .side-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
+        .side-bar span { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+        .side-close { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--text); font-size: 18px; line-height: 1; cursor: pointer; }
+        .side-reopen { position: absolute; z-index: 6; top: 58px; border: 1px solid rgba(237,231,222,.18); background: rgba(28,24,21,.94); color: #ede7de; border-radius: 10px; padding: 8px 10px; font-size: 12px; font-weight: 700; }
+        .side-reopen[hidden] { display: none; }
+        .side-reopen-left { left: 12px; }
+        .side-reopen-right { right: 12px; }
         .viewport.place { cursor: crosshair; }
         .viewport.hand, .viewport.panning { cursor: grab; }
         #world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
@@ -144,6 +154,18 @@
             .tools, .props { max-height: 30dvh; }
             .canvas-nav .tool { min-width: 72px; }
         }
+        body.hide-left:not(.hide-right) .workspace { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); }
+        body.hide-right:not(.hide-left) .workspace { grid-template-columns: minmax(180px, 250px) minmax(0, 1fr); }
+        @media (max-width: 860px) {
+            body.hide-left:not(.hide-right) .workspace { grid-template-columns: 1fr; grid-template-rows: minmax(280px, 1fr) minmax(180px, 36dvh); grid-template-areas: "canvas" "props"; }
+            body.hide-right:not(.hide-left) .workspace { grid-template-columns: 1fr; grid-template-rows: minmax(280px, 1fr) minmax(180px, 36dvh); grid-template-areas: "canvas" "tools"; }
+        }
+        @media (max-width: 640px) {
+            body.hide-left:not(.hide-right) .workspace,
+            body.hide-right:not(.hide-left) .workspace { grid-template-columns: 1fr; grid-template-rows: minmax(240px, 1fr) auto; }
+            body.hide-left:not(.hide-right) .workspace { grid-template-areas: "canvas" "props"; }
+            body.hide-right:not(.hide-left) .workspace { grid-template-areas: "canvas" "tools"; }
+        }
     </style>
 </head>
 <body>
@@ -173,6 +195,7 @@
         </header>
         <div class="workspace">
             <aside class="tools">
+                <div class="side-bar"><span>Tools</span><button class="side-close" type="button" id="closeLeftBtn" aria-label="Close tools">×</button></div>
                 <h2>Layouts</h2>
                 <div id="layoutList"></div>
                 <button class="btn" type="button" id="newLayoutBtn">New layout</button>
@@ -191,10 +214,14 @@
                 <div class="canvas-nav" id="canvasNav">
                     <button class="tool on" type="button" id="selectTool" data-tool="select">Select</button>
                     <button class="tool" type="button" id="handTool" data-tool="hand">Pan</button>
+                    <button class="tool" type="button" id="sidesBtn">Hide sides</button>
                 </div>
+                <button class="side-reopen side-reopen-left" type="button" id="openLeftBtn" hidden>Tools</button>
+                <button class="side-reopen side-reopen-right" type="button" id="openRightBtn" hidden>Guests</button>
                 <div id="world"></div>
             </main>
             <aside class="props">
+                <div class="side-bar"><span>Details</span><button class="side-close" type="button" id="closeRightBtn" aria-label="Close details">×</button></div>
                 <div id="props"></div>
                 <div class="roster">
                     <h2>Guests</h2>
@@ -1981,7 +2008,7 @@
         }
         function onPointerDown(e) {
             if (e.button === 2) return;
-            if (e.target.closest(".canvas-nav")) return;
+            if (e.target.closest(".canvas-nav") || e.target.closest(".side-reopen")) return;
             if (!document.getElementById("arrangeModal").hidden) return;
             if (!document.getElementById("leaveModal").hidden) return;
             activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -1993,7 +2020,7 @@
                 return;
             }
             const point = worldPoint(e);
-            const touchPan = e.pointerType === "touch";
+            const touchPan = e.pointerType === "touch" || e.pointerType === "pen";
             if (e.button === 1 || tool === "hand" || spaceDown) {
                 drag = { kind: "pan", sx: e.clientX, sy: e.clientY, px: panX, py: panY };
                 viewport().classList.add("panning");
@@ -2007,6 +2034,12 @@
                 if (!obj) return;
                 pushHistory();
                 drag = { kind: "resize", id: obj.id, sx: e.clientX, sy: e.clientY, w: obj.w, h: obj.h, moved: false };
+                return;
+            }
+            if (item && touchPan) {
+                const obj = findObj(item.dataset.id);
+                if (!obj || layerState(obj.layer).locked) return;
+                drag = { kind: "touch-item", id: obj.id, sx: e.clientX, sy: e.clientY, px: panX, py: panY, moved: false };
                 return;
             }
             if (item) {
@@ -2076,6 +2109,13 @@
                 return;
             }
             if (!drag) return;
+            if (drag.kind === "touch-item") {
+                if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) <= 10) return;
+                drag.kind = "pan";
+                drag.fromItem = true;
+                drag.moved = true;
+                viewport().classList.add("panning");
+            }
             if (drag.kind === "arm") {
                 if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) <= 8) return;
                 drag.kind = "pan";
@@ -2145,6 +2185,9 @@
             if (!drag) return;
             const kind = drag.kind;
             const moved = drag.moved;
+            if (kind === "touch-item") selectOnly(drag.id);
+            const travel = e ? Math.hypot((e.clientX || 0) - (drag.sx || 0), (e.clientY || 0) - (drag.sy || 0)) : 99;
+            if (kind === "pan" && travel < 10 && !drag.fromItem) clearSelection();
             if (kind === "arm" && !moved) placeAt(tool, drag.wx, drag.wy);
             if (kind === "marquee" && drag.w > 4) {
                 active().objects.forEach(obj => {
@@ -2156,7 +2199,7 @@
                 history.pop();
                 historyIndex = history.length - 1;
                 updateHistoryButtons();
-            } else if (moved) {
+            } else if (moved && (kind === "move" || kind === "resize" || kind === "asset")) {
                 if (kind === "move" && drag.origins.length === 1) {
                     const movedObj = findObj(drag.origins[0].id);
                     if (movedObj && movedObj.type === "chair") movedObj.manual = true;
@@ -2294,6 +2337,24 @@
         document.getElementById("redoBtn").onclick = redo;
         document.getElementById("saveBtn").onclick = saveNow;
         document.getElementById("dashBtn").onclick = () => { document.getElementById("leaveModal").hidden = false; };
+        function syncSides() {
+            const left = document.body.classList.contains("hide-left");
+            const right = document.body.classList.contains("hide-right");
+            document.body.classList.toggle("sides-hidden", left && right);
+            document.getElementById("sidesBtn").textContent = left && right ? "Show sides" : "Hide sides";
+            document.getElementById("openLeftBtn").hidden = !left;
+            document.getElementById("openRightBtn").hidden = !right;
+        }
+        document.getElementById("closeLeftBtn").onclick = () => { document.body.classList.add("hide-left"); syncSides(); };
+        document.getElementById("closeRightBtn").onclick = () => { document.body.classList.add("hide-right"); syncSides(); };
+        document.getElementById("openLeftBtn").onclick = () => { document.body.classList.remove("hide-left"); syncSides(); };
+        document.getElementById("openRightBtn").onclick = () => { document.body.classList.remove("hide-right"); syncSides(); };
+        document.getElementById("sidesBtn").onclick = () => {
+            const bothHidden = document.body.classList.contains("hide-left") && document.body.classList.contains("hide-right");
+            document.body.classList.toggle("hide-left", !bothHidden);
+            document.body.classList.toggle("hide-right", !bothHidden);
+            syncSides();
+        };
         document.getElementById("leaveStay").onclick = () => { document.getElementById("leaveModal").hidden = true; };
         document.getElementById("leaveSkip").onclick = () => { location.href = "dashboard.html"; };
         document.getElementById("leaveForm").addEventListener("submit", async (e) => {
