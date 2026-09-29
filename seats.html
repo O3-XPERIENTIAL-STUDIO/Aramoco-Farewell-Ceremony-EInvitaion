@@ -31,15 +31,15 @@
         }
         .btn.primary { background: var(--coral); border-color: var(--coral); color: #fff; }
         .btn:disabled, .icon-btn:disabled { opacity: .4; cursor: default; }
-        .app { display: none; height: 100vh; grid-template-rows: 56px 1fr 40px; }
+        .app { display: none; height: 100vh; height: 100dvh; grid-template-rows: auto minmax(0, 1fr) auto; }
         .app.open { display: grid; }
-        .topbar, .statusbar { display: flex; align-items: center; gap: 8px; padding: 0 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
-        .statusbar { border-bottom: 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
-        .mark { width: 28px; height: 28px; border-radius: 8px; background: var(--coral); display: grid; place-items: center; font-weight: 700; }
-        .namebox { min-width: 180px; }
+        .topbar, .statusbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+        .statusbar { border-bottom: 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; min-height: 40px; }
+        .mark { width: 28px; height: 28px; border-radius: 8px; background: var(--coral); display: grid; place-items: center; font-weight: 700; flex: 0 0 auto; }
+        .namebox { min-width: 0; width: min(220px, 36vw); flex: 1 1 140px; }
         .spacer { flex: 1; }
-        .workspace { display: grid; grid-template-columns: 250px 1fr 300px; min-height: 0; }
-        .tools, .props { background: var(--panel); overflow: auto; padding: 12px; }
+        .workspace { display: grid; grid-template-columns: minmax(180px, 250px) minmax(0, 1fr) minmax(220px, 300px); min-height: 0; min-width: 0; }
+        .tools, .props { background: var(--panel); overflow: auto; padding: 12px; min-width: 0; min-height: 0; }
         .tools { border-right: 1px solid var(--line); }
         .props { border-left: 1px solid var(--line); }
         h2 { margin: 14px 0 8px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
@@ -54,7 +54,9 @@
         .layout-row, .asset-row { width: 100%; display: flex; align-items: center; gap: 6px; padding: 6px 8px; margin-bottom: 6px; }
         .layout-row span, .asset-row span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
         .mini { border: 0; background: transparent; color: var(--muted); font-size: 11px; font-weight: 700; }
-        .viewport { position: relative; overflow: hidden; background-color: #f3f5f8; background-image: linear-gradient(rgba(55,70,95,.14) 1px, transparent 1px), linear-gradient(90deg, rgba(55,70,95,.14) 1px, transparent 1px); touch-action: none; }
+        .viewport { position: relative; overflow: hidden; min-width: 0; min-height: 0; background-color: #f3f5f8; background-image: linear-gradient(rgba(55,70,95,.14) 1px, transparent 1px), linear-gradient(90deg, rgba(55,70,95,.14) 1px, transparent 1px); touch-action: none; }
+        .canvas-nav { position: absolute; z-index: 6; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; padding: 6px; background: rgba(28,24,21,.94); border: 1px solid rgba(237,231,222,.18); border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,.28); }
+        .canvas-nav .tool { min-width: 88px; text-align: center; background: transparent; color: #ede7de; }
         .viewport.place { cursor: crosshair; }
         .viewport.hand, .viewport.panning { cursor: grab; }
         #world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
@@ -126,9 +128,21 @@
         .sheet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
         .sheet .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
         body.is-preview .tools, body.is-preview .props, body.is-preview .float { display: none; }
-        body.is-preview .workspace { grid-template-columns: 1fr; }
+        body.is-preview .workspace { grid-template-columns: minmax(0, 1fr); grid-template-areas: "canvas"; }
         @media (max-width: 1100px) {
-            .workspace { grid-template-columns: 210px 1fr 250px; }
+            .workspace { grid-template-columns: minmax(160px, 210px) minmax(0, 1fr) minmax(180px, 250px); }
+        }
+        @media (max-width: 860px) {
+            .workspace { grid-template-columns: 1fr 1fr; grid-template-rows: minmax(280px, 1fr) minmax(180px, 36dvh); grid-template-areas: "canvas canvas" "tools props"; }
+            .viewport { grid-area: canvas; }
+            .tools { grid-area: tools; border-right: 0; border-top: 1px solid var(--line); }
+            .props { grid-area: props; border-left: 1px solid var(--line); border-top: 1px solid var(--line); }
+            .toast { max-width: 100%; margin-left: 0; }
+        }
+        @media (max-width: 640px) {
+            .workspace { grid-template-columns: 1fr; grid-template-rows: minmax(240px, 1fr) auto auto; grid-template-areas: "canvas" "tools" "props"; }
+            .tools, .props { max-height: 30dvh; }
+            .canvas-nav .tool { min-width: 72px; }
         }
     </style>
 </head>
@@ -151,7 +165,7 @@
             <button class="icon-btn" id="redoBtn" type="button" title="Redo (Ctrl+Shift+Z)">Redo</button>
             <button class="btn primary" id="saveBtn" type="button">Save layout</button>
             <button class="icon-btn" id="previewBtn" type="button">Preview</button>
-            <a class="icon-btn" href="dashboard.html" style="text-decoration:none">Dashboard</a>
+            <button class="icon-btn" id="dashBtn" type="button">Dashboard</button>
             <span class="spacer"></span>
             <button class="icon-btn" id="clearSelBtn" type="button">Clear selection</button>
             <button class="icon-btn" id="dupBtn" type="button" title="Duplicate (Ctrl+D)">Duplicate</button>
@@ -165,10 +179,6 @@
                 <h2>Objects</h2>
                 <p class="hint">Choose a seating type, then click the grid. A setup panel asks for rows, chairs, and spacing before anything is created.</p>
                 <div class="tool-grid" id="toolGrid"></div>
-                <div class="row" style="margin-top:8px">
-                    <button class="tool" type="button" id="selectTool" data-tool="select">Select</button>
-                    <button class="tool" type="button" id="handTool" data-tool="hand">Pan</button>
-                </div>
                 <h2>Floor plan</h2>
                 <p class="hint">Optional. Skip this and build the room on the grid.</p>
                 <button class="btn" type="button" id="uploadBtn">Upload SVG / CAD</button>
@@ -177,7 +187,11 @@
                 <h2>Layers</h2>
                 <div id="layerList"></div>
             </aside>
-            <main class="viewport place" id="viewport">
+            <main class="viewport" id="viewport">
+                <div class="canvas-nav" id="canvasNav">
+                    <button class="tool on" type="button" id="selectTool" data-tool="select">Select</button>
+                    <button class="tool" type="button" id="handTool" data-tool="hand">Pan</button>
+                </div>
                 <div id="world"></div>
             </main>
             <aside class="props">
@@ -204,6 +218,17 @@
         </footer>
     </div>
     <div class="float" id="floatMenu" hidden></div>
+    <div class="sheet-modal" id="leaveModal" hidden>
+        <form class="sheet" id="leaveForm">
+            <h3>Save this layout?</h3>
+            <p class="hint">Save it on the server before opening the dashboard, so the same plan opens on every device.</p>
+            <div class="actions">
+                <button class="btn" type="button" id="leaveStay">Stay</button>
+                <button class="btn" type="button" id="leaveSkip">Don't save</button>
+                <button class="btn primary" type="submit">Save and open</button>
+            </div>
+        </form>
+    </div>
     <div class="sheet-modal" id="arrangeModal" hidden>
         <form class="sheet" id="arrangeForm">
             <h3>Create seating arrangement</h3>
@@ -293,7 +318,7 @@
         let doc = null;
         let users = [];
         let seatByCode = new Map();
-        let tool = "chair";
+        let tool = "select";
         let selection = new Set();
         let selectedAssetId = "";
         let zoom = 0.45;
@@ -304,6 +329,7 @@
         let history = [];
         let historyIndex = -1;
         let drag = null;
+        const activePointers = new Map();
         let clipboard = [];
         let saveTimer = null;
         let booted = false;
@@ -1699,7 +1725,7 @@
             if (!allChairs().length) {
                 setSaveState("Only on this browser");
                 toast("This layout is only in this browser. Add a chair, then it saves on the server for every device.");
-                return;
+                return false;
             }
             setSaveState("Saving to the server…");
             toast("Saving to the server…");
@@ -1712,7 +1738,7 @@
                 if (!res.ok) {
                     setSaveState("Only on this browser");
                     toast(payload.message || payload.Message || "Could not save to the server.", "bad");
-                    return;
+                    return false;
                 }
                 await loadSeats();
                 renderWorld();
@@ -1722,9 +1748,11 @@
                 renderRoster();
                 setSaveState("Saved on the server");
                 toast("Saved on the server. Open this page on any device to see the same layout.", "ok");
+                return true;
             } catch (err) {
                 setSaveState("Only on this browser");
                 toast("Could not save the layout to the server.", "bad");
+                return false;
             }
         }
 
@@ -1931,10 +1959,41 @@
             scheduleSave();
         }
 
+        function beginPinch() {
+            const pts = [...activePointers.values()].slice(0, 2);
+            if (pts.length < 2) return;
+            if (drag && drag.kind === "move" && drag.origins) {
+                drag.origins.forEach(origin => {
+                    const obj = findObj(origin.id);
+                    if (obj) { obj.x = origin.x; obj.y = origin.y; }
+                });
+                history.pop();
+                historyIndex = Math.max(0, history.length - 1);
+                updateHistoryButtons();
+            }
+            drag = {
+                kind: "pinch",
+                dist: Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1,
+                x: (pts[0].x + pts[1].x) / 2,
+                y: (pts[0].y + pts[1].y) / 2
+            };
+            viewport().classList.add("panning");
+        }
         function onPointerDown(e) {
             if (e.button === 2) return;
+            if (e.target.closest(".canvas-nav")) return;
             if (!document.getElementById("arrangeModal").hidden) return;
+            if (!document.getElementById("leaveModal").hidden) return;
+            activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (e.pointerType !== "mouse") {
+                try { viewport().setPointerCapture(e.pointerId); } catch (err) { /* already captured */ }
+            }
+            if (activePointers.size >= 2) {
+                beginPinch();
+                return;
+            }
             const point = worldPoint(e);
+            const touchPan = e.pointerType === "touch";
             if (e.button === 1 || tool === "hand" || spaceDown) {
                 drag = { kind: "pan", sx: e.clientX, sy: e.clientY, px: panX, py: panY };
                 viewport().classList.add("panning");
@@ -1943,7 +2002,7 @@
             const resize = e.target.closest(".resize");
             const item = e.target.closest(".item");
             const assetEl = e.target.closest(".asset");
-            if (resize && item) {
+            if (resize && item && !touchPan) {
                 const obj = findObj(item.dataset.id);
                 if (!obj) return;
                 pushHistory();
@@ -1981,7 +2040,16 @@
                 }
             }
             if (tool !== "select" && tool !== "hand") {
-                placeAt(tool, point.x, point.y);
+                if (!touchPan) {
+                    placeAt(tool, point.x, point.y);
+                    return;
+                }
+                drag = { kind: "arm", sx: e.clientX, sy: e.clientY, px: panX, py: panY, wx: point.x, wy: point.y, moved: false };
+                return;
+            }
+            if (touchPan || tool === "hand") {
+                drag = { kind: "pan", sx: e.clientX, sy: e.clientY, px: panX, py: panY };
+                viewport().classList.add("panning");
                 return;
             }
             if (!e.ctrlKey && !e.metaKey) selection.clear();
@@ -1991,7 +2059,29 @@
             renderFloat();
         }
         function onPointerMove(e) {
+            if (activePointers.has(e.pointerId)) activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (activePointers.size >= 2 && drag && drag.kind === "pinch") {
+                const pts = [...activePointers.values()].slice(0, 2);
+                const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
+                const x = (pts[0].x + pts[1].x) / 2;
+                const y = (pts[0].y + pts[1].y) / 2;
+                const factor = dist / drag.dist;
+                if (factor > 0 && Math.abs(factor - 1) > 0.008) zoomAt(x, y, factor);
+                panX += x - drag.x;
+                panY += y - drag.y;
+                drag.dist = dist;
+                drag.x = x;
+                drag.y = y;
+                applyView();
+                return;
+            }
             if (!drag) return;
+            if (drag.kind === "arm") {
+                if (Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) <= 8) return;
+                drag.kind = "pan";
+                drag.moved = true;
+                viewport().classList.add("panning");
+            }
             if (drag.kind === "pan") {
                 panX = drag.px + (e.clientX - drag.sx);
                 panY = drag.py + (e.clientY - drag.sy);
@@ -2043,10 +2133,19 @@
                 drag.x = x; drag.y = y; drag.w = w; drag.h = h;
             }
         }
-        function onPointerUp() {
+        function onPointerUp(e) {
+            if (e && e.pointerId != null) activePointers.delete(e.pointerId);
+            if (drag && drag.kind === "pinch") {
+                if (activePointers.size < 2) {
+                    drag = null;
+                    viewport().classList.remove("panning");
+                }
+                return;
+            }
             if (!drag) return;
             const kind = drag.kind;
             const moved = drag.moved;
+            if (kind === "arm" && !moved) placeAt(tool, drag.wx, drag.wy);
             if (kind === "marquee" && drag.w > 4) {
                 active().objects.forEach(obj => {
                     const hit = obj.x < drag.x + drag.w && obj.x + obj.w > drag.x && obj.y < drag.y + drag.h && obj.y + obj.h > drag.y;
@@ -2086,6 +2185,9 @@
         document.getElementById("viewport").addEventListener("pointerdown", onPointerDown);
         window.addEventListener("pointermove", onPointerMove);
         window.addEventListener("pointerup", onPointerUp);
+        window.addEventListener("pointercancel", onPointerUp);
+        document.getElementById("viewport").addEventListener("touchmove", (e) => { e.preventDefault(); }, { passive: false });
+        document.addEventListener("gesturestart", (e) => e.preventDefault());
         document.getElementById("viewport").addEventListener("wheel", (e) => {
             e.preventDefault();
             zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.1 : 1 / 1.1);
@@ -2191,6 +2293,14 @@
         document.getElementById("undoBtn").onclick = undo;
         document.getElementById("redoBtn").onclick = redo;
         document.getElementById("saveBtn").onclick = saveNow;
+        document.getElementById("dashBtn").onclick = () => { document.getElementById("leaveModal").hidden = false; };
+        document.getElementById("leaveStay").onclick = () => { document.getElementById("leaveModal").hidden = true; };
+        document.getElementById("leaveSkip").onclick = () => { location.href = "dashboard.html"; };
+        document.getElementById("leaveForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const saved = await saveNow();
+            if (saved) location.href = "dashboard.html";
+        });
         document.getElementById("previewBtn").onclick = () => { document.body.classList.toggle("is-preview"); document.getElementById("previewBtn").textContent = document.body.classList.contains("is-preview") ? "Edit" : "Preview"; fit(); };
         document.getElementById("clearSelBtn").onclick = clearSelection;
         document.getElementById("dupBtn").onclick = duplicateSelection;
@@ -2261,6 +2371,7 @@
             const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName);
             if (e.code === "Space") spaceDown = true;
             if (e.key === "Escape") {
+                if (!document.getElementById("leaveModal").hidden) { document.getElementById("leaveModal").hidden = true; return; }
                 if (!document.getElementById("arrangeModal").hidden) { closeArrange(); return; }
                 if (!typing) { setTool("select"); clearSelection(); }
                 return;
