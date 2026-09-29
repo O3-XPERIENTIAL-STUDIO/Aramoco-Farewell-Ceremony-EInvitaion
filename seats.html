@@ -98,8 +98,21 @@
         .item.sofa { background: rgba(125,206,160,.15); }
         .item.wall { background: #cfc6bb; border-radius: 4px; }
         .item.door, .item.entrance, .item.exit { border-radius: 8px; background: rgba(226,182,87,.16); }
-        .item.text { background: transparent; border-style: dashed; }
+        .item.text { background: transparent; border-style: dashed; overflow: hidden; }
+        .item.text .obj-label { font-size: 28px; line-height: 1.15; width: 92%; }
         .item.is-selected { outline: 2px solid #2563eb; outline-offset: 3px; z-index: 4; }
+        .xform { position: absolute; z-index: 6; box-sizing: border-box; border: calc(1.5px / var(--z, 1)) solid #2563eb; pointer-events: none; transform-origin: center center; }
+        .xform .rot-stem { position: absolute; left: 50%; top: 0; width: calc(1.5px / var(--z, 1)); height: calc(22px / var(--z, 1)); background: #2563eb; transform: translate(-50%, -100%); }
+        .xform .handle { position: absolute; width: calc(14px / var(--z, 1)); height: calc(14px / var(--z, 1)); background: #fff; border: calc(2px / var(--z, 1)) solid #2563eb; border-radius: calc(2px / var(--z, 1)); pointer-events: auto; touch-action: none; }
+        .xform .handle.nw { left: 0; top: 0; transform: translate(-50%, -50%); cursor: nwse-resize; }
+        .xform .handle.n { left: 50%; top: 0; transform: translate(-50%, -50%); cursor: ns-resize; }
+        .xform .handle.ne { left: 100%; top: 0; transform: translate(-50%, -50%); cursor: nesw-resize; }
+        .xform .handle.e { left: 100%; top: 50%; transform: translate(-50%, -50%); cursor: ew-resize; }
+        .xform .handle.se { left: 100%; top: 100%; transform: translate(-50%, -50%); cursor: nwse-resize; }
+        .xform .handle.s { left: 50%; top: 100%; transform: translate(-50%, -50%); cursor: ns-resize; }
+        .xform .handle.sw { left: 0; top: 100%; transform: translate(-50%, -50%); cursor: nesw-resize; }
+        .xform .handle.w { left: 0; top: 50%; transform: translate(-50%, -50%); cursor: ew-resize; }
+        .xform .handle.rotate { left: 50%; top: 0; border-radius: 50%; background: #2563eb; cursor: grab; transform: translate(-50%, calc(-100% - 22px / var(--z, 1))); }
         .item:hover { filter: brightness(1.08); }
         .seat-no, .obj-label { font-size: 10px; font-weight: 700; line-height: 1.1; text-align: center; pointer-events: none; }
         .who { font-size: 12px; font-weight: 700; pointer-events: none; }
@@ -255,6 +268,16 @@
                 <button class="btn primary" type="submit">Save and open</button>
             </div>
         </form>
+    </div>
+    <div class="sheet-modal" id="renumberModal" hidden>
+        <div class="sheet">
+            <h3>Renumber the remaining chairs?</h3>
+            <p class="hint" id="renumberNote">The numbers now skip a seat. Renumber them in the same order so there is no gap.</p>
+            <div class="actions">
+                <button class="btn" type="button" id="renumberKeep">Keep numbers</button>
+                <button class="btn primary" type="button" id="renumberApply">Renumber</button>
+            </div>
+        </div>
     </div>
     <div class="sheet-modal" id="arrangeModal" hidden>
         <form class="sheet" id="arrangeForm">
@@ -479,7 +502,8 @@
                 x: snap(x), y: snap(y), w: size[0], h: size[1], rotation: 0,
                 layer: LAYER_OF[type] || "furniture",
                 label: CATALOG.find(c => c[0] === type)?.[1] || "Item",
-                text: type === "text" ? "Label" : ""
+                text: type === "text" ? "Label" : "",
+                fontSize: type === "text" ? 28 : 0
             };
             if (type === "chair") obj.seatNumber = nextSeat();
             return obj;
@@ -732,9 +756,11 @@
                 chair.x = table.x + slot.x;
                 chair.y = table.y + slot.y;
                 chair.baseRot = slot.rot || 0;
-                chair.rotation = chair.baseRot;
-                chair.w = CHAIR;
-                chair.h = CHAIR;
+                if (!chair.turned) chair.rotation = chair.baseRot;
+                if (!chair.sized) {
+                    chair.w = CHAIR;
+                    chair.h = CHAIR;
+                }
             });
             table.bx = plan.body.x;
             table.by = plan.body.y;
@@ -748,7 +774,7 @@
             const current = doc.activeLayoutId;
             doc.layouts.forEach(layout => {
                 doc.activeLayoutId = layout.id;
-                layout.objects.filter(obj => obj.type === "chair" && !obj.tableId).forEach(chair => {
+                layout.objects.filter(obj => obj.type === "chair" && !obj.tableId && !obj.sized).forEach(chair => {
                     const prev = chair.w || CHAIR;
                     if (prev !== CHAIR) {
                         chair.x -= (CHAIR - prev) / 2;
@@ -757,7 +783,7 @@
                     chair.w = CHAIR;
                     chair.h = CHAIR;
                 });
-                layout.objects.filter(obj => obj.type === "table").forEach(table => {
+                layout.objects.filter(obj => obj.type === "table" && !obj.freeform).forEach(table => {
                     table.relayout = true;
                     syncTable(table);
                     table.relayout = false;
@@ -1123,6 +1149,82 @@
         function itemLeft(obj) { return obj.type === "table" ? obj.x + (obj.bx || 0) : obj.x; }
         function itemTop(obj) { return obj.type === "table" ? obj.y + (obj.by || 0) : obj.y; }
 
+        function localFromWorld(px, py, cx, cy, deg) {
+            const t = deg * Math.PI / 180;
+            const dx = px - cx;
+            const dy = py - cy;
+            const c = Math.cos(t);
+            const s = Math.sin(t);
+            return { x: dx * c + dy * s, y: -dx * s + dy * c };
+        }
+        function worldFromLocal(lx, ly, cx, cy, deg) {
+            const t = deg * Math.PI / 180;
+            const c = Math.cos(t);
+            const s = Math.sin(t);
+            return { x: cx + lx * c - ly * s, y: cy + lx * s + ly * c };
+        }
+        function groupBounds(items) {
+            const left = Math.min(...items.map(itemLeft));
+            const top = Math.min(...items.map(itemTop));
+            const right = Math.max(...items.map(o => itemLeft(o) + o.w));
+            const bottom = Math.max(...items.map(o => itemTop(o) + o.h));
+            return { left, top, w: Math.max(24, right - left), h: Math.max(24, bottom - top) };
+        }
+        function renderXform() {
+            const items = selectedObjects().filter(o => layerState(o.layer).visible);
+            const old = document.getElementById("xform");
+            if (old) old.remove();
+            if (!items.length) return;
+            const single = items.length === 1;
+            const obj = items[0];
+            const b = single
+                ? { left: itemLeft(obj), top: itemTop(obj), w: obj.w, h: obj.h, rot: obj.rotation || 0 }
+                : { ...groupBounds(items), rot: 0 };
+            const names = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
+            const box = document.createElement("div");
+            box.className = "xform";
+            box.id = "xform";
+            box.style.left = b.left + "px";
+            box.style.top = b.top + "px";
+            box.style.width = b.w + "px";
+            box.style.height = b.h + "px";
+            box.style.transform = `rotate(${b.rot}deg)`;
+            box.style.setProperty("--z", String(zoom));
+            box.innerHTML = `<i class="rot-stem"></i><i class="handle rotate" data-handle="rotate"></i>`
+                + names.map(name => `<i class="handle ${name}" data-handle="${name}"></i>`).join("");
+            world().appendChild(box);
+        }
+        function placeXform(left, top, w, h, rot) {
+            const box = document.getElementById("xform");
+            if (!box) return;
+            box.style.left = left + "px";
+            box.style.top = top + "px";
+            box.style.width = w + "px";
+            box.style.height = h + "px";
+            box.style.transform = `rotate(${rot || 0}deg)`;
+        }
+        function paintObject(obj) {
+            const el = world().querySelector(`[data-id="${obj.id}"]`);
+            if (!el) return;
+            el.style.left = itemLeft(obj) + "px";
+            el.style.top = itemTop(obj) + "px";
+            el.style.width = obj.w + "px";
+            el.style.height = obj.h + "px";
+            el.style.transform = `rotate(${obj.rotation || 0}deg)`;
+        }
+        function markTransformed(obj) {
+            if (obj.type === "chair") {
+                obj.manual = true;
+                obj.sized = true;
+                obj.turned = true;
+            }
+            if (obj.type === "table") {
+                obj.freeform = true;
+                obj.tableW = obj.w;
+                obj.tableH = obj.h;
+            }
+        }
+
         function worldPoint(e) {
             const rect = viewport().getBoundingClientRect();
             return { x: (e.clientX - rect.left - panX) / zoom, y: (e.clientY - rect.top - panY) / zoom };
@@ -1138,6 +1240,8 @@
             const oy = ((panY % grid) + grid) % grid;
             vp.style.backgroundPosition = ox + "px " + oy + "px";
             document.getElementById("zoomLabel").textContent = Math.round(zoom * 100) + "%";
+            const box = document.getElementById("xform");
+            if (box) box.style.setProperty("--z", String(zoom));
             positionFloat();
         }
         function zoomAt(clientX, clientY, factor) {
@@ -1269,7 +1373,6 @@
                 const assigned = record && (record.status || record.Status) === "Assigned";
                 const name = guestName(record);
                 const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]).join("").toUpperCase();
-                const resize = selected && selection.size === 1 && RESIZABLE.has(obj.type) ? `<i class="resize"></i>` : "";
                 const parent = obj.tableId ? layout.objects.find(o => o.id === obj.tableId) : null;
                 const perRow = parent && parent.shape === "rows" ? (parent.perRow || 10) : 0;
                 const index = obj.tableId ? String(perRow ? ((obj.slot || 0) % perRow) + 1 : (obj.slot || 0) + 1) : "";
@@ -1278,12 +1381,13 @@
                     ? `<span class="who is-name" style="${upright}">${esc(name)}</span>`
                     : `<span class="who">${esc(assigned ? (initials || "•") : index)}</span>`;
                 const pills = obj.shape === "rows" ? rowPills(obj) : "";
+                const font = obj.type === "text" ? ` style="font-size:${clamp(obj.fontSize || 28, 8, 240)}px"` : "";
                 return `<div class="item ${esc(obj.type)}${obj.type === "table" ? " shape-" + esc(obj.shape || "round") : ""}${assigned ? " is-assigned" : ""}${selected ? " is-selected" : ""}" data-id="${esc(obj.id)}" title="${esc(obj.type === "chair" ? (obj.seatNumber || "") : (obj.label || ""))}" style="left:${itemLeft(obj)}px;top:${itemTop(obj)}px;width:${obj.w}px;height:${obj.h}px;transform:rotate(${obj.rotation || 0}deg)">
-                    ${obj.type === "chair" ? `${faceHtml}${obj.tableId ? "" : `<span class="seat-no">${esc(obj.seatNumber || "")}</span>`}` : (pills || `<span class="obj-label">${esc(obj.type === "text" ? (obj.text || "Label") : obj.label)}</span>`)}
-                    ${resize}
+                    ${obj.type === "chair" ? `${faceHtml}${obj.tableId ? "" : `<span class="seat-no">${esc(obj.seatNumber || "")}</span>`}` : (pills || `<span class="obj-label"${font}>${esc(obj.type === "text" ? (obj.text || "Label") : obj.label)}</span>`)}
                 </div>`;
             }).join("");
             root.innerHTML = assets + items + `<div class="marquee" id="marquee" hidden></div>`;
+            renderXform();
             layout.assets.forEach(asset => {
                 const el = root.querySelector(`[data-asset="${asset.id}"]`);
                 if (!el || !asset.markup) return;
@@ -1373,6 +1477,7 @@
             box.innerHTML = `<h2>${esc(obj.type === "chair" ? (obj.seatNumber || "Chair") : (obj.label || obj.type))}</h2>
                 ${parentTable ? `<p class="hint">Parent table: ${esc(parentTable.label || "Table")}${obj.edge ? " · " + edgeName[obj.edge] : ""}${obj.manual ? " · Moved by hand" : ""}</p>` : ""}
                 <label class="field">Name<input id="propLabel" value="${esc(obj.type === "text" ? obj.text : obj.label)}" /></label>
+                ${obj.type === "text" ? `<label class="field">Font size<input id="propFont" type="number" min="8" max="240" value="${clamp(obj.fontSize || 28, 8, 240)}" /></label>` : ""}
                 ${obj.type === "chair" ? `<label class="field">Seat number<input id="propSeat" value="${esc(obj.seatNumber || "")}" ${record && (record.status || record.Status) === "Assigned" ? "readonly" : ""} /></label>
                     <p class="hint">Assigned user: <strong style="color:var(--text)">${esc(assignedName || "Unassigned")}</strong></p>
                     <div class="row">${assignedName ? `<button class="btn" type="button" id="unassignBtn">Remove user</button>` : ""}</div>` : ""}
@@ -1526,9 +1631,109 @@
             renderAll();
             scheduleSave();
         }
+        function seatParts(code) {
+            const text = String(code || "").toUpperCase();
+            const match = text.match(/^(.*?)(\d+)$/);
+            if (!match) return { prefix: "C-", n: 0, width: 3 };
+            return { prefix: match[1] || "C-", n: parseInt(match[2], 10) || 0, width: match[2].length };
+        }
+        function formatSeat(prefix, n, width) {
+            return prefix + String(n).padStart(Math.max(1, width), "0");
+        }
+        function seatGroups(chairs) {
+            const groups = new Map();
+            chairs.forEach(chair => {
+                const part = seatParts(chair.seatNumber);
+                if (!groups.has(part.prefix)) groups.set(part.prefix, []);
+                groups.get(part.prefix).push({ chair, ...part });
+            });
+            return groups;
+        }
+        function seatsHaveGap(chairs) {
+            let gap = false;
+            seatGroups(chairs).forEach(list => {
+                const nums = list.map(item => item.n).sort((a, b) => a - b);
+                nums.forEach((n, i) => { if (n !== i + 1) gap = true; });
+            });
+            return gap;
+        }
+        function renumberPreview(chairs) {
+            const lines = [];
+            seatGroups(chairs).forEach(list => {
+                const sorted = list.slice().sort((a, b) => a.n - b.n);
+                const changed = sorted.filter((item, i) => item.n !== i + 1);
+                if (!changed.length) return;
+                const sample = changed.slice(0, 4);
+                const from = sample.map(item => item.n).join(", ");
+                const to = sample.map((item, i) => sorted.indexOf(item) + 1).join(", ");
+                lines.push(from + " become " + to + (changed.length > sample.length ? ", and the rest follow" : ""));
+            });
+            return lines.length
+                ? "The numbers now skip. " + lines.join(". ") + ". Guests stay on the same chair."
+                : "The numbers now skip. Renumber them in the same order so there is no gap. Guests stay on the same chair.";
+        }
+        function retargetAssignment(oldCode, newCode) {
+            const from = String(oldCode || "").toUpperCase();
+            const seat = seatByCode.get(from);
+            if (!seat) return;
+            seatByCode.delete(from);
+            seat.seatCode = newCode;
+            seat.SeatCode = newCode;
+            seatByCode.set(String(newCode).toUpperCase(), seat);
+            users.forEach(user => {
+                if (String(user.seatCode || "").toUpperCase() === from) user.seatCode = newCode;
+            });
+        }
+        async function moveGuestSeats(moves) {
+            for (const move of moves) {
+                const released = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(move.from)}/release`, { method: "PUT" });
+                if (!released.ok) return false;
+            }
+            for (const move of moves) {
+                const assigned = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(move.to)}/assign`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ uniqueId: move.uniqueId })
+                });
+                if (!assigned.ok) return false;
+            }
+            return true;
+        }
+        async function applyRenumber() {
+            const chairs = active().objects.filter(o => o.type === "chair");
+            if (!chairs.length || !seatsHaveGap(chairs)) return;
+            pushHistory();
+            const moves = [];
+            seatGroups(chairs).forEach(list => {
+                list.sort((a, b) => a.n - b.n);
+                list.forEach((item, index) => {
+                    const next = formatSeat(item.prefix, index + 1, item.width);
+                    if (next === item.chair.seatNumber) return;
+                    const record = assignment(item.chair);
+                    const guestId = record && (record.uniqueId || record.UniqueId);
+                    if (guestId && (record.status || record.Status) === "Assigned") {
+                        moves.push({ uniqueId: guestId, from: item.chair.seatNumber, to: next });
+                    }
+                    retargetAssignment(item.chair.seatNumber, next);
+                    item.chair.seatNumber = next;
+                });
+            });
+            renderAll();
+            scheduleSave();
+            if (!moves.length) { toast("Chairs renumbered.", "ok"); return; }
+            const moved = await moveGuestSeats(moves);
+            if (moved) {
+                await loadSeats();
+                renderAll();
+                toast("Chairs renumbered. Guests stayed on the same chairs.", "ok");
+            } else {
+                toast("Numbers updated on this plan. Save the layout so guests stay on these chairs.");
+            }
+        }
         function deleteSelection() {
             const items = selectedObjects();
             if (!items.length && !selectedAssetId) return;
+            const removedChair = items.some(o => o.type === "chair" || (o.type === "table" && chairsOf(o).length));
             pushHistory();
             const ids = new Set(items.map(o => o.id));
             items.filter(o => o.type === "table").forEach(table => chairsOf(table).forEach(c => ids.add(c.id)));
@@ -1557,6 +1762,11 @@
             selection.clear();
             renderAll();
             scheduleSave();
+            const left = active().objects.filter(o => o.type === "chair");
+            if (removedChair && seatsHaveGap(left)) {
+                document.getElementById("renumberNote").textContent = renumberPreview(left);
+                document.getElementById("renumberModal").hidden = false;
+            }
         }
         function rotateSelection() {
             const items = selectedObjects();
@@ -1911,6 +2121,8 @@
                 if (obj.type === "text") obj.text = label.value;
                 else obj.label = label.value;
             }
+            const font = document.getElementById("propFont");
+            if (font && obj.type === "text") obj.fontSize = clamp(parseFloat(font.value) || 28, 8, 240);
             const seat = document.getElementById("propSeat");
             if (seat && obj.type === "chair" && !seat.readOnly) {
                 const next = seat.value.trim().toUpperCase();
@@ -1930,6 +2142,7 @@
             pushHistory();
             const label = document.getElementById("propLabel");
             if (label) table.label = label.value || table.label;
+            table.freeform = false;
             const prevShape = table.shape;
             table.shape = document.getElementById("tblShape").value || table.shape;
             table.chairDistance = clamp(parseFloat(document.getElementById("tblSpace").value) || 0, 0, 200);
@@ -1986,17 +2199,123 @@
             scheduleSave();
         }
 
+        function applyXform(e) {
+            const p = worldPoint(e);
+            const finish = (items, rot) => {
+                if (!items.length) return;
+                if (drag.single) {
+                    const obj = items[0];
+                    placeXform(itemLeft(obj), itemTop(obj), obj.w, obj.h, obj.rotation || 0);
+                } else {
+                    const b = groupBounds(items);
+                    placeXform(b.left, b.top, b.w, b.h, rot || 0);
+                }
+                positionFloat();
+            };
+            if (drag.kind === "rotate") {
+                let deg = (Math.atan2(p.y - drag.cy, p.x - drag.cx) - drag.angle) * 180 / Math.PI;
+                if (snapOn) deg = Math.round(deg / 15) * 15;
+                const rad = deg * Math.PI / 180;
+                const c = Math.cos(rad);
+                const s = Math.sin(rad);
+                const changed = [];
+                drag.origins.forEach(origin => {
+                    const obj = findObj(origin.id);
+                    if (!obj) return;
+                    obj.rotation = (((origin.rotation + deg) % 360) + 360) % 360;
+                    if (!drag.single) {
+                        const ocx = origin.visLeft + origin.w / 2;
+                        const ocy = origin.visTop + origin.h / 2;
+                        const dx = ocx - drag.cx;
+                        const dy = ocy - drag.cy;
+                        const nx = drag.cx + dx * c - dy * s;
+                        const ny = drag.cy + dx * s + dy * c;
+                        obj.w = origin.w;
+                        obj.h = origin.h;
+                        obj.x = origin.type === "table" ? nx - obj.w / 2 - origin.bx : nx - obj.w / 2;
+                        obj.y = origin.type === "table" ? ny - obj.h / 2 - origin.by : ny - obj.h / 2;
+                    }
+                    markTransformed(obj);
+                    paintObject(obj);
+                    changed.push(obj);
+                });
+                finish(changed, 0);
+                return;
+            }
+            const h = drag.handle;
+            const fromRight = h.indexOf("e") >= 0;
+            const fromLeft = h.indexOf("w") >= 0;
+            const fromBottom = h.indexOf("s") >= 0;
+            const fromTop = h.indexOf("n") >= 0;
+            if (drag.single) {
+                const origin = drag.origins[0];
+                const obj = findObj(origin.id);
+                if (!obj) return;
+                const loc = localFromWorld(p.x, p.y, drag.cx, drag.cy, drag.rot);
+                let left = -origin.w / 2;
+                let right = origin.w / 2;
+                let top = -origin.h / 2;
+                let bottom = origin.h / 2;
+                if (fromRight) right = Math.max(left + 24, loc.x);
+                if (fromLeft) left = Math.min(right - 24, loc.x);
+                if (fromBottom) bottom = Math.max(top + 24, loc.y);
+                if (fromTop) top = Math.min(bottom - 24, loc.y);
+                const center = worldFromLocal((left + right) / 2, (top + bottom) / 2, drag.cx, drag.cy, drag.rot);
+                obj.w = Math.max(24, Math.round(right - left));
+                obj.h = Math.max(24, Math.round(bottom - top));
+                const visLeft = center.x - obj.w / 2;
+                const visTop = center.y - obj.h / 2;
+                obj.x = origin.type === "table" ? visLeft - origin.bx : visLeft;
+                obj.y = origin.type === "table" ? visTop - origin.by : visTop;
+                markTransformed(obj);
+                paintObject(obj);
+                finish([obj]);
+                return;
+            }
+            const b = drag.bounds;
+            const ax = fromRight ? b.left : fromLeft ? b.left + b.w : b.left + b.w / 2;
+            const ay = fromBottom ? b.top : fromTop ? b.top + b.h : b.top + b.h / 2;
+            let sx = 1;
+            let sy = 1;
+            if (fromRight) sx = (p.x - ax) / b.w;
+            if (fromLeft) sx = (ax - p.x) / b.w;
+            if (fromBottom) sy = (p.y - ay) / b.h;
+            if (fromTop) sy = (ay - p.y) / b.h;
+            sx = Math.max(0.2, sx || 1);
+            sy = Math.max(0.2, sy || 1);
+            const changed = [];
+            drag.origins.forEach(origin => {
+                const obj = findObj(origin.id);
+                if (!obj) return;
+                obj.w = Math.max(24, Math.round(origin.w * sx));
+                obj.h = Math.max(24, Math.round(origin.h * sy));
+                const visLeft = ax + (origin.visLeft - ax) * sx;
+                const visTop = ay + (origin.visTop - ay) * sy;
+                obj.x = origin.type === "table" ? visLeft - origin.bx : visLeft;
+                obj.y = origin.type === "table" ? visTop - origin.by : visTop;
+                markTransformed(obj);
+                paintObject(obj);
+                changed.push(obj);
+            });
+            finish(changed, 0);
+        }
         function beginPinch() {
             const pts = [...activePointers.values()].slice(0, 2);
             if (pts.length < 2) return;
-            if (drag && drag.kind === "move" && drag.origins) {
+            if (drag && drag.origins && (drag.kind === "move" || drag.kind === "scale" || drag.kind === "rotate")) {
                 drag.origins.forEach(origin => {
                     const obj = findObj(origin.id);
-                    if (obj) { obj.x = origin.x; obj.y = origin.y; }
+                    if (!obj) return;
+                    obj.x = origin.x;
+                    obj.y = origin.y;
+                    obj.w = origin.w;
+                    obj.h = origin.h;
+                    obj.rotation = origin.rotation;
                 });
                 history.pop();
                 historyIndex = Math.max(0, history.length - 1);
                 updateHistoryButtons();
+                renderWorld();
             }
             drag = {
                 kind: "pinch",
@@ -2011,12 +2330,41 @@
             if (e.target.closest(".canvas-nav") || e.target.closest(".side-reopen")) return;
             if (!document.getElementById("arrangeModal").hidden) return;
             if (!document.getElementById("leaveModal").hidden) return;
+            if (!document.getElementById("renumberModal").hidden) return;
             activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
             if (e.pointerType !== "mouse") {
                 try { viewport().setPointerCapture(e.pointerId); } catch (err) { /* already captured */ }
             }
             if (activePointers.size >= 2) {
                 beginPinch();
+                return;
+            }
+            const handle = e.target.closest(".handle");
+            if (handle && handle.dataset.handle) {
+                const items = selectedObjects().filter(o => !layerState(o.layer).locked);
+                if (!items.length) return;
+                pushHistory();
+                const single = items.length === 1;
+                const obj = items[0];
+                const bounds = single
+                    ? { left: itemLeft(obj), top: itemTop(obj), w: obj.w, h: obj.h }
+                    : groupBounds(items);
+                const cx = bounds.left + bounds.w / 2;
+                const cy = bounds.top + bounds.h / 2;
+                const p = worldPoint(e);
+                drag = {
+                    kind: handle.dataset.handle === "rotate" ? "rotate" : "scale",
+                    handle: handle.dataset.handle,
+                    sx: e.clientX, sy: e.clientY, moved: false, single,
+                    rot: single ? (obj.rotation || 0) : 0,
+                    cx, cy, bounds,
+                    angle: Math.atan2(p.y - cy, p.x - cx),
+                    origins: items.map(o => ({
+                        id: o.id, x: o.x, y: o.y, w: o.w, h: o.h,
+                        rotation: o.rotation || 0, bx: o.bx || 0, by: o.by || 0,
+                        visLeft: itemLeft(o), visTop: itemTop(o), type: o.type
+                    }))
+                };
                 return;
             }
             const point = worldPoint(e);
@@ -2144,6 +2492,9 @@
                     if (el) { el.style.left = itemLeft(obj) + "px"; el.style.top = itemTop(obj) + "px"; }
                 });
                 positionFloat();
+            } else if (drag.kind === "scale" || drag.kind === "rotate") {
+                drag.moved = true;
+                applyXform(e);
             } else if (drag.kind === "resize") {
                 const obj = findObj(drag.id);
                 if (!obj) return;
@@ -2195,15 +2546,16 @@
                     if (hit && layerState(obj.layer).visible && !layerState(obj.layer).locked) selection.add(obj.id);
                 });
             }
-            if ((kind === "move" || kind === "resize" || kind === "asset") && !moved) {
+            if ((kind === "move" || kind === "resize" || kind === "asset" || kind === "scale" || kind === "rotate") && !moved) {
                 history.pop();
                 historyIndex = history.length - 1;
                 updateHistoryButtons();
-            } else if (moved && (kind === "move" || kind === "resize" || kind === "asset")) {
+            } else if (moved && (kind === "move" || kind === "resize" || kind === "asset" || kind === "scale" || kind === "rotate")) {
                 if (kind === "move" && drag.origins.length === 1) {
                     const movedObj = findObj(drag.origins[0].id);
                     if (movedObj && movedObj.type === "chair") movedObj.manual = true;
                 }
+                if (kind === "scale" || kind === "rotate") renderAll();
                 scheduleSave();
             }
             drag = null;
@@ -2317,7 +2669,7 @@
                 if (id === "nudge") toast("Drag the selection, or set X and Y in the side panel.");
                 const focus = {
                     assign: "#rosterSearch",
-                    edit: "#editRows, #propSeat, #propLabel",
+                    edit: "#editRows, #propFont, #propSeat, #propLabel",
                     nudge: "#propX, #editType, #propLabel",
                     rotate15: "#propR, #editType, #propLabel",
                     duplicate: "#propLabel, #editType, #props",
@@ -2334,6 +2686,19 @@
         });
         document.body.addEventListener("input", (e) => {
             if (e.target.id === "rosterSearch") renderRoster();
+            if (e.target.id === "propFont") {
+                const obj = selectedObjects()[0];
+                if (obj && obj.type === "text") {
+                    const next = clamp(parseFloat(e.target.value) || 28, 8, 240);
+                    if (next !== (obj.fontSize || 28)) {
+                        if (!e.target.dataset.pushed) { pushHistory(); e.target.dataset.pushed = "1"; }
+                        obj.fontSize = next;
+                        const label = world().querySelector(`[data-id="${obj.id}"] .obj-label`);
+                        if (label) label.style.fontSize = next + "px";
+                        scheduleSave();
+                    }
+                }
+            }
             if (e.target.id === "layoutName" && doc) {
                 active().name = e.target.value || "Untitled";
                 renderLayouts();
@@ -2382,6 +2747,11 @@
             syncSides();
         };
         document.getElementById("leaveStay").onclick = () => { document.getElementById("leaveModal").hidden = true; };
+        document.getElementById("renumberKeep").onclick = () => { document.getElementById("renumberModal").hidden = true; };
+        document.getElementById("renumberApply").onclick = () => {
+            document.getElementById("renumberModal").hidden = true;
+            applyRenumber();
+        };
         document.getElementById("leaveSkip").onclick = () => { location.href = "dashboard.html"; };
         document.getElementById("leaveForm").addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -2458,12 +2828,14 @@
             const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName);
             if (e.code === "Space") spaceDown = true;
             if (e.key === "Escape") {
+                if (!document.getElementById("renumberModal").hidden) { document.getElementById("renumberModal").hidden = true; return; }
                 if (!document.getElementById("leaveModal").hidden) { document.getElementById("leaveModal").hidden = true; return; }
                 if (!document.getElementById("arrangeModal").hidden) { closeArrange(); return; }
                 if (!typing) { setTool("select"); clearSelection(); }
                 return;
             }
             if (typing) return;
+            if (!document.getElementById("renumberModal").hidden) return;
             const meta = e.ctrlKey || e.metaKey;
             if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); deleteSelection(); }
             if (meta && e.key.toLowerCase() === "z" && e.shiftKey) { e.preventDefault(); redo(); }
