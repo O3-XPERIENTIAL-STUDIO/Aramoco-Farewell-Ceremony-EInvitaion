@@ -182,7 +182,7 @@
         </tr>
         <tr>
             <td colspan="2" class="name-cell" align="left" valign="middle" bgcolor="#313131" style="min-height:92px; padding:16px 24px 16px 70px; margin:0; background:#313131; background-color:#313131; background-image:none;">
-                <span id="guestName" style="display:block; margin:0; color:#ffffff; -webkit-text-fill-color:#ffffff; background:transparent; font-family:'Manifa Pro', Tahoma, Arial, sans-serif; font-size:30px; font-weight:700; font-style:normal; line-height:36px; text-align:left;">Dear Guest</span>
+                <span id="guestName" style="display:block; margin:0; color:#ffffff; -webkit-text-fill-color:#ffffff; background:transparent; font-family:'Manifa Pro', Tahoma, Arial, sans-serif; font-size:30px; font-weight:700; font-style:normal; line-height:36px; text-align:left;">Dear Guest,</span>
                 <span id="guestPosition" class="is-empty" style="display:none; margin:4px 0 0; color:#ffffff; -webkit-text-fill-color:#ffffff; background:transparent; font-family:'Manifa Pro', Tahoma, Arial, sans-serif; font-size:15px; font-weight:400; font-style:italic; line-height:20px; text-align:left;"></span>
             </td>
         </tr>
@@ -216,6 +216,7 @@
             if (guestEl) {
                 var shownName = name || "Guest";
                 if (!/^dear\b/i.test(shownName)) shownName = "Dear " + shownName;
+                if (!/,\s*$/.test(shownName)) shownName += ",";
                 guestEl.textContent = shownName;
             }
 

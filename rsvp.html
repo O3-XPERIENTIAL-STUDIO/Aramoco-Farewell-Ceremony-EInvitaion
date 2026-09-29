@@ -342,7 +342,7 @@
                     <img id="qrImage" alt="QR code to open your E-Badge" width="240" height="240" />
                 </div>
                 <p>Please scan the QR Code above from your mobile device to access your E-Badge or click the link below</p>
-                <a class="btn-download" id="btnViewEbadge" href="#">View your E-Badge</a>
+                <button type="button" class="btn-download" id="btnViewEbadge">Download E-Badge</button>
                 <a class="btn-download btn-wallet hidden" id="btnAppleWallet" href="#">Add to Apple Wallet</a>
                 <p class="wallet-hint hidden" id="walletHint">Safari adds the pass directly. Chrome on iPhone downloads a .pkpass file — open it to add it to Wallet.</p>
                 <p>To ensure a smooth entry, we recommend saving the QR code or E-Badge to your mobile device for quick scanning at the registration area. Please note that your E-Badge will be updated with your table details closer to the date of the event.</p>
@@ -458,7 +458,59 @@
             var PUBLIC_SITE = "https://aramcocorporateevents.com";
             var ebadgePath = uniqueId ? ("/e-badge/" + encodeURIComponent(uniqueId)) : "";
             var ebadgeUrl = uniqueId ? (PUBLIC_SITE + ebadgePath) : "";
-            if (btnViewEbadge && ebadgePath) btnViewEbadge.href = ebadgePath;
+
+            function saveBlob(blob, filename) {
+                var objectUrl = URL.createObjectURL(blob);
+                var link = document.createElement("a");
+                link.href = objectUrl;
+                link.download = filename;
+                link.rel = "noopener";
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.setTimeout(function() { URL.revokeObjectURL(objectUrl); }, 1500);
+            }
+
+            function downloadEbadge() {
+                if (!uniqueId || !btnViewEbadge) return;
+                var filename = "Aramco-Farewell-E-Badge.jpg";
+                var url = API_BASE + "/api/AramcoFarewell/qr-card/" + encodeURIComponent(uniqueId) + "?download=1";
+                var previousLabel = btnViewEbadge.textContent;
+                btnViewEbadge.disabled = true;
+                btnViewEbadge.textContent = "Downloading…";
+                if (acceptError) acceptError.textContent = "";
+
+                fetch(url, { mode: "cors", cache: "no-store" })
+                    .then(function(res) {
+                        if (!res.ok) throw new Error("E-Badge download failed");
+                        return res.blob();
+                    })
+                    .then(function(blob) {
+                        var file = new File([blob], filename, { type: blob.type || "image/jpeg" });
+                        var phone = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || "");
+                        if (phone && navigator.canShare && navigator.canShare({ files: [file] })) {
+                            return navigator.share({ files: [file], title: "E-Badge" }).catch(function(err) {
+                                if (err && err.name === "AbortError") return;
+                                saveBlob(blob, filename);
+                            });
+                        }
+                        saveBlob(blob, filename);
+                    })
+                    .catch(function() {
+                        if (acceptError) acceptError.textContent = "Could not download the E-Badge. Please try again.";
+                    })
+                    .then(function() {
+                        btnViewEbadge.disabled = false;
+                        btnViewEbadge.textContent = previousLabel;
+                    });
+            }
+
+            if (btnViewEbadge) {
+                btnViewEbadge.addEventListener("click", function(ev) {
+                    if (ev) ev.preventDefault();
+                    downloadEbadge();
+                });
+            }
 
             if (qrImage && ebadgeUrl && window.QRious) {
                 qrImage.src = new QRious({
