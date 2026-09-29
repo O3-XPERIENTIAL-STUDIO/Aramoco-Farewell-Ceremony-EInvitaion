@@ -1,1078 +1,2298 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8" />
-    <link rel="stylesheet" href="assets/css/manifa.css" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Seat assignment | Aramco Farewells</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Seating plan designer | Aramco Farewells</title>
     <link rel="icon" type="image/png" href="assets/icon.png" />
-    <link rel="apple-touch-icon" href="assets/icon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         :root {
-            --bg: #0D1117;
-            --surface: #161B22;
-            --surface-hover: #21262D;
-            --surface2: #21262D;
-            --border: #30363D;
-            --text: #E6EDF3;
-            --text-muted: #8B949E;
-            --gold: #D29922;
-            --accent: #2F81F7;
-            --red: #F85149;
-            --green: #3FB950;
-            --amber: #D29922;
-            --radius: 14px;
+            --bg: #1c1815; --panel: #241f1c; --panel-2: #2e2824; --line: rgba(237,231,222,.12);
+            --text: #ede7de; --muted: #aa9f92; --coral: #e45c44; --green: #7dcea0; --amber: #e2b657; --danger: #f07167;
+            --grid: 20px;
         }
-        html, body { height: 100%; }
-        body {
-            font-family: "Manifa Pro", Tahoma, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            color-scheme: dark;
+        * { box-sizing: border-box; }
+        html, body { height: 100%; margin: 0; }
+        body { font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
+        button, input, select, textarea { font-family: inherit; color: inherit; }
+        button { cursor: pointer; }
+        .gate { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+        .gate form { width: min(380px, calc(100% - 32px)); background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 24px; }
+        .gate h1 { margin: 0 0 6px; font-size: 1.2rem; }
+        .gate p { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+        .gate input, .field input, .field textarea, .field select, .search {
+            width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 8px 10px; font-size: 13px;
         }
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 8px 12px;
-            background: var(--surface2);
-            color: var(--text);
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            -webkit-tap-highlight-color: transparent;
+        .err { color: var(--danger); min-height: 18px; font-size: 12px; }
+        .btn, .icon-btn {
+            border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 600;
         }
-        .btn-primary { background: #CBA886; color: #002650; border-color: #CBA886; }
-        .btn-ghost { background: transparent; }
-        .btn:hover { filter: brightness(1.08); }
-        .btn:disabled { opacity: 0.55; cursor: wait; }
-        input, select {
-            width: 100%;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: #0D1117;
-            color: var(--text);
-            padding: 9px 10px;
-            font-size: 13px;
+        .btn.primary { background: var(--coral); border-color: var(--coral); color: #fff; }
+        .btn:disabled, .icon-btn:disabled { opacity: .4; cursor: default; }
+        .app { display: none; height: 100vh; grid-template-rows: 56px 1fr 40px; }
+        .app.open { display: grid; }
+        .topbar, .statusbar { display: flex; align-items: center; gap: 8px; padding: 0 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+        .statusbar { border-bottom: 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+        .mark { width: 28px; height: 28px; border-radius: 8px; background: var(--coral); display: grid; place-items: center; font-weight: 700; }
+        .namebox { min-width: 180px; }
+        .spacer { flex: 1; }
+        .workspace { display: grid; grid-template-columns: 250px 1fr 300px; min-height: 0; }
+        .tools, .props { background: var(--panel); overflow: auto; padding: 12px; }
+        .tools { border-right: 1px solid var(--line); }
+        .props { border-left: 1px solid var(--line); }
+        h2 { margin: 14px 0 8px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+        h2:first-child { margin-top: 0; }
+        .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .tool, .layout-row, .asset-row, .guest-row {
+            border: 1px solid var(--line); background: transparent; border-radius: 10px; color: var(--text); text-align: left;
         }
-        .gate {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-        }
-        .gate-card {
-            width: 100%;
-            max-width: 380px;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 28px 24px;
-        }
-        .gate-card h1 { font-size: 1.15rem; margin-bottom: 6px; }
-        .gate-card p { color: var(--text-muted); font-size: 13px; margin-bottom: 16px; }
-        .gate-card input { margin-bottom: 10px; }
-        .gate-error { color: var(--red); font-size: 12px; min-height: 18px; margin-bottom: 8px; }
-        .app { display: none; }
-        .app.open { display: block; }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            padding: 18px 22px;
-            border-bottom: 1px solid var(--border);
-        }
-        .header h1 { font-size: 1.15rem; }
-        .header h1 span { color: var(--gold); }
-        .header-right { display: flex; gap: 8px; align-items: center; }
-        .wrap { padding: 18px 22px 40px; }
-        .panel {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            padding: 16px;
-        }
-        .hint { color: var(--text-muted); font-size: 12px; margin-bottom: 12px; }
-        .hint code {
-            font-size: 11px;
-            background: #0D1117;
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            padding: 1px 5px;
-        }
-        .seat-stats { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-        .seat-chip {
-            border: 1px solid var(--border);
-            background: var(--surface2);
-            color: var(--text);
-            border-radius: 999px;
-            padding: 6px 12px;
-            font-size: 12px;
-            cursor: pointer;
-        }
-        .seat-chip.active { border-color: var(--gold); color: var(--gold); }
-        .map-toolbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 12px;
-        }
-        .map-meta { color: var(--text-muted); font-size: 12px; line-height: 1.45; }
-        .map-meta strong { color: var(--text); }
-        .map-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-        .map-upload-status {
-            display: none;
-            width: 100%;
-            border-radius: 8px;
-            padding: 8px 10px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 12px;
-        }
-        .map-upload-status.visible { display: block; }
-        .map-upload-status.is-working {
-            background: rgba(47, 129, 247, 0.16);
-            color: #79b8ff;
-            border: 1px solid rgba(47, 129, 247, 0.35);
-        }
-        .map-upload-status.is-ok {
-            background: rgba(63, 185, 80, 0.14);
-            color: var(--green);
-            border: 1px solid rgba(63, 185, 80, 0.32);
-        }
-        .map-upload-status.is-err {
-            background: rgba(248, 81, 73, 0.14);
-            color: var(--red);
-            border: 1px solid rgba(248, 81, 73, 0.32);
-        }
-        .seat-layout {
-            display: grid;
-            grid-template-columns: minmax(0, 1fr) 360px;
-            gap: 16px;
-            align-items: start;
-        }
-        .seat-map-stage {
-            position: relative;
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            background: #071422;
-            overflow: hidden;
-        }
-        .seat-zoom-bar {
-            position: absolute;
-            z-index: 4;
-            top: 10px;
-            right: 10px;
-            display: flex;
-            gap: 6px;
-            background: rgba(13, 17, 23, 0.82);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 6px;
-            backdrop-filter: blur(8px);
-        }
-        .seat-zoom-bar .btn {
-            width: 38px;
-            height: 38px;
-            padding: 0;
-            font-size: 18px;
-            line-height: 1;
-        }
-        .seat-zoom-bar .btn.wide { width: auto; padding: 0 10px; font-size: 12px; }
-        .seat-zoom-level {
-            min-width: 46px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 11px;
-            color: var(--text-muted);
-            font-variant-numeric: tabular-nums;
-        }
-        .seat-viewport {
-            height: min(78vh, 760px);
-            overflow: hidden;
-            touch-action: none;
-            cursor: grab;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-        .seat-viewport.is-panning { cursor: grabbing; }
-        .seat-map-inner {
-            transform-origin: 0 0;
-            will-change: transform;
-        }
-        .seat-map-inner svg {
-            display: block;
-            width: 1400px;
-            height: 980px;
-            max-width: none;
-        }
-        .seat-side {
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 14px;
-            background: var(--surface2);
-            min-height: 280px;
-        }
-        .seat-side h3 { font-size: 14px; margin-bottom: 8px; }
-        .seat-side p { color: var(--text-muted); font-size: 12px; line-height: 1.5; margin-bottom: 10px; }
-        .seat-side input, .seat-side .btn { width: 100%; margin-bottom: 8px; }
-        .seat-current {
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 10px;
-            margin-bottom: 12px;
-            background: rgba(203, 168, 134, 0.08);
-        }
-        .seat-current strong { display: block; color: var(--gold); margin-bottom: 4px; }
-        .seat-assign-status {
-            display: none;
-            border-radius: 8px;
-            padding: 8px 10px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-        .seat-assign-status.visible { display: block; }
-        .seat-assign-status.is-working {
-            background: rgba(47, 129, 247, 0.16);
-            color: #79b8ff;
-            border: 1px solid rgba(47, 129, 247, 0.35);
-        }
-        .seat-assign-status.is-ok {
-            background: rgba(63, 185, 80, 0.14);
-            color: var(--green);
-            border: 1px solid rgba(63, 185, 80, 0.32);
-        }
-        .seat-assign-status.is-err {
-            background: rgba(248, 81, 73, 0.14);
-            color: var(--red);
-            border: 1px solid rgba(248, 81, 73, 0.32);
-        }
-        .seat-guest-list {
-            max-height: 360px;
-            overflow: auto;
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            margin-bottom: 8px;
-            -webkit-overflow-scrolling: touch;
-        }
-        .seat-guest-row {
-            display: block;
-            width: 100%;
-            text-align: left;
-            border: 0;
-            border-bottom: 1px solid var(--border);
-            background: transparent;
-            color: var(--text);
-            padding: 11px 12px;
-            cursor: pointer;
-            transition: background 0.12s ease, box-shadow 0.12s ease, transform 0.08s ease;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .seat-guest-row:last-child { border-bottom: 0; }
-        .seat-guest-top {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-        }
-        .seat-guest-name { font-weight: 600; font-size: 13px; }
-        .seat-guest-row small { display: block; color: var(--text-muted); font-size: 11px; margin-top: 3px; }
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            flex-shrink: 0;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.3px;
-            text-transform: uppercase;
-            border-radius: 999px;
-            padding: 3px 8px;
-            line-height: 1.2;
-        }
-        .status-badge::before {
-            content: "";
-            width: 6px;
-            height: 6px;
-            border-radius: 50%;
-            background: currentColor;
-        }
-        .status-accepted {
-            background: rgba(63, 185, 80, 0.12);
-            color: var(--green);
-            border: 1px solid rgba(63, 185, 80, 0.28);
-        }
-        .status-pending {
-            background: rgba(210, 153, 34, 0.12);
-            color: var(--amber);
-            border: 1px solid rgba(210, 153, 34, 0.28);
-        }
-        .status-declined {
-            background: rgba(248, 81, 73, 0.12);
-            color: var(--red);
-            border: 1px solid rgba(248, 81, 73, 0.28);
-        }
-        @media (hover: hover) and (pointer: fine) {
-            .seat-guest-row:hover {
-                background: rgba(203, 168, 134, 0.16);
-            }
-        }
-        .seat-guest-row:active,
-        .seat-guest-row.is-pressed {
-            background: rgba(203, 168, 134, 0.28);
-            transform: scale(0.985);
-        }
-        .seat-guest-row.is-selected {
-            background: rgba(203, 168, 134, 0.18);
-            box-shadow: inset 3px 0 0 #CBA886;
-        }
-        .seat-guest-row.is-assigning {
-            background: rgba(47, 129, 247, 0.18);
-            box-shadow: inset 3px 0 0 var(--accent);
-        }
-        .seat-guest-row.is-assigning .seat-guest-name::after {
-            content: " · Assigning…";
-            color: #79b8ff;
-            font-weight: 700;
-        }
-        .seat-guest-list.is-busy .seat-guest-row:not(.is-assigning) {
-            opacity: 0.45;
-            pointer-events: none;
-        }
-        .seat-hover-card {
-            position: fixed;
-            z-index: 80;
-            min-width: 210px;
-            max-width: 280px;
-            padding: 10px 12px;
-            border-radius: 10px;
-            border: 1px solid var(--border);
-            background: #161B22;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
-            color: var(--text);
-            display: none;
-        }
-        .seat-hover-card.visible { display: block; }
-        .seat-hover-card .hover-name { font-weight: 700; color: var(--gold); margin-bottom: 2px; }
-        .seat-hover-card .hover-meta { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; }
-        .seat-hover-actions { display: flex; gap: 6px; }
-        .seat-hover-actions .btn { flex: 1; margin: 0; padding: 6px 8px; font-size: 11px; }
-        @media (max-width: 980px) {
-            .header { flex-wrap: wrap; padding: 12px 14px; }
-            .header h1 { font-size: 1rem; }
-            .wrap { padding: 12px 12px 28px; }
-            .panel { padding: 12px; }
-            .seat-layout { grid-template-columns: 1fr; }
-            .seat-viewport { height: min(62vh, 560px); min-height: 280px; }
-            .seat-guest-list { max-height: 42vh; }
-            .seat-hover-card { display: none !important; }
-        }
-        @media (pointer: coarse) {
-            .seat-hover-card { display: none !important; }
-            .seat-guest-row { padding: 13px 12px; }
+        .tool { padding: 8px; font-size: 12px; font-weight: 600; }
+        .tool.on, .layout-row.on { border-color: var(--coral); background: rgba(228,92,68,.12); }
+        .hint { color: var(--muted); font-size: 12px; line-height: 1.4; margin: 8px 0; }
+        .layout-row, .asset-row { width: 100%; display: flex; align-items: center; gap: 6px; padding: 6px 8px; margin-bottom: 6px; }
+        .layout-row span, .asset-row span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
+        .mini { border: 0; background: transparent; color: var(--muted); font-size: 11px; font-weight: 700; }
+        .viewport { position: relative; overflow: hidden; background-color: #f3f5f8; background-image: linear-gradient(rgba(55,70,95,.14) 1px, transparent 1px), linear-gradient(90deg, rgba(55,70,95,.14) 1px, transparent 1px); touch-action: none; }
+        .viewport.place { cursor: crosshair; }
+        .viewport.hand, .viewport.panning { cursor: grab; }
+        #world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+        .add-card { border: 1px solid var(--line); border-radius: 12px; padding: 10px; margin-bottom: 8px; background: #2a2420; }
+        .add-card strong { display: block; font-size: 13px; }
+        .add-card .sub { color: var(--muted); font-size: 11px; }
+        .stepper { display: flex; align-items: center; gap: 4px; margin: 8px 0; }
+        .stepper input { width: 72px; text-align: center; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 6px; }
+        .stepper button, .add-card .btn { flex: 1; }
+        .side-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .item { position: absolute; display: flex; align-items: center; justify-content: center; flex-direction: column; border: 1px solid rgba(237,231,222,.35); user-select: none; }
+        .item.chair { z-index: 2; border: none; border-radius: 42px; background: #2f4c72; color: #fff; box-shadow: 0 8px 16px rgba(20,32,52,.22); overflow: hidden; }
+        .item.chair .who, .item.chair .seat-no { position: relative; z-index: 1; font-size: 48px; font-weight: 700; line-height: 1; }
+        .item.chair .who.is-name { display: block; width: 90%; font-size: 34px; font-weight: 700; line-height: 1.08; text-align: center; white-space: normal; }
+        .item.chair.is-assigned { background: #ffe14a; color: #1a1408; box-shadow: 0 0 0 5px rgba(255, 210, 40, .55), 0 12px 22px rgba(180, 120, 0, .35); }
+        .item.chair.is-assigned .who { color: #1a1408; }
+        .item.table { z-index: 1; border: none; border-radius: 16px; background: #f3ecdf; color: #1d2836; box-shadow: 0 10px 22px rgba(30,24,16,.14); }
+        .item.table.shape-round, .item.table.shape-oval { border-radius: 50%; }
+        .item.table.shape-square { border-radius: 16px; }
+        .item.table.shape-crescent { border-radius: 0 0 999px 999px; }
+        .item.table .obj-label { font-size: 16px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
+        .preview-box { background: #f3f5f8; border: 1px solid var(--line); border-radius: 12px; min-height: 150px; margin: 8px 0; overflow: hidden; }
+        .preview-box svg { width: 100%; height: 160px; display: block; }
+        .item.table.shape-rows { background: transparent; box-shadow: none; overflow: visible; }
+        .row-pill { position: absolute; left: 0; width: 258px; border-radius: 42px; background: #2f4c72; color: #fff; font-size: 40px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 16px rgba(20,32,52,.18); }
+        .item.round { border-radius: 50%; background: rgba(237,231,222,.08); }
+        .item.rect, .item.sofa, .item.booth, .item.stage, .item.custom { border-radius: 12px; background: rgba(237,231,222,.06); }
+        .item.stage { background: rgba(228,92,68,.18); }
+        .item.sofa { background: rgba(125,206,160,.15); }
+        .item.wall { background: #cfc6bb; border-radius: 4px; }
+        .item.door, .item.entrance, .item.exit { border-radius: 8px; background: rgba(226,182,87,.16); }
+        .item.text { background: transparent; border-style: dashed; }
+        .item.is-selected { outline: 2px solid #2563eb; outline-offset: 3px; z-index: 4; }
+        .item:hover { filter: brightness(1.08); }
+        .seat-no, .obj-label { font-size: 10px; font-weight: 700; line-height: 1.1; text-align: center; pointer-events: none; }
+        .who { font-size: 12px; font-weight: 700; pointer-events: none; }
+        .hover-name { display: none; position: absolute; left: 50%; top: calc(100% + 6px); transform: translateX(-50%); background: #111; color: #fff; border-radius: 6px; padding: 3px 6px; font-size: 11px; white-space: nowrap; z-index: 3; }
+        .item.chair:hover .hover-name, .item.chair.is-selected .hover-name { display: block; }
+        .resize { position: absolute; right: -5px; bottom: -5px; width: 10px; height: 10px; background: #fff; border-radius: 2px; cursor: nwse-resize; }
+        .asset { position: absolute; transform-origin: 0 0; }
+        .asset.is-selected { outline: 1px dashed var(--amber); }
+        .marquee { position: absolute; border: 1px solid var(--coral); background: rgba(228,92,68,.15); pointer-events: none; }
+        .float { position: fixed; z-index: 20; display: flex; gap: 4px; padding: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+        .float[hidden] { display: none; }
+        .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; font-size: 12px; color: var(--muted); }
+        .row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+        .guest-row { width: 100%; padding: 8px; margin-bottom: 6px; text-align: left; }
+        .guest-row small { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; }
+        .guest-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+        .guest-top strong { font-size: 13px; line-height: 1.3; }
+        .guest-status { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 7px; }
+        .guest-status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; }
+        .guest-status.pending { color: #e2b657; background: rgba(226,182,87,.14); border: 1px solid rgba(226,182,87,.35); }
+        .guest-status.pending::before { background: #e2b657; }
+        .guest-status.accepted { color: #7dcea0; background: rgba(125,206,160,.14); border: 1px solid rgba(125,206,160,.35); }
+        .guest-status.accepted::before { background: #7dcea0; }
+        .guest-status.declined { color: #f07167; background: rgba(240,113,103,.14); border: 1px solid rgba(240,113,103,.35); }
+        .guest-status.declined::before { background: #f07167; }
+        .roster { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 8px; }
+        .guest-row.is-taken { opacity: .7; }
+        .stat b { color: var(--text); }
+        .toast { margin-left: auto; max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .toast.bad { color: var(--danger); }
+        .toast.ok { color: var(--green); }
+        .sheet-modal { position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; padding: 16px; }
+        .sheet-modal[hidden] { display: none; }
+        .sheet { width: min(440px, 100%); max-height: calc(100vh - 32px); overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px 18px 14px; }
+        .sheet h3 { margin: 0 0 4px; font-size: 18px; }
+        .sheet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
+        .sheet .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+        body.is-preview .tools, body.is-preview .props, body.is-preview .float { display: none; }
+        body.is-preview .workspace { grid-template-columns: 1fr; }
+        @media (max-width: 1100px) {
+            .workspace { grid-template-columns: 210px 1fr 250px; }
         }
     </style>
 </head>
-
 <body>
     <div class="gate" id="gate">
-        <form class="gate-card" id="gateForm">
-            <h1>Seat assignment</h1>
-            <p>Admin access only. Enter the seat-management password.</p>
-            <input id="adminPassword" type="password" autocomplete="current-password" placeholder="Password" />
-            <div class="gate-error" id="gateError"></div>
-            <button class="btn btn-primary" type="submit" style="width:100%;">Unlock</button>
+        <form id="gateForm">
+            <h1>Seating plan</h1>
+            <p>Enter the seat plan password.</p>
+            <div class="err" id="gateError"></div>
+            <input id="adminPassword" type="password" placeholder="Password" autocomplete="current-password" />
+            <div style="height:10px"></div>
+            <button class="btn primary" type="submit" style="width:100%">Continue</button>
         </form>
     </div>
-
     <div class="app" id="app">
-        <div class="header">
-            <h1>Aramco Farewells <span>Seat assignment</span></h1>
-            <div class="header-right">
-                <a class="btn btn-ghost" href="dashboard.html">Dashboard</a>
-                <button class="btn btn-ghost" type="button" onclick="lockSeats()">Lock</button>
-            </div>
-        </div>
-        <div class="wrap">
-            <div class="panel">
-                <div class="seat-stats" id="seatStats"></div>
-                <div class="map-toolbar">
-                    <div class="map-meta" id="mapMeta">Current map: placeholder Hall 4</div>
-                    <div class="map-actions">
-                        <input id="svgFileInput" type="file" accept=".dxf,.dwg,.svg,image/svg+xml,image/vnd.dxf,application/dxf,application/acad" hidden />
-                        <button class="btn btn-primary" type="button" onclick="document.getElementById('svgFileInput').click()">Upload CAD / SVG</button>
-                        <button class="btn btn-ghost" type="button" id="restoreMapBtn" onclick="restoreDefaultMap()" style="display:none;">Use placeholder</button>
-                    </div>
+        <header class="topbar">
+            <div class="mark">A</div>
+            <input class="namebox" id="layoutName" aria-label="Layout name" />
+            <button class="icon-btn" id="undoBtn" type="button" title="Undo (Ctrl+Z)">Undo</button>
+            <button class="icon-btn" id="redoBtn" type="button" title="Redo (Ctrl+Shift+Z)">Redo</button>
+            <button class="btn primary" id="saveBtn" type="button">Save layout</button>
+            <button class="icon-btn" id="previewBtn" type="button">Preview</button>
+            <a class="icon-btn" href="dashboard.html" style="text-decoration:none">Dashboard</a>
+            <span class="spacer"></span>
+            <button class="icon-btn" id="clearSelBtn" type="button">Clear selection</button>
+            <button class="icon-btn" id="dupBtn" type="button" title="Duplicate (Ctrl+D)">Duplicate</button>
+            <button class="icon-btn" id="delBtn" type="button" title="Delete">Delete</button>
+        </header>
+        <div class="workspace">
+            <aside class="tools">
+                <h2>Layouts</h2>
+                <div id="layoutList"></div>
+                <button class="btn" type="button" id="newLayoutBtn">New layout</button>
+                <h2>Objects</h2>
+                <p class="hint">Choose a seating type, then click the grid. A setup panel asks for rows, chairs, and spacing before anything is created.</p>
+                <div class="tool-grid" id="toolGrid"></div>
+                <div class="row" style="margin-top:8px">
+                    <button class="tool" type="button" id="selectTool" data-tool="select">Select</button>
+                    <button class="tool" type="button" id="handTool" data-tool="hand">Pan</button>
                 </div>
-                <div class="map-upload-status" id="mapUploadStatus"></div>
-                <p class="hint">Upload a CAD file and the system numbers chairs and tables for you. Recommended: AutoCAD <strong>DXF</strong> (2018). DWG and SVG also work. Optional: put zones on layers named VVIP, VIP, General, Media.</p>
-                <div class="seat-layout">
-                    <div class="seat-map-stage">
-                        <div class="seat-zoom-bar">
-                            <button class="btn" type="button" onclick="zoomBy(1/1.25)" aria-label="Zoom out">−</button>
-                            <div class="seat-zoom-level" id="seatZoomLevel">100%</div>
-                            <button class="btn" type="button" onclick="zoomBy(1.25)" aria-label="Zoom in">+</button>
-                            <button class="btn wide" type="button" onclick="fitMap()">Fit</button>
-                        </div>
-                        <div class="seat-viewport" id="seatViewport">
-                            <div class="seat-map-inner" id="seatMapInner"></div>
-                        </div>
-                    </div>
-                    <aside class="seat-side" id="seatSide">
-                        <h3>Select a seat</h3>
-                        <p>Click a chair on the map.</p>
-                    </aside>
+                <h2>Floor plan</h2>
+                <p class="hint">Optional. Skip this and build the room on the grid.</p>
+                <button class="btn" type="button" id="uploadBtn">Upload SVG / CAD</button>
+                <input id="fileInput" type="file" accept=".svg,.dxf,.dwg,image/svg+xml" hidden />
+                <div id="assetList"></div>
+                <h2>Layers</h2>
+                <div id="layerList"></div>
+            </aside>
+            <main class="viewport place" id="viewport">
+                <div id="world"></div>
+            </main>
+            <aside class="props">
+                <div id="props"></div>
+                <div class="roster">
+                    <h2>Guests</h2>
+                    <p class="hint" id="rosterCounts"></p>
+                    <input class="search" id="rosterSearch" placeholder="Search guests" />
+                    <div id="roster"></div>
                 </div>
-            </div>
+            </aside>
         </div>
+        <footer class="statusbar">
+            <button class="icon-btn" id="zoomOutBtn" type="button">−</button>
+            <span id="zoomLabel">100%</span>
+            <button class="icon-btn" id="zoomInBtn" type="button">+</button>
+            <button class="icon-btn" id="fitBtn" type="button">Fit</button>
+            <button class="icon-btn" id="zoom100Btn" type="button">100%</button>
+            <button class="icon-btn" id="snapBtn" type="button">Snap on</button>
+            <span class="stat" id="stats"></span>
+            <span id="saveState">Not saved yet</span>
+            <span class="toast" id="toast"></span>
+            <button class="mini" type="button" id="lockBtn">Lock</button>
+        </footer>
     </div>
-    <div class="seat-hover-card" id="seatHoverCard"></div>
-
+    <div class="float" id="floatMenu" hidden></div>
+    <div class="sheet-modal" id="arrangeModal" hidden>
+        <form class="sheet" id="arrangeForm">
+            <h3>Create seating arrangement</h3>
+            <p class="hint" id="arrWhere">Click a spot on the grid, set the seating, then create it.</p>
+            <label class="field">Type
+                <select id="arrType">
+                    <option value="rect">Rectangular table + chairs</option>
+                    <option value="square">Square table + chairs</option>
+                    <option value="round">Round table + chairs</option>
+                    <option value="oval">Oval table + chairs</option>
+                    <option value="crescent">Half-round / crescent</option>
+                    <option value="ushape">U-shape table + chairs</option>
+                    <option value="rows">Row seating</option>
+                </select>
+            </label>
+            <div class="sheet-grid">
+                <label class="field"><span id="arrRowsName">Rows</span><input id="arrRows" type="number" min="1" max="20" value="1" /></label>
+                <label class="field"><span id="arrColsName">Columns</span><input id="arrCols" type="number" min="1" max="30" value="1" /></label>
+                <label class="field" id="arrChairsWrap">Chairs per table<input id="arrChairs" type="number" min="2" max="24" value="10" /></label>
+                <label class="field">Chair distance<input id="arrDist" type="number" min="0" max="200" value="28" /></label>
+                <label class="field">Gaps between chairs
+                    <select id="arrGap">
+                        <option value="even">Even</option>
+                        <option value="opening">One larger opening</option>
+                        <option value="uneven">Uneven</option>
+                    </select>
+                </label>
+                <label class="field" id="arrWidthWrap"><span id="arrWidthLabel">Table width</span><input id="arrW" type="number" min="60" max="800" value="180" /></label>
+                <label class="field" id="arrHeightWrap">Table height<input id="arrH" type="number" min="48" max="800" value="120" /></label>
+                <label class="field" id="arrSpaceXWrap">Horizontal spacing<input id="arrSpaceX" type="number" min="0" max="400" value="100" /></label>
+                <label class="field"><span id="arrSpaceYName">Vertical spacing</span><input id="arrSpaceY" type="number" min="0" max="400" value="120" /></label>
+                <label class="field">Rotation<input id="arrRot" type="number" min="0" max="359" value="0" /></label>
+                <label class="field" id="arrDistWrap">Chair distribution
+                    <select id="arrDistMode">
+                        <option value="auto">Automatic</option>
+                        <option value="equal">Equal distribution</option>
+                        <option value="long">Long sides only</option>
+                        <option value="short">Short sides only</option>
+                        <option value="all">All sides</option>
+                    </select>
+                </label>
+                <label class="field" id="arrNumWrap">Seat numbers
+                    <select id="arrNumbering">
+                        <option value="c">C-001</option>
+                        <option value="table">T01-C01</option>
+                    </select>
+                </label>
+            </div>
+            <div class="preview-box" id="arrPreview"></div>
+            <p class="hint" id="arrSummary"></p>
+            <div class="actions">
+                <button class="btn" type="button" id="arrCancel">Cancel</button>
+                <button class="btn primary" type="submit">Create</button>
+            </div>
+        </form>
+    </div>
     <script>
         const baseURL = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
         const ADMIN_PASSWORD = "admin123";
         const AUTH_KEY = "aramcoFarewellSeatAdmin";
-        const MIN_SCALE = 0.35;
-        const MAX_SCALE = 6;
+        const DRAFT_KEY = "aramcoDesignerV2";
+        const CHAIR = 156;
+        const ROW_LABEL = 258;
+        const CATALOG = [
+            ["chair", "Chair"],
+            ["round", "Round table"],
+            ["rect", "Rectangular table"],
+            ["banquet", "Table + chairs"],
+            ["rows", "Row seating"],
+            ["stage", "Stage"],
+            ["sofa", "Sofa"],
+            ["custom", "Custom"],
+            ["text", "Text"],
+            ["wall", "Wall"]
+        ];
+        const SEATING_TOOLS = new Set(["round", "rect", "banquet", "rows"]);
+        const SIZES = {
+            chair: [156, 156], round: [180, 180], rect: [240, 110], sofa: [150, 64], booth: [110, 110],
+            stage: [340, 130], door: [48, 90], entrance: [80, 48], exit: [80, 48], wall: [220, 14], text: [180, 48], custom: [120, 80]
+        };
+        const LAYER_OF = {
+            chair: "chairs", round: "furniture", rect: "furniture", sofa: "furniture", booth: "furniture", stage: "furniture",
+            door: "structure", entrance: "structure", exit: "structure", wall: "structure", text: "labels", custom: "furniture"
+        };
+        const RESIZABLE = new Set(["round", "rect", "sofa", "booth", "stage", "door", "entrance", "exit", "wall", "text", "custom"]);
 
+        let doc = null;
         let users = [];
-        let seatMapLoaded = false;
-        let seatFilter = "";
-        let selectedSeatCode = "";
-        let selectedGuestId = "";
-        let assigningGuestId = "";
-        let seatRecords = [];
-        let seatGuestQuery = "";
-        let hoverHideTimer = null;
-        let mapIsUploaded = false;
-        let mapScale = 1;
-        let mapTx = 0;
-        let mapTy = 0;
-        let mapDidPan = false;
-        let mapGesturesBound = false;
-        let mapWidth = 1400;
-        let mapHeight = 980;
-        const pointers = new Map();
-        let lastPinchDist = 0;
-        let lastPanX = 0;
-        let lastPanY = 0;
+        let seatByCode = new Map();
+        let tool = "chair";
+        let selection = new Set();
+        let selectedAssetId = "";
+        let zoom = 0.45;
+        let panX = 40;
+        let panY = 40;
+        let snapOn = true;
+        let spaceDown = false;
+        let history = [];
+        let historyIndex = -1;
+        let drag = null;
+        let clipboard = [];
+        let saveTimer = null;
+        let booted = false;
 
-        function isUnlocked() {
-            return sessionStorage.getItem(AUTH_KEY) === "1";
+        const viewport = () => document.getElementById("viewport");
+        const world = () => document.getElementById("world");
+        const active = () => doc.layouts.find(l => l.id === doc.activeLayoutId) || doc.layouts[0];
+        const uid = () => Math.random().toString(36).slice(2, 10);
+        const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
+        const snap = (n) => snapOn ? Math.round(n / doc.gridSize) * doc.gridSize : Math.round(n);
+        const esc = (v) => String(v ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+
+        function blankLayout(name) {
+            return {
+                id: "lay-" + uid(), name,
+                objects: [], assets: [],
+                layers: {
+                    chairs: { visible: true, locked: false },
+                    furniture: { visible: true, locked: false },
+                    structure: { visible: true, locked: false },
+                    labels: { visible: true, locked: false },
+                    background: { visible: true, locked: true }
+                }
+            };
         }
-
-        function showApp() {
-            document.getElementById("gate").style.display = "none";
-            document.getElementById("app").classList.add("open");
-            fetchUsers();
-            loadSeatMap(true);
+        function blankDoc() {
+            const layout = blankLayout("Main Hall");
+            return { version: 2, gridSize: 20, activeLayoutId: layout.id, layouts: [layout] };
         }
-
-        function lockSeats() {
-            sessionStorage.removeItem(AUTH_KEY);
-            location.reload();
+        function layerState(name) {
+            const layout = active();
+            layout.layers = layout.layers || blankLayout("").layers;
+            return layout.layers[name] || { visible: true, locked: false };
         }
-
-        document.getElementById("gateForm").addEventListener("submit", function(e) {
-            e.preventDefault();
-            const value = (document.getElementById("adminPassword").value || "").trim();
-            const error = document.getElementById("gateError");
-            if (value === ADMIN_PASSWORD) {
-                sessionStorage.setItem(AUTH_KEY, "1");
-                showApp();
-                return;
+        function findObj(id) {
+            for (const layout of doc.layouts) {
+                const obj = layout.objects.find(o => o.id === id);
+                if (obj) return obj;
             }
-            error.textContent = "Incorrect password.";
-        });
-
-        if (isUnlocked()) showApp();
-
-        document.getElementById("svgFileInput").addEventListener("change", async function() {
-            const file = this.files && this.files[0];
-            this.value = "";
-            if (file) await uploadSeatSvg(file);
-        });
-
-        function normalizeStatus(value) {
-            const status = (value || "").toString().trim().toLowerCase();
-            if (status === "accepted") return "accepted";
-            if (status === "declined") return "declined";
+            return null;
+        }
+        function selectedObjects() {
+            return active().objects.filter(o => selection.has(o.id));
+        }
+        function allChairs() {
+            return doc.layouts.flatMap(l => l.objects.filter(o => o.type === "chair"));
+        }
+        function nextSeat() {
+            let max = 0;
+            allChairs().forEach(c => {
+                const n = parseInt(String(c.seatNumber || "").replace(/\D/g, ""), 10);
+                if (n > max) max = n;
+            });
+            return "C-" + String(max + 1).padStart(3, "0");
+        }
+        function assignment(chair) {
+            return seatByCode.get(String(chair.seatNumber || "").toUpperCase()) || null;
+        }
+        function guestName(record) {
+            return record ? (record.guestName || record.GuestName || "") : "";
+        }
+        function guestStatus(value) {
+            const status = String(value || "pending").toLowerCase();
+            if (status.indexOf("accept") === 0) return "accepted";
+            if (status.indexOf("declin") === 0) return "declined";
             return "pending";
         }
-
         function statusLabel(value) {
-            const status = normalizeStatus(value);
+            const status = guestStatus(value);
             if (status === "accepted") return "Accepted";
             if (status === "declined") return "Declined";
             return "Pending";
         }
-
-        function normalizeUserType(value) {
-            const key = (value || "").toString().trim().toLowerCase().replace(/\s+/g, "");
-            if (key === "vvip" || key === "tier1") return "VVIP";
-            if (key === "vip-en" || key === "vipen" || key === "vip_en") return "VIP-EN";
-            if (key === "vip") return "VIP";
-            if (key === "media") return "Media";
-            return "General";
+        function setSaveState(message) {
+            const el = document.getElementById("saveState");
+            if (el) el.textContent = message || "";
         }
 
-        async function fetchUsers() {
-            const response = await fetch(`${baseURL}/api/AramcoFarewell/users`, { cache: "no-store" });
-            if (!response.ok) return;
-            const data = (await response.json()) || [];
-            users = data.map(u => ({
-                uniqueId: u.uniqueId || u.UniqueId || "",
-                userName: u.fullName || u.FullName || "",
-                emailId: u.emailId || u.EmailId || "",
-                company: u.company || u.Company || "",
-                inviteType: normalizeUserType(u.userType || u.UserType),
-                status: normalizeStatus(u.status || u.Status),
-                seatCode: u.seatCode || u.SeatCode || ""
-            }));
+        function pushHistory() {
+            history.splice(historyIndex + 1);
+            history.push(JSON.stringify(doc));
+            if (history.length > 40) history.shift();
+            historyIndex = history.length - 1;
+            updateHistoryButtons();
+        }
+        function restoreHistory(snapshot) {
+            const next = JSON.parse(snapshot);
+            doc = next;
+            selection.clear();
+            selectedAssetId = "";
+            renderAll();
+        }
+        function undo() {
+            if (historyIndex <= 0) return;
+            historyIndex -= 1;
+            restoreHistory(history[historyIndex]);
+            scheduleSave();
+        }
+        function redo() {
+            if (historyIndex >= history.length - 1) return;
+            historyIndex += 1;
+            restoreHistory(history[historyIndex]);
+            scheduleSave();
+        }
+        function updateHistoryButtons() {
+            document.getElementById("undoBtn").disabled = historyIndex <= 0;
+            document.getElementById("redoBtn").disabled = historyIndex >= history.length - 1;
         }
 
-        function escapeSeatHtml(value) {
-            return String(value || "")
-                .replace(/&/g, "&amp;")
-                .replace(/</g, "&lt;")
-                .replace(/>/g, "&gt;")
-                .replace(/"/g, "&quot;");
+        function toast(message, kind) {
+            const el = document.getElementById("toast");
+            el.textContent = message || "";
+            el.className = "toast" + (kind ? " " + kind : "");
         }
 
-        function findSeat(code) {
-            const key = String(code || "").toUpperCase();
-            return seatRecords.find(s => (s.seatCode || s.SeatCode || "").toUpperCase() === key) || null;
-        }
-
-        function applyMapTransform() {
-            const inner = document.getElementById("seatMapInner");
-            if (!inner) return;
-            inner.style.transform = `translate(${mapTx}px, ${mapTy}px) scale(${mapScale})`;
-            const level = document.getElementById("seatZoomLevel");
-            if (level) level.textContent = Math.round(mapScale * 100) + "%";
-        }
-
-        function zoomAt(cx, cy, factor) {
-            const next = Math.min(MAX_SCALE, Math.max(MIN_SCALE, mapScale * factor));
-            const k = next / mapScale;
-            mapTx = cx - (cx - mapTx) * k;
-            mapTy = cy - (cy - mapTy) * k;
-            mapScale = next;
-            applyMapTransform();
-        }
-
-        function zoomBy(factor) {
-            const viewport = document.getElementById("seatViewport");
-            if (!viewport) return;
-            zoomAt(viewport.clientWidth / 2, viewport.clientHeight / 2, factor);
-        }
-
-        function fitMap() {
-            const viewport = document.getElementById("seatViewport");
-            if (!viewport || !viewport.clientWidth || !viewport.clientHeight) return;
-            const pad = 16;
-            const scale = Math.min(
-                (viewport.clientWidth - pad * 2) / mapWidth,
-                (viewport.clientHeight - pad * 2) / mapHeight
-            );
-            mapScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, scale));
-            mapTx = (viewport.clientWidth - mapWidth * mapScale) / 2;
-            mapTy = (viewport.clientHeight - mapHeight * mapScale) / 2;
-            applyMapTransform();
-        }
-
-        function pinchDistance() {
-            const pts = [...pointers.values()];
-            if (pts.length < 2) return 0;
-            return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
-        }
-
-        function bindMapGestures(viewport) {
-            if (mapGesturesBound) return;
-            mapGesturesBound = true;
-
-            viewport.addEventListener("wheel", (e) => {
-                e.preventDefault();
-                const rect = viewport.getBoundingClientRect();
-                zoomAt(e.clientX - rect.left, e.clientY - rect.top, e.deltaY < 0 ? 1.12 : 1 / 1.12);
-            }, { passive: false });
-
-            viewport.addEventListener("pointerdown", (e) => {
-                if (e.pointerType === "mouse" && e.button !== 0) return;
-                viewport.setPointerCapture(e.pointerId);
-                pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-                lastPanX = e.clientX;
-                lastPanY = e.clientY;
-                mapDidPan = false;
-                if (pointers.size === 2) lastPinchDist = pinchDistance();
-            });
-
-            viewport.addEventListener("pointermove", (e) => {
-                if (!pointers.has(e.pointerId)) return;
-                pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-                if (pointers.size >= 2) {
-                    const rect = viewport.getBoundingClientRect();
-                    const pts = [...pointers.values()];
-                    const cx = (pts[0].x + pts[1].x) / 2 - rect.left;
-                    const cy = (pts[0].y + pts[1].y) / 2 - rect.top;
-                    const dist = pinchDistance();
-                    if (lastPinchDist) zoomAt(cx, cy, dist / lastPinchDist);
-                    lastPinchDist = dist;
-                    mapDidPan = true;
-                    viewport.classList.add("is-panning");
-                    return;
-                }
-                const dx = e.clientX - lastPanX;
-                const dy = e.clientY - lastPanY;
-                if (Math.hypot(dx, dy) > 6) {
-                    mapDidPan = true;
-                    viewport.classList.add("is-panning");
-                    hideSeatHover();
-                }
-                if (mapDidPan) {
-                    mapTx += dx;
-                    mapTy += dy;
-                    lastPanX = e.clientX;
-                    lastPanY = e.clientY;
-                    applyMapTransform();
-                }
-            });
-
-            const endPointer = (e) => {
-                pointers.delete(e.pointerId);
-                lastPinchDist = 0;
-                viewport.classList.remove("is-panning");
-                setTimeout(() => { mapDidPan = false; }, 50);
+        function createObject(type, x, y) {
+            const size = SIZES[type] || [80, 80];
+            const obj = {
+                id: "obj-" + uid(), type,
+                x: snap(x), y: snap(y), w: size[0], h: size[1], rotation: 0,
+                layer: LAYER_OF[type] || "furniture",
+                label: CATALOG.find(c => c[0] === type)?.[1] || "Item",
+                text: type === "text" ? "Label" : ""
             };
-            viewport.addEventListener("pointerup", endPointer);
-            viewport.addEventListener("pointercancel", endPointer);
-            viewport.addEventListener("lostpointercapture", (e) => {
-                if (pointers.has(e.pointerId)) endPointer(e);
-            });
-
-            window.addEventListener("resize", () => {
-                if (seatMapLoaded) fitMap();
-            });
+            if (type === "chair") obj.seatNumber = nextSeat();
+            return obj;
         }
 
-        async function loadSeatMap(forceSvg) {
-            const statsEl = document.getElementById("seatStats");
-            const viewport = document.getElementById("seatViewport");
-            const inner = document.getElementById("seatMapInner");
-            try {
-                const [dataRes, svgRes] = await Promise.all([
-                    fetch(`${baseURL}/api/AramcoFarewell/seats`, { cache: "no-store" }),
-                    (!seatMapLoaded || forceSvg)
-                        ? fetch(`${baseURL}/api/AramcoFarewell/seats/map`, { cache: "no-store" })
-                        : Promise.resolve(null)
-                ]);
-                if (!dataRes.ok) throw new Error("Could not load seats");
-                const data = await dataRes.json();
-                seatRecords = data.seats || data.Seats || [];
-                renderSeatStats(data.stats || data.Stats || {});
-                renderMapMeta(data.map || data.Map || {});
-                if (svgRes) {
-                    if (!svgRes.ok) throw new Error("Could not load seat map");
-                    inner.innerHTML = await svgRes.text();
-                    const svg = inner.querySelector("svg");
-                    if (svg && svg.viewBox && svg.viewBox.baseVal) {
-                        mapWidth = svg.viewBox.baseVal.width || 1400;
-                        mapHeight = svg.viewBox.baseVal.height || 980;
-                        svg.setAttribute("width", mapWidth);
-                        svg.setAttribute("height", mapHeight);
-                    }
-                    seatMapLoaded = true;
-                    bindSeatClicks(inner);
-                    bindMapGestures(viewport);
-                    requestAnimationFrame(fitMap);
-                }
-                paintSeats();
-                if (selectedSeatCode) renderSeatSide(selectedSeatCode);
-                else resetSeatSide();
-            } catch (err) {
-                console.error(err);
-                if (statsEl) statsEl.textContent = "Seat map is unavailable until the API is published.";
+        function chairsOf(table) {
+            return active().objects.filter(o => o.tableId === table.id).sort((a, b) => (a.slot || 0) - (b.slot || 0));
+        }
+        function distributeSides(seats, shape, mode, bodyW, bodyH) {
+            const n = clamp(parseInt(seats, 10) || 4, 1, 24);
+            if (shape === "ushape") {
+                const side = Math.max(1, Math.floor(n / 4));
+                return { top: Math.max(1, n - side * 2), right: side, bottom: 0, left: side };
             }
+            if (mode === "long") {
+                const top = Math.ceil(n / 2);
+                return { top, right: 0, bottom: n - top, left: 0 };
+            }
+            if (mode === "short") {
+                const left = Math.ceil(n / 2);
+                return { top: 0, right: n - left, bottom: 0, left };
+            }
+            if (mode === "equal" || mode === "all" || bodyW <= bodyH * 1.15 && bodyH <= bodyW * 1.15) {
+                const base = Math.floor(n / 4);
+                let rem = n - base * 4;
+                const sides = { top: base, right: base, bottom: base, left: base };
+                ["top", "right", "bottom", "left"].forEach(edge => { if (rem > 0) { sides[edge] += 1; rem -= 1; } });
+                return sides;
+            }
+            const ends = Math.max(1, Math.round(n * 0.2));
+            const long = Math.max(0, n - ends * 2);
+            const top = Math.ceil(long / 2);
+            return { top, bottom: long - top, left: ends, right: n - top - (long - top) - ends };
+        }
+        function chairDistanceOf(table) {
+            const raw = table.chairDistance != null ? table.chairDistance : table.spacing;
+            return clamp(Number(raw) || 0, 0, 200);
+        }
+        function tableSlots(table) {
+            const dist = chairDistanceOf(table);
+            const shape = table.shape || "round";
+            const bodyW = clamp(Number(table.tableW) || Number(table.w) || 240, 48, 900);
+            const bodyH = clamp(Number(table.tableH) || (shape === "round" ? bodyW : Number(table.h) || 120), 48, 900);
+            if (shape === "rows") {
+                const rows = clamp(parseInt(table.rows, 10) || 1, 1, 20);
+                const per = clamp(parseInt(table.perRow, 10) || 10, 1, 30);
+                const gapY = clamp(Number(table.rowGap != null ? table.rowGap : dist), 0, 240);
+                const style = table.gapStyle || "even";
+                const base = CHAIR + dist;
+                const steps = [];
+                for (let c = 0; c < per - 1; c++) {
+                    if (style === "uneven") steps.push(base * (c % 2 ? 1.65 : 0.6));
+                    else if (style === "opening" && c === Math.floor((per - 1) / 2)) steps.push(base * 2.2);
+                    else steps.push(base);
+                }
+                const slots = [];
+                for (let r = 0; r < rows; r++) {
+                    let x = ROW_LABEL + 42;
+                    for (let c = 0; c < per; c++) {
+                        slots.push({ x, y: r * (CHAIR + gapY), rot: 0, edge: "row", row: r });
+                        if (c < steps.length) x += steps[c];
+                    }
+                }
+                const w = ROW_LABEL + 42 + steps.reduce((sum, step) => sum + step, 0) + CHAIR;
+                const h = Math.max(CHAIR, rows * (CHAIR + gapY) - gapY);
+                return { slots, body: { x: 0, y: 0, w: ROW_LABEL, h }, w, h };
+            }
+            const seats = clamp(parseInt(table.seats, 10) || 8, 2, 24);
+            const sized = shape === "round" || shape === "square" || shape === "crescent";
+            const useW = bodyW;
+            const useH = sized ? bodyW : bodyH;
+            if (shape === "round" || shape === "oval") {
+                const rxBody = useW / 2;
+                const ryBody = (shape === "oval" ? useH : useW) / 2;
+                const style = table.gapStyle || "even";
+                const snugX = rxBody + dist + CHAIR / 2;
+                const snugY = shape === "oval" ? ryBody + dist + CHAIR / 2 : snugX;
+                const evenChord = (CHAIR + dist) / (2 * Math.sin(Math.PI / seats));
+                let gap = style;
+                let orbitX = snugX;
+                let orbitY = snugY;
+                if (gap === "opening") {
+                    const step = 2 * Math.asin(Math.min(0.999, (CHAIR + dist) / (2 * Math.max(orbitX, 1))));
+                    if (step * Math.max(seats - 1, 1) >= Math.PI * 2 - 0.15) gap = "even";
+                }
+                if (gap === "even" || gap === "uneven") {
+                    orbitX = Math.max(snugX, evenChord * (gap === "uneven" ? 0.94 : 1));
+                    orbitY = shape === "oval" ? Math.max(snugY, orbitX * (ryBody / Math.max(rxBody, 1))) : orbitX;
+                }
+                const full = Math.PI * 2;
+                const angles = [];
+                if (gap === "opening") {
+                    const step = 2 * Math.asin(Math.min(0.999, (CHAIR + dist) / (2 * Math.max(orbitX, 1))));
+                    const total = step * Math.max(seats - 1, 1);
+                    const start = -Math.PI / 2 - total / 2;
+                    for (let i = 0; i < seats; i++) angles.push(start + i * step);
+                } else if (gap === "uneven") {
+                    const step = full / seats;
+                    const nudge = step * 0.28;
+                    for (let i = 0; i < seats; i++) angles.push(-Math.PI / 2 + i * step + (i % 2 ? nudge : -nudge));
+                } else {
+                    for (let i = 0; i < seats; i++) angles.push(-Math.PI / 2 + (i * full) / seats);
+                }
+                const slots = angles.map(a => {
+                    const cx = orbitX + Math.cos(a) * orbitX;
+                    const cy = orbitY + Math.sin(a) * orbitY;
+                    return { x: cx - CHAIR / 2, y: cy - CHAIR / 2, rot: (a * 180 / Math.PI) + 90, edge: "ring" };
+                });
+                return {
+                    slots,
+                    body: { x: orbitX - rxBody, y: orbitY - ryBody, w: rxBody * 2, h: ryBody * 2 },
+                    w: orbitX * 2, h: orbitY * 2
+                };
+            }
+            if (shape === "crescent") {
+                const radius = Math.max(useW / 2, 48);
+                const orbit = Math.max(radius + dist + CHAIR / 2, ((CHAIR + dist) * seats) / Math.PI);
+                const slots = [];
+                for (let i = 0; i < seats; i++) {
+                    const a = Math.PI - (Math.PI * (i + 0.5) / seats);
+                    const cx = orbit + Math.cos(a) * orbit;
+                    const cy = CHAIR + Math.sin(a) * orbit;
+                    slots.push({ x: cx - CHAIR / 2, y: cy - CHAIR / 2, rot: (a * 180 / Math.PI) + 90, edge: "ring" });
+                }
+                return {
+                    slots,
+                    body: { x: orbit - radius, y: CHAIR, w: radius * 2, h: radius },
+                    w: orbit * 2, h: CHAIR + orbit + CHAIR / 2
+                };
+            }
+            const mode = table.distribute || "auto";
+            const sides = (mode === "custom" && table.sides) ? {
+                top: clamp(+table.sides.top || 0, 0, 20),
+                right: clamp(+table.sides.right || 0, 0, 20),
+                bottom: shape === "ushape" ? 0 : clamp(+table.sides.bottom || 0, 0, 20),
+                left: clamp(+table.sides.left || 0, 0, 20)
+            } : distributeSides(seats, shape, mode, useW, useH);
+            const pad = CHAIR + dist;
+            const slots = [];
+            const style = table.gapStyle || "even";
+            const edgeLine = (count, edge) => {
+                if (!count) return;
+                const span = (edge === "top" || edge === "bottom") ? useW : useH;
+                const base = CHAIR + dist;
+                const gaps = [];
+                for (let i = 0; i < count - 1; i++) {
+                    if (style === "uneven") gaps.push(base * (i % 2 ? 1.7 : 0.55));
+                    else gaps.push(base);
+                }
+                const used = gaps.reduce((sum, gap) => sum + gap, 0);
+                const centers = [];
+                let cursor = style === "opening" ? 0 : (span - used) / 2;
+                for (let i = 0; i < count; i++) {
+                    centers.push(cursor);
+                    if (i < gaps.length) cursor += gaps[i];
+                }
+                const order = (edge === "bottom" || edge === "left") ? centers.slice().reverse() : centers;
+                order.forEach(at => {
+                    if (edge === "top") slots.push({ x: pad + at - CHAIR / 2, y: 0, rot: 0, edge });
+                    if (edge === "bottom") slots.push({ x: pad + at - CHAIR / 2, y: pad + useH + dist, rot: 180, edge });
+                    if (edge === "right") slots.push({ x: pad + useW + dist, y: pad + at - CHAIR / 2, rot: 90, edge });
+                    if (edge === "left") slots.push({ x: 0, y: pad + at - CHAIR / 2, rot: 270, edge });
+                });
+            };
+            edgeLine(sides.top, "top");
+            edgeLine(sides.right, "right");
+            edgeLine(sides.bottom, "bottom");
+            edgeLine(sides.left, "left");
+            return {
+                slots, sides,
+                body: { x: pad, y: pad, w: useW, h: useH },
+                w: pad + useW + dist + CHAIR,
+                h: pad + useH + dist + (sides.bottom ? CHAIR : 0)
+            };
+        }
+        function applySpin(table) {
+            const deg = table.spin || 0;
+            if (!deg) {
+                table.rotation = 0;
+                return;
+            }
+            const cx = table.x + (table.arrangeW || 0) / 2;
+            const cy = table.y + (table.arrangeH || 0) / 2;
+            const rad = deg * Math.PI / 180;
+            const rot = (x, y) => {
+                const dx = x - cx, dy = y - cy;
+                return {
+                    x: cx + dx * Math.cos(rad) - dy * Math.sin(rad),
+                    y: cy + dx * Math.sin(rad) + dy * Math.cos(rad)
+                };
+            };
+            const bodyCx = table.x + (table.bx || 0) + table.w / 2;
+            const bodyCy = table.y + (table.by || 0) + table.h / 2;
+            const body = rot(bodyCx, bodyCy);
+            table.bx = body.x - table.w / 2 - table.x;
+            table.by = body.y - table.h / 2 - table.y;
+            table.rotation = deg;
+            chairsOf(table).forEach(chair => {
+                if (chair.manual && !table.relayout) return;
+                const p = rot(chair.x + chair.w / 2, chair.y + chair.h / 2);
+                chair.x = p.x - chair.w / 2;
+                chair.y = p.y - chair.h / 2;
+                chair.rotation = (chair.baseRot || 0) + deg;
+            });
+        }
+        function isAssigned(chair) {
+            const record = assignment(chair);
+            return !!(record && (record.status || record.Status) === "Assigned");
+        }
+        function syncTable(table) {
+            const plan = tableSlots(table);
+            if ((table.distribute || "auto") === "custom" && plan.sides) table.sides = plan.sides;
+            table.seats = plan.slots.length;
+            let chairs = chairsOf(table);
+            if (chairs.length > plan.slots.length) {
+                const extra = chairs.slice(plan.slots.length);
+                const drop = new Set();
+                extra.forEach(chair => {
+                    if (isAssigned(chair)) {
+                        chair.tableId = "";
+                        chair.arrangementId = "";
+                        chair.manual = true;
+                    } else drop.add(chair.id);
+                });
+                if (drop.size) active().objects = active().objects.filter(o => !drop.has(o.id));
+                chairs = chairsOf(table);
+            }
+            while (chairs.length < plan.slots.length) {
+                const chair = createObject("chair", table.x, table.y);
+                chair.tableId = table.id;
+                chair.groupId = table.groupId;
+                chair.w = CHAIR;
+                chair.h = CHAIR;
+                active().objects.push(chair);
+                chairs.push(chair);
+            }
+            plan.slots.forEach((slot, i) => {
+                const chair = chairs[i];
+                chair.slot = i;
+                chair.edge = slot.edge || "";
+                chair.tableId = table.id;
+                chair.groupId = table.groupId;
+                chair.arrangementId = table.arrangementId || "";
+                chair.seatShape = table.shape || "round";
+                if (table.numbering === "table" && !isAssigned(chair)) {
+                    chair.seatNumber = "T" + String(table.tableNo || 1).padStart(2, "0") + "-C" + String(i + 1).padStart(2, "0");
+                }
+                if (chair.manual && !table.relayout) return;
+                chair.manual = false;
+                chair.x = table.x + slot.x;
+                chair.y = table.y + slot.y;
+                chair.baseRot = slot.rot || 0;
+                chair.rotation = chair.baseRot;
+                chair.w = CHAIR;
+                chair.h = CHAIR;
+            });
+            table.bx = plan.body.x;
+            table.by = plan.body.y;
+            table.w = plan.body.w;
+            table.h = plan.body.h;
+            table.arrangeW = plan.w;
+            table.arrangeH = plan.h;
+            applySpin(table);
+        }
+        function growChairs() {
+            const current = doc.activeLayoutId;
+            doc.layouts.forEach(layout => {
+                doc.activeLayoutId = layout.id;
+                layout.objects.filter(obj => obj.type === "chair" && !obj.tableId).forEach(chair => {
+                    const prev = chair.w || CHAIR;
+                    if (prev !== CHAIR) {
+                        chair.x -= (CHAIR - prev) / 2;
+                        chair.y -= (CHAIR - prev) / 2;
+                    }
+                    chair.w = CHAIR;
+                    chair.h = CHAIR;
+                });
+                layout.objects.filter(obj => obj.type === "table").forEach(table => {
+                    table.relayout = true;
+                    syncTable(table);
+                    table.relayout = false;
+                });
+            });
+            doc.activeLayoutId = current;
+        }
+        function viewCenter() {
+            const rect = viewport().getBoundingClientRect();
+            return {
+                x: (rect.width / 2 - panX) / zoom,
+                y: (rect.height / 2 - panY) / zoom
+            };
+        }
+        let arrangePoint = null;
+        function readArrange() {
+            const type = document.getElementById("arrType").value || "rect";
+            const rowsMax = type === "rows" ? 20 : 10;
+            const colsMax = type === "rows" ? 30 : 10;
+            return {
+                type,
+                rows: clamp(parseInt(document.getElementById("arrRows").value, 10) || 1, 1, rowsMax),
+                cols: clamp(parseInt(document.getElementById("arrCols").value, 10) || 1, 1, colsMax),
+                chairs: clamp(parseInt(document.getElementById("arrChairs").value, 10) || 8, 2, 24),
+                dist: clamp(parseInt(document.getElementById("arrDist").value, 10) || 0, 0, 200),
+                w: clamp(parseInt(document.getElementById("arrW").value, 10) || 240, 60, 800),
+                h: clamp(parseInt(document.getElementById("arrH").value, 10) || 120, 48, 800),
+                spaceX: clamp(parseInt(document.getElementById("arrSpaceX").value, 10) || 0, 0, 400),
+                spaceY: clamp(parseInt(document.getElementById("arrSpaceY").value, 10) || 0, 0, 400),
+                rot: ((parseInt(document.getElementById("arrRot").value, 10) || 0) % 360 + 360) % 360,
+                distribute: document.getElementById("arrDistMode").value || "auto",
+                numbering: document.getElementById("arrNumbering").value || "c",
+                gapStyle: document.getElementById("arrGap").value || "even"
+            };
+        }
+        function previewMarkup(cfg) {
+            const probe = makeTable(cfg, 0, 0, "");
+            probe.spin = 0;
+            const cells = [];
+            if (cfg.type === "rows") {
+                probe.rows = cfg.rows;
+                probe.perRow = cfg.cols;
+                probe.seats = cfg.rows * cfg.cols;
+                cells.push({ x: 0, y: 0, plan: tableSlots(probe) });
+            } else {
+                const plan = tableSlots(probe);
+                const pitchX = plan.w + cfg.spaceX;
+                const pitchY = plan.h + cfg.spaceY;
+                const rows = Math.min(cfg.rows, 3);
+                const cols = Math.min(cfg.cols, 4);
+                for (let r = 0; r < rows; r++) {
+                    for (let c = 0; c < cols; c++) cells.push({ x: c * pitchX, y: r * pitchY, plan });
+                }
+            }
+            let maxX = 1, maxY = 1;
+            cells.forEach(cell => {
+                maxX = Math.max(maxX, cell.x + cell.plan.w);
+                maxY = Math.max(maxY, cell.y + cell.plan.h);
+            });
+            const marks = cells.map(cell => {
+                const body = cell.plan.body;
+                const round = cfg.type === "round" || cfg.type === "oval";
+                const crescent = cfg.type === "crescent";
+                const rx = round ? body.w / 2 : (crescent ? body.w / 2 : 8);
+                const ry = round ? body.h / 2 : rx;
+                const tableMark = cfg.type === "rows"
+                    ? Array.from({ length: cfg.rows }, (_, r) => `<rect x="${cell.x}" y="${cell.y + r * (CHAIR + cfg.spaceY)}" width="${ROW_LABEL}" height="${CHAIR}" rx="42" fill="#2f4c72"/>`).join("")
+                    : `<rect x="${cell.x + body.x}" y="${cell.y + body.y}" width="${Math.max(body.w, 1)}" height="${Math.max(body.h, 1)}" rx="${rx}" ry="${ry}" fill="#f3ecdf"/>`;
+                const chairs = cell.plan.slots.map(slot => `<rect x="${cell.x + slot.x}" y="${cell.y + slot.y}" width="${CHAIR}" height="${CHAIR}" rx="42" fill="#2f4c72"/>`).join("");
+                return tableMark + chairs;
+            }).join("");
+            return `<svg viewBox="-10 -10 ${maxX + 20} ${maxY + 20}" preserveAspectRatio="xMidYMid meet">${marks}</svg>`;
+        }
+        function syncArrangeFields() {
+            const type = document.getElementById("arrType").value;
+            const rows = type === "rows";
+            const radial = type === "round" || type === "square" || type === "crescent" || type === "oval";
+            document.getElementById("arrChairsWrap").hidden = rows;
+            document.getElementById("arrWidthWrap").hidden = rows;
+            document.getElementById("arrHeightWrap").hidden = rows || type === "round" || type === "square" || type === "crescent";
+            document.getElementById("arrSpaceXWrap").hidden = rows;
+            document.getElementById("arrDistWrap").hidden = rows || type === "round" || type === "oval" || type === "crescent";
+            document.getElementById("arrNumWrap").hidden = rows;
+            document.getElementById("arrRowsName").textContent = "Rows";
+            document.getElementById("arrColsName").textContent = rows ? "Chairs per row" : "Columns";
+            document.getElementById("arrWidthLabel").textContent = radial && type !== "oval" ? (type === "square" ? "Table size" : "Diameter") : "Table width";
+            document.getElementById("arrSpaceYName").textContent = rows ? "Space between rows" : "Vertical spacing";
+            const cfg = readArrange();
+            const tables = rows ? 1 : cfg.rows * cfg.cols;
+            const chairs = rows ? cfg.rows * cfg.cols : tables * cfg.chairs;
+            const tooMany = !rows && tables > 40;
+            const clipped = !rows && (cfg.rows > 3 || cfg.cols > 4);
+            document.getElementById("arrSummary").textContent = tooMany
+                ? "Use 40 tables or fewer. Lower the rows or columns."
+                : ((rows
+                    ? `Creates 1 block · ${cfg.rows} rows · ${cfg.cols} chairs per row · ${chairs} chairs.`
+                    : `Creates ${tables} table${tables === 1 ? "" : "s"} · ${cfg.chairs} chairs each · ${chairs} chairs.`)
+                    + (clipped ? " Preview shows the first rows and columns." : ""));
+            const preview = document.getElementById("arrPreview");
+            if (preview && !tooMany) preview.innerHTML = previewMarkup(cfg);
+        }
+        function openArrange(point, tool) {
+            if (layerState("furniture").locked || layerState("chairs").locked) {
+                toast("Unlock the furniture and chair layers first.", "bad");
+                return;
+            }
+            const typeOf = { round: "round", rect: "rect", banquet: "rect", rows: "rows" };
+            arrangePoint = { x: snap(point.x), y: snap(point.y) };
+            document.getElementById("arrType").value = typeOf[tool] || document.getElementById("arrType").value || "rect";
+            document.getElementById("arrWhere").textContent = `Placed at ${Math.round(arrangePoint.x)}, ${Math.round(arrangePoint.y)}.`;
+            document.getElementById("arrangeModal").hidden = false;
+            syncArrangeFields();
+        }
+        function closeArrange() {
+            document.getElementById("arrangeModal").hidden = true;
+            arrangePoint = null;
+        }
+        function nextTableNumber() {
+            let max = 0;
+            active().objects.forEach(obj => {
+                if (obj.type !== "table" || obj.shape === "rows") return;
+                const match = String(obj.label || "").match(/(\d+)\s*$/);
+                if (match) max = Math.max(max, parseInt(match[1], 10));
+            });
+            return max;
+        }
+        function makeTable(config, x, y, label) {
+            const shape = config.type;
+            return {
+                id: "obj-" + uid(), type: "table", shape,
+                x, y, w: config.w, h: shape === "round" ? config.w : config.h,
+                rotation: 0, spin: config.rot || 0,
+                layer: "furniture", label, text: "",
+                seats: config.chairs, spacing: config.dist, chairDistance: config.dist,
+                gapStyle: config.gapStyle || "even",
+                tableW: config.w,
+                tableH: (shape === "round" || shape === "square" || shape === "crescent") ? config.w : config.h,
+                rows: config.rows, perRow: config.cols, rowGap: config.spaceY,
+                distribute: config.distribute || "auto",
+                numbering: config.numbering || "c",
+                sides: null, groupId: "grp-" + uid()
+            };
+        }
+        function stampTable(table, config, number, row, col, arrangementId) {
+            table.arrangementId = arrangementId;
+            table.tableNo = number;
+            table.gridRow = row;
+            table.gridCol = col;
+            table.plan = {
+                type: config.type, rows: config.rows, cols: config.cols, chairs: config.chairs,
+                dist: config.dist, w: config.w, h: config.h, spaceX: config.spaceX, spaceY: config.spaceY,
+                rot: config.rot, distribute: config.distribute, numbering: config.numbering,
+                gapStyle: config.gapStyle || "even"
+            };
+            table.gapStyle = config.gapStyle || table.gapStyle || "even";
+            table.relayout = true;
+            syncTable(table);
+            table.relayout = false;
+        }
+        function createArrangement(config, origin) {
+            if (config.type !== "rows" && config.rows * config.cols > 40) {
+                toast("Use 40 tables or fewer.", "bad");
+                return;
+            }
+            pushHistory();
+            const made = [];
+            const arrangementId = "arr-" + uid();
+            if (config.type === "rows") {
+                const table = makeTable(config, snap(origin.x), snap(origin.y), "Chair rows");
+                table.seats = config.rows * config.cols;
+                active().objects.push(table);
+                stampTable(table, config, 1, 0, 0, arrangementId);
+                made.push(table);
+            } else {
+                const probe = makeTable(config, 0, 0, "");
+                const plan = tableSlots(probe);
+                const pitchX = plan.w + config.spaceX;
+                const pitchY = plan.h + config.spaceY;
+                let number = nextTableNumber();
+                for (let r = 0; r < config.rows; r++) {
+                    for (let c = 0; c < config.cols; c++) {
+                        number += 1;
+                        const table = makeTable(
+                            config,
+                            snap(origin.x + c * pitchX),
+                            snap(origin.y + r * pitchY),
+                            "Table " + String(number).padStart(2, "0")
+                        );
+                        active().objects.push(table);
+                        stampTable(table, config, number, r, c, arrangementId);
+                        made.push(table);
+                    }
+                }
+            }
+            selection = new Set(made.flatMap(table => [table.id, ...chairsOf(table).map(chair => chair.id)]));
+            selectedAssetId = "";
+            closeArrange();
+            renderAll();
+            scheduleSave();
+            const chairCount = made.reduce((sum, table) => sum + chairsOf(table).length, 0);
+            toast(config.type === "rows"
+                ? `Created a row block with ${chairCount} chairs.`
+                : `Created ${made.length} table${made.length === 1 ? "" : "s"} · ${chairCount} chairs.`, "ok");
+        }
+        function arrangementTables(id) {
+            return active().objects.filter(o => o.type === "table" && o.arrangementId === id)
+                .sort((a, b) => (a.gridRow || 0) - (b.gridRow || 0) || (a.gridCol || 0) - (b.gridCol || 0));
+        }
+        function membersOf(id) {
+            return active().objects.filter(o => o.arrangementId === id);
+        }
+        function selectionArrangement() {
+            const items = selectedObjects();
+            if (!items.length) return "";
+            const id = items[0].arrangementId || "";
+            if (!id || !items.every(o => o.arrangementId === id) || !items.some(o => o.type === "table")) return "";
+            return id;
+        }
+        function removeTableKeepAssigned(table) {
+            const drop = new Set([table.id]);
+            chairsOf(table).forEach(chair => {
+                if (isAssigned(chair)) {
+                    chair.tableId = "";
+                    chair.arrangementId = "";
+                    chair.manual = true;
+                } else drop.add(chair.id);
+            });
+            active().objects = active().objects.filter(o => !drop.has(o.id));
+        }
+        function ungroupArrangement(id) {
+            if (!id) return;
+            pushHistory();
+            membersOf(id).forEach(obj => { obj.arrangementId = ""; });
+            selection.clear();
+            renderAll();
+            scheduleSave();
+            toast("Ungrouped. Each table still keeps its chairs.");
+        }
+        function arrangementForm(id) {
+            const tables = arrangementTables(id);
+            const first = tables[0];
+            const plan = first.plan || {};
+            const type = first.shape || plan.type || "rect";
+            const chairs = tables.reduce((sum, table) => sum + chairsOf(table).length, 0);
+            const assigned = tables.reduce((sum, table) => sum + chairsOf(table).filter(isAssigned).length, 0);
+            const shapes = [["rect", "Rectangular"], ["square", "Square"], ["round", "Round"], ["oval", "Oval"], ["crescent", "Half-round"], ["ushape", "U-shape"], ["rows", "Row seating"]];
+            const modes = [["auto", "Automatic"], ["equal", "Equal"], ["long", "Long sides"], ["short", "Short sides"], ["all", "All sides"]];
+            return `<h2>Table arrangement</h2>
+                <p class="hint">${tables.length} tables · ${chairs} chairs · ${assigned} assigned. Assigned guests stay on their seat numbers when you apply a change.</p>
+                <label class="field">Type<select id="editType">${shapes.map(([v, l]) => `<option value="${v}"${v === type ? " selected" : ""}>${l}</option>`).join("")}</select></label>
+                <label class="field">Rows<input id="editRows" type="number" min="1" max="20" value="${plan.rows || (type === "rows" ? first.rows : Math.max(...tables.map(t => (t.gridRow || 0) + 1)))}" /></label>
+                <label class="field">${type === "rows" ? "Chairs per row" : "Columns"}<input id="editCols" type="number" min="1" max="30" value="${plan.cols || (type === "rows" ? first.perRow : Math.max(...tables.map(t => (t.gridCol || 0) + 1)))}" /></label>
+                ${type === "rows" ? "" : `<label class="field">Chairs per table<input id="editChairs" type="number" min="2" max="24" value="${plan.chairs || first.seats || 8}" /></label>`}
+                <label class="field">Chair distance<input id="editDist" type="number" min="0" max="200" value="${first.chairDistance ?? plan.dist ?? 28}" /></label>
+                <label class="field">Gaps between chairs<select id="editGap">
+                    ${[["even", "Even"], ["opening", "One larger opening"], ["uneven", "Uneven"]].map(([v, l]) => `<option value="${v}"${(first.gapStyle || "even") === v ? " selected" : ""}>${l}</option>`).join("")}
+                </select></label>
+                <label class="field">${type === "round" || type === "square" || type === "crescent" ? "Table size" : "Table width"}<input id="editW" type="number" min="60" max="800" value="${Math.round(first.tableW || plan.w || 240)}" /></label>
+                ${type === "round" || type === "square" || type === "crescent" || type === "rows" ? "" : `<label class="field">Table height<input id="editH" type="number" min="48" max="800" value="${Math.round(first.tableH || plan.h || 120)}" /></label>`}
+                ${type === "rows" ? "" : `<label class="field">Horizontal gap<input id="editSpaceX" type="number" min="0" max="400" value="${plan.spaceX ?? 100}" /></label>`}
+                <label class="field">${type === "rows" ? "Space between rows" : "Vertical gap"}<input id="editSpaceY" type="number" min="0" max="400" value="${plan.spaceY ?? first.rowGap ?? 120}" /></label>
+                ${type === "rows" || type === "round" || type === "oval" || type === "crescent" ? "" : `<label class="field">Chair distribution<select id="editMode">${modes.map(([v, l]) => `<option value="${v}"${(first.distribute || "auto") === v ? " selected" : ""}>${l}</option>`).join("")}</select></label>`}
+                <div class="row">
+                    <button class="btn primary" type="button" id="applyArr">Apply changes</button>
+                    <button class="btn" type="button" id="ungroupArr">Ungroup</button>
+                    <button class="btn" type="button" id="dupBtn2">Duplicate</button>
+                    <button class="btn" type="button" id="delBtn2">Delete</button>
+                </div>`;
+        }
+        function applyArrangement() {
+            const id = selectionArrangement();
+            if (!id) return;
+            const tables = arrangementTables(id);
+            if (!tables.length) return;
+            const type = document.getElementById("editType").value || tables[0].shape;
+            const rows = clamp(parseInt(document.getElementById("editRows").value, 10) || 1, 1, type === "rows" ? 20 : 10);
+            const cols = clamp(parseInt(document.getElementById("editCols").value, 10) || 1, 1, type === "rows" ? 30 : 10);
+            if (type !== "rows" && rows * cols > 40) { toast("Use 40 tables or fewer.", "bad"); return; }
+            const cfg = {
+                type, rows, cols,
+                chairs: clamp(parseInt(document.getElementById("editChairs")?.value, 10) || tables[0].seats || 8, 2, 24),
+                dist: clamp(parseInt(document.getElementById("editDist").value, 10) || 0, 0, 200),
+                w: clamp(parseInt(document.getElementById("editW").value, 10) || 240, 60, 800),
+                h: clamp(parseInt(document.getElementById("editH")?.value, 10) || tables[0].tableH || 120, 48, 800),
+                spaceX: clamp(parseInt(document.getElementById("editSpaceX")?.value, 10) || 0, 0, 400),
+                spaceY: clamp(parseInt(document.getElementById("editSpaceY").value, 10) || 0, 0, 400),
+                rot: tables[0].spin || 0,
+                distribute: document.getElementById("editMode")?.value || tables[0].distribute || "auto",
+                numbering: tables[0].numbering || "c",
+                gapStyle: document.getElementById("editGap")?.value || tables[0].gapStyle || "even"
+            };
+            pushHistory();
+            const origin = { x: Math.min(...tables.map(t => t.x)), y: Math.min(...tables.map(t => t.y)) };
+            if (type === "rows") {
+                const keep = tables[0];
+                tables.slice(1).forEach(removeTableKeepAssigned);
+                keep.shape = "rows";
+                keep.rows = rows;
+                keep.perRow = cols;
+                keep.seats = rows * cols;
+                keep.chairDistance = cfg.dist;
+                keep.spacing = cfg.dist;
+                keep.rowGap = cfg.spaceY;
+                keep.gapStyle = cfg.gapStyle;
+                keep.x = snap(origin.x);
+                keep.y = snap(origin.y);
+                keep.label = "Chair rows";
+                stampTable(keep, cfg, keep.tableNo || 1, 0, 0, id);
+            } else {
+                const probe = makeTable(cfg, 0, 0, "");
+                const plan = tableSlots(probe);
+                const pitchX = plan.w + cfg.spaceX;
+                const pitchY = plan.h + cfg.spaceY;
+                const need = rows * cols;
+                const pool = tables.slice();
+                while (pool.length > need) removeTableKeepAssigned(pool.pop());
+                let number = nextTableNumber();
+                for (let i = 0; i < need; i++) {
+                    const r = Math.floor(i / cols);
+                    const c = i % cols;
+                    let table = pool[i];
+                    if (!table) {
+                        number += 1;
+                        table = makeTable(cfg, 0, 0, "Table " + String(number).padStart(2, "0"));
+                        table.tableNo = number;
+                        active().objects.push(table);
+                    }
+                    table.shape = type;
+                    table.x = snap(origin.x + c * pitchX);
+                    table.y = snap(origin.y + r * pitchY);
+                    table.seats = cfg.chairs;
+                    table.chairDistance = cfg.dist;
+                    table.spacing = cfg.dist;
+                    table.tableW = cfg.w;
+                    table.tableH = (type === "round" || type === "square" || type === "crescent") ? cfg.w : cfg.h;
+                    table.distribute = cfg.distribute;
+                    table.numbering = cfg.numbering;
+                    table.gapStyle = cfg.gapStyle;
+                    table.spin = cfg.rot;
+                    table.sides = null;
+                    table.label = table.shape === "rows" ? "Chair rows" : ("Table " + String(table.tableNo || (i + 1)).padStart(2, "0"));
+                    stampTable(table, cfg, table.tableNo || (i + 1), r, c, id);
+                }
+            }
+            selection = new Set(membersOf(id).map(o => o.id));
+            renderAll();
+            scheduleSave();
+            toast("Arrangement updated. Assigned seats were kept.", "ok");
         }
 
-        function renderSeatStats(stats) {
-            const el = document.getElementById("seatStats");
-            if (!el) return;
-            const items = [
-                ["", "Total", stats.total ?? stats.Total ?? 0],
-                ["Assigned", "Assigned", stats.assigned ?? stats.Assigned ?? 0],
-                ["Reserved", "Reserved", stats.reserved ?? stats.Reserved ?? 0],
-                ["Available", "Unassigned", stats.unassigned ?? stats.Unassigned ?? 0]
-            ];
-            el.innerHTML = items.map(([filter, label, value]) =>
-                `<button type="button" class="seat-chip${seatFilter === filter ? " active" : ""}" onclick="setSeatFilter('${filter}')">${label}: <strong>${value}</strong></button>`
+        function placeAt(type, x, y) {
+            if (SEATING_TOOLS.has(type)) { openArrange({ x, y }, type); return; }
+            const layer = LAYER_OF[type] || "furniture";
+            if (layerState(layer).locked) { toast("That layer is locked.", "bad"); return; }
+            pushHistory();
+            const obj = createObject(type, x - (SIZES[type][0] / 2), y - (SIZES[type][1] / 2));
+            active().objects.push(obj);
+            selection = new Set([obj.id]);
+            selectedAssetId = "";
+            renderAll();
+            scheduleSave();
+        }
+        function itemLeft(obj) { return obj.type === "table" ? obj.x + (obj.bx || 0) : obj.x; }
+        function itemTop(obj) { return obj.type === "table" ? obj.y + (obj.by || 0) : obj.y; }
+
+        function worldPoint(e) {
+            const rect = viewport().getBoundingClientRect();
+            return { x: (e.clientX - rect.left - panX) / zoom, y: (e.clientY - rect.top - panY) / zoom };
+        }
+
+        function applyView() {
+            const el = world();
+            el.style.transform = `translate(${panX}px, ${panY}px) scale(${zoom})`;
+            const grid = (doc && doc.gridSize ? doc.gridSize : 20) * zoom;
+            const vp = viewport();
+            vp.style.backgroundSize = grid + "px " + grid + "px";
+            const ox = ((panX % grid) + grid) % grid;
+            const oy = ((panY % grid) + grid) % grid;
+            vp.style.backgroundPosition = ox + "px " + oy + "px";
+            document.getElementById("zoomLabel").textContent = Math.round(zoom * 100) + "%";
+            positionFloat();
+        }
+        function zoomAt(clientX, clientY, factor) {
+            const rect = viewport().getBoundingClientRect();
+            const mx = clientX - rect.left;
+            const my = clientY - rect.top;
+            const next = clamp(zoom * factor, 0.05, 4);
+            const k = next / zoom;
+            panX = mx - (mx - panX) * k;
+            panY = my - (my - panY) * k;
+            zoom = next;
+            applyView();
+        }
+        function contentBounds() {
+            const layout = active();
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            let any = false;
+            (layout.objects || []).forEach(obj => {
+                any = true;
+                const x = itemLeft(obj);
+                const y = itemTop(obj);
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x + (obj.w || 0));
+                maxY = Math.max(maxY, y + (obj.h || 0));
+            });
+            (layout.assets || []).forEach(asset => {
+                if (!asset.visible) return;
+                any = true;
+                minX = Math.min(minX, asset.x);
+                minY = Math.min(minY, asset.y);
+                maxX = Math.max(maxX, asset.x + asset.w);
+                maxY = Math.max(maxY, asset.y + asset.h);
+            });
+            return any ? { minX, minY, maxX, maxY } : null;
+        }
+        function fit() {
+            const rect = viewport().getBoundingClientRect();
+            const bounds = contentBounds();
+            if (!bounds || rect.width < 20 || rect.height < 20) {
+                zoom = 1;
+                panX = 64;
+                panY = 64;
+                applyView();
+                return;
+            }
+            const w = Math.max(80, bounds.maxX - bounds.minX);
+            const h = Math.max(80, bounds.maxY - bounds.minY);
+            zoom = clamp(Math.min((rect.width - 80) / w, (rect.height - 80) / h), 0.05, 2);
+            panX = (rect.width - w * zoom) / 2 - bounds.minX * zoom;
+            panY = (rect.height - h * zoom) / 2 - bounds.minY * zoom;
+            applyView();
+        }
+
+        function renderAll() {
+            renderLayouts();
+            renderTools();
+            renderAssets();
+            renderLayers();
+            renderWorld();
+            renderProps();
+            renderFloat();
+            renderStats();
+            renderGuestList();
+            renderRoster();
+            applyView();
+            const name = document.getElementById("layoutName");
+            if (document.activeElement !== name) name.value = active().name;
+            viewport().classList.toggle("place", tool !== "select" && tool !== "hand");
+            viewport().classList.toggle("hand", tool === "hand");
+            document.getElementById("snapBtn").textContent = snapOn ? "Snap on" : "Snap off";
+        }
+
+        function renderTools() {
+            document.getElementById("toolGrid").innerHTML = CATALOG.map(([type, label]) =>
+                `<button class="tool${tool === type ? " on" : ""}" type="button" draggable="true" data-tool="${type}">${esc(label)}</button>`
+            ).join("");
+            document.getElementById("selectTool").classList.toggle("on", tool === "select");
+            document.getElementById("handTool").classList.toggle("on", tool === "hand");
+        }
+        function renderLayouts() {
+            document.getElementById("layoutList").innerHTML = doc.layouts.map(layout =>
+                `<div class="layout-row${layout.id === doc.activeLayoutId ? " on" : ""}">
+                    <button class="mini" type="button" data-open-layout="${layout.id}" style="flex:1;text-align:left;color:inherit;font-size:13px">${esc(layout.name)}</button>
+                    <button class="mini" type="button" data-dup-layout="${layout.id}">Copy</button>
+                    <button class="mini" type="button" data-del-layout="${layout.id}">Delete</button>
+                </div>`
             ).join("");
         }
-
-        function renderMapMeta(map) {
-            mapIsUploaded = !!(map.isUploaded ?? map.IsUploaded);
-            const fileName = map.fileName || map.FileName || (mapIsUploaded ? "uploaded.svg" : "hall4.svg");
-            const updated = map.updatedOn || map.UpdatedOn;
-            const meta = document.getElementById("mapMeta");
-            const restore = document.getElementById("restoreMapBtn");
-            if (meta) {
-                const when = updated ? ` · updated ${new Date(updated).toLocaleString()}` : "";
-                meta.innerHTML = mapIsUploaded
-                    ? `Current map: <strong>${escapeSeatHtml(fileName)}</strong>${escapeSeatHtml(when)}`
-                    : `Current map: <strong>placeholder Hall 4</strong> · upload a CAD SVG anytime to replace it`;
-            }
-            if (restore) restore.style.display = mapIsUploaded ? "" : "none";
+        function renderAssets() {
+            const assets = active().assets || [];
+            document.getElementById("assetList").innerHTML = assets.map(asset =>
+                `<div class="asset-row">
+                    <button class="mini" type="button" data-open-asset="${asset.id}" style="flex:1;text-align:left;color:inherit;font-size:12px">${esc(asset.fileName)}</button>
+                    <button class="mini" type="button" data-asset-vis="${asset.id}">${asset.visible ? "Hide" : "Show"}</button>
+                    <button class="mini" type="button" data-asset-lock="${asset.id}">${asset.locked ? "Unlock" : "Lock"}</button>
+                    <button class="mini" type="button" data-asset-del="${asset.id}">Delete</button>
+                </div>`
+            ).join("") || `<p class="hint">No floor plan uploaded.</p>`;
         }
-
-        function setMapUploadStatus(kind, message) {
-            const el = document.getElementById("mapUploadStatus");
-            if (!el) return;
-            el.className = "map-upload-status" + (kind ? ` visible is-${kind}` : "");
-            el.textContent = message || "";
-        }
-
-        async function uploadSeatSvg(file) {
-            if (!file) return;
-            if (mapIsUploaded && !confirm("Replace the current seat map? Seats that are not in the new file will lose their assignments."))
-                return;
-            setMapUploadStatus("working", `Uploading ${file.name}… chairs and tables will be numbered automatically.`);
-            try {
-                const body = new FormData();
-                body.append("file", file);
-                const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/map`, { method: "POST", body });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                    setMapUploadStatus("err", data.message || data.Message || "Could not upload SVG.");
-                    return;
-                }
-                selectedSeatCode = "";
-                selectedGuestId = "";
-                assigningGuestId = "";
-                seatMapLoaded = false;
-                await loadSeatMap(true);
-                setMapUploadStatus("ok", data.message || data.Message || "Map replaced.");
-            } catch (err) {
-                setMapUploadStatus("err", "Could not upload SVG. Check the connection and try again.");
-            }
-        }
-
-        async function restoreDefaultMap() {
-            if (!confirm("Restore the placeholder Hall 4 map? Seats that are not on that map will lose their assignments."))
-                return;
-            setMapUploadStatus("working", "Restoring placeholder map…");
-            try {
-                const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/map`, { method: "DELETE" });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                    setMapUploadStatus("err", data.message || data.Message || "Could not restore the placeholder map.");
-                    return;
-                }
-                selectedSeatCode = "";
-                selectedGuestId = "";
-                assigningGuestId = "";
-                seatMapLoaded = false;
-                await loadSeatMap(true);
-                setMapUploadStatus("ok", data.message || data.Message || "Placeholder map restored.");
-            } catch (err) {
-                setMapUploadStatus("err", "Could not restore the placeholder map.");
-            }
-        }
-
-        function resetSeatSide() {
-            const side = document.getElementById("seatSide");
-            if (!side) return;
-            side.innerHTML = "<h3>Select a seat</h3><p>Click a chair on the map.</p>";
-        }
-
-        function setSeatFilter(filter) {
-            seatFilter = seatFilter === filter ? "" : filter;
-            paintSeats();
-            renderSeatStats({
-                total: seatRecords.filter(s => seatStatus(s) !== "Blocked").length,
-                assigned: seatRecords.filter(s => seatStatus(s) === "Assigned").length,
-                reserved: seatRecords.filter(s => seatStatus(s) === "Reserved").length,
-                unassigned: seatRecords.filter(s => seatStatus(s) === "Available").length
-            });
-        }
-
-        function seatStatus(seat) {
-            return (seat && (seat.status || seat.Status)) || "Available";
-        }
-
-        function bindSeatClicks(root) {
-            root.querySelectorAll("[data-seat-code]").forEach(el => {
-                el.addEventListener("click", () => {
-                    if (mapDidPan) return;
-                    hideSeatHover();
-                    selectedSeatCode = el.getAttribute("data-seat-code") || "";
-                    selectedGuestId = "";
-                    assigningGuestId = "";
-                    seatGuestQuery = "";
-                    paintSeats();
-                    renderSeatSide(selectedSeatCode);
-                    if (window.matchMedia("(max-width: 980px)").matches) {
-                        document.getElementById("seatSide")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                    }
-                });
-                el.addEventListener("mouseenter", () => {
-                    if (window.matchMedia("(pointer: coarse)").matches) return;
-                    showSeatHover(el);
-                });
-                el.addEventListener("mouseleave", scheduleHideSeatHover);
-            });
-            const hover = document.getElementById("seatHoverCard");
-            if (hover && !hover.dataset.bound) {
-                hover.dataset.bound = "1";
-                hover.addEventListener("mouseenter", () => { if (hoverHideTimer) clearTimeout(hoverHideTimer); });
-                hover.addEventListener("mouseleave", scheduleHideSeatHover);
-            }
-        }
-
-        function showSeatHover(el) {
-            if (hoverHideTimer) clearTimeout(hoverHideTimer);
-            const code = el.getAttribute("data-seat-code") || "";
-            const seat = findSeat(code);
-            if (!seat) return;
-            const status = seatStatus(seat);
-            const name = seat.guestName || seat.GuestName || "";
-            const zone = seat.zone || seat.Zone || "";
-            const hover = document.getElementById("seatHoverCard");
-            if (!hover) return;
-            let actions = `<button class="btn btn-primary" onclick="openSeatAssign('${escapeSeatHtml(code)}')">Assign</button>`;
-            if (status === "Assigned") {
-                actions = `
-                    <button class="btn btn-ghost" onclick="releaseSelectedSeat('${escapeSeatHtml(code)}')">Release</button>
-                    <button class="btn btn-primary" onclick="openSeatAssign('${escapeSeatHtml(code)}')">Assign new</button>`;
-            } else if (status === "Reserved") {
-                actions = `
-                    <button class="btn btn-ghost" onclick="releaseSelectedSeat('${escapeSeatHtml(code)}')">Release</button>
-                    <button class="btn btn-primary" onclick="openSeatAssign('${escapeSeatHtml(code)}')">Assign</button>`;
-            }
-            hover.innerHTML = `
-                <div class="hover-name">${escapeSeatHtml(name || code)}</div>
-                <div class="hover-meta">${escapeSeatHtml(code)} · ${escapeSeatHtml(status)}${zone ? " · " + escapeSeatHtml(zone) : ""}</div>
-                <div class="seat-hover-actions">${actions}</div>`;
-            hover.classList.add("visible");
-            const rect = el.getBoundingClientRect();
-            const cardW = hover.offsetWidth || 220;
-            const cardH = hover.offsetHeight || 90;
-            let left = rect.right + 10;
-            let top = rect.top;
-            if (left + cardW > window.innerWidth - 8) left = Math.max(8, rect.left - cardW - 10);
-            if (top + cardH > window.innerHeight - 8) top = Math.max(8, window.innerHeight - cardH - 8);
-            hover.style.left = left + "px";
-            hover.style.top = top + "px";
-        }
-
-        function scheduleHideSeatHover() {
-            if (hoverHideTimer) clearTimeout(hoverHideTimer);
-            hoverHideTimer = setTimeout(hideSeatHover, 180);
-        }
-
-        function hideSeatHover() {
-            const hover = document.getElementById("seatHoverCard");
-            if (hover) hover.classList.remove("visible");
-        }
-
-        function openSeatAssign(code) {
-            hideSeatHover();
-            selectedSeatCode = code;
-            selectedGuestId = "";
-            assigningGuestId = "";
-            seatGuestQuery = "";
-            paintSeats();
-            renderSeatSide(code);
-            setTimeout(() => {
-                const search = document.getElementById("seatGuestSearch");
-                if (search) search.focus();
-            }, 0);
-        }
-
-        function paintSeats() {
-            const inner = document.getElementById("seatMapInner");
-            if (!inner) return;
-            inner.querySelectorAll("[data-seat-code]").forEach(el => {
-                const code = (el.getAttribute("data-seat-code") || "").toUpperCase();
-                const seat = findSeat(code) || {};
-                const status = seatStatus(seat).toLowerCase();
-                el.classList.remove("is-available", "is-reserved", "is-assigned", "is-blocked", "is-selected");
-                el.classList.add("is-" + (status || "available"));
-                if (code === selectedSeatCode.toUpperCase()) el.classList.add("is-selected");
-                el.style.opacity = (seatFilter && seatStatus(seat) !== seatFilter) ? "0.28" : "1";
-            });
-        }
-
-        function invitees() {
-            const rank = { accepted: 0, pending: 1, declined: 2 };
-            return users.slice().sort((a, b) => {
-                const byStatus = (rank[a.status] ?? 9) - (rank[b.status] ?? 9);
-                if (byStatus) return byStatus;
-                return (a.userName || a.emailId || "").localeCompare(b.userName || b.emailId || "");
-            });
-        }
-
-        function renderSeatSide(code) {
-            const side = document.getElementById("seatSide");
-            const seat = findSeat(code);
-            if (!side || !seat) return;
-            const status = seatStatus(seat);
-            const guestName = seat.guestName || seat.GuestName || "";
-            const zone = seat.zone || seat.Zone || "";
-            const current = status === "Assigned" && guestName ? `
-                <div class="seat-current">
-                    <strong>${escapeSeatHtml(guestName)}</strong>
-                    Assigned to this seat
-                    <button class="btn btn-ghost" style="margin-top:8px;" onclick="releaseSelectedSeat('${escapeSeatHtml(code)}')">Release</button>
-                </div>` : "";
-            side.innerHTML = `
-                <h3>${escapeSeatHtml(code)}</h3>
-                <p>Zone: <strong>${escapeSeatHtml(zone)}</strong><br>Status: <strong>${escapeSeatHtml(status)}</strong></p>
-                ${current}
-                <div class="seat-assign-status" id="seatAssignStatus"></div>
-                <p>${status === "Assigned" ? "Assign a different guest" : "Search guests to assign"}</p>
-                <input type="search" id="seatGuestSearch" placeholder="Search name, email, company, status…" value="${escapeSeatHtml(seatGuestQuery)}" oninput="filterSeatGuests(this.value)" />
-                <div class="seat-guest-list" id="seatGuestList"></div>
-                <button class="btn btn-ghost" onclick="reserveSelectedSeat('${escapeSeatHtml(code)}')">Reserve seat</button>
-            `;
-            renderSeatGuestList();
-        }
-
-        function setAssignStatus(kind, message) {
-            const el = document.getElementById("seatAssignStatus");
-            if (!el) return;
-            el.className = "seat-assign-status" + (kind ? ` visible is-${kind}` : "");
-            el.textContent = message || "";
-        }
-
-        function filterSeatGuests(query) {
-            seatGuestQuery = query || "";
-            renderSeatGuestList();
-        }
-
-        function renderSeatGuestList() {
-            const list = document.getElementById("seatGuestList");
-            if (!list) return;
-            const q = seatGuestQuery.trim().toLowerCase();
-            const rows = invitees().filter(u => {
-                if (!q) return true;
-                return [u.userName, u.emailId, u.company, u.inviteType, u.seatCode, statusLabel(u.status)]
-                    .join(" ")
-                    .toLowerCase()
-                    .includes(q);
-            });
-            if (!rows.length) {
-                list.classList.remove("is-busy");
-                list.innerHTML = '<div class="seat-guest-row" style="cursor:default;">No matching guests</div>';
-                return;
-            }
-            list.classList.toggle("is-busy", !!assigningGuestId);
-            list.innerHTML = rows.map(u => {
-                const taken = u.seatCode ? ` · seat ${escapeSeatHtml(u.seatCode)}` : "";
-                const state = u.uniqueId === assigningGuestId
-                    ? " is-assigning"
-                    : (u.uniqueId === selectedGuestId ? " is-selected" : "");
-                return `<button type="button" class="seat-guest-row${state}"
-                    onpointerdown="pressGuestRow(this)"
-                    onpointerup="unpressGuestRow(this)"
-                    onpointerleave="unpressGuestRow(this)"
-                    onclick="assignSeatToGuest('${escapeSeatHtml(selectedSeatCode)}','${escapeSeatHtml(u.uniqueId)}','${escapeSeatHtml(u.userName || u.emailId)}')">
-                    <div class="seat-guest-top">
-                        <span class="seat-guest-name">${escapeSeatHtml(u.userName || u.emailId)}</span>
-                        <span class="status-badge status-${escapeSeatHtml(u.status)}">${escapeSeatHtml(statusLabel(u.status))}</span>
-                    </div>
-                    <small>${escapeSeatHtml(u.inviteType || "")} · ${escapeSeatHtml(u.emailId || "")}${taken}</small>
-                </button>`;
+        function renderLayers() {
+            const names = [["chairs", "Chairs"], ["furniture", "Furniture"], ["structure", "Walls & doors"], ["labels", "Labels"], ["background", "Background"]];
+            document.getElementById("layerList").innerHTML = names.map(([key, label]) => {
+                const layer = layerState(key);
+                return `<div class="asset-row"><span>${label}</span>
+                    <button class="mini" type="button" data-layer-vis="${key}">${layer.visible ? "Hide" : "Show"}</button>
+                    <button class="mini" type="button" data-layer-lock="${key}">${layer.locked ? "Unlock" : "Lock"}</button></div>`;
             }).join("");
         }
 
-        function pressGuestRow(el) {
-            if (el) el.classList.add("is-pressed");
+        function rowPills(obj) {
+            const rows = clamp(parseInt(obj.rows, 10) || 1, 1, 20);
+            const gapY = clamp(Number(obj.rowGap != null ? obj.rowGap : chairDistanceOf(obj)), 0, 240);
+            const step = CHAIR + gapY;
+            let html = "";
+            for (let r = 0; r < rows; r++) html += `<span class="row-pill" style="top:${r * step}px;height:${CHAIR}px">Row ${r + 1}</span>`;
+            return html;
+        }
+        function renderWorld() {
+            const root = world();
+            const layout = active();
+            const assets = (layout.assets || []).map(asset => {
+                if (!asset.visible || !layerState("background").visible) return "";
+                return `<div class="asset${selectedAssetId === asset.id ? " is-selected" : ""}" data-asset="${esc(asset.id)}" style="left:${asset.x}px;top:${asset.y}px;width:${asset.w}px;height:${asset.h}px;transform:rotate(${asset.rotation || 0}deg)"></div>`;
+            }).join("");
+            const items = layout.objects.filter(o => layerState(o.layer).visible).map(obj => {
+                const selected = selection.has(obj.id);
+                const record = obj.type === "chair" ? assignment(obj) : null;
+                const assigned = record && (record.status || record.Status) === "Assigned";
+                const name = guestName(record);
+                const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]).join("").toUpperCase();
+                const resize = selected && selection.size === 1 && RESIZABLE.has(obj.type) ? `<i class="resize"></i>` : "";
+                const parent = obj.tableId ? layout.objects.find(o => o.id === obj.tableId) : null;
+                const perRow = parent && parent.shape === "rows" ? (parent.perRow || 10) : 0;
+                const index = obj.tableId ? String(perRow ? ((obj.slot || 0) % perRow) + 1 : (obj.slot || 0) + 1) : "";
+                const upright = `transform:rotate(${-(obj.rotation || 0)}deg)`;
+                const faceHtml = assigned && name
+                    ? `<span class="who is-name" style="${upright}">${esc(name)}</span>`
+                    : `<span class="who">${esc(assigned ? (initials || "•") : index)}</span>`;
+                const pills = obj.shape === "rows" ? rowPills(obj) : "";
+                return `<div class="item ${esc(obj.type)}${obj.type === "table" ? " shape-" + esc(obj.shape || "round") : ""}${assigned ? " is-assigned" : ""}${selected ? " is-selected" : ""}" data-id="${esc(obj.id)}" title="${esc(obj.type === "chair" ? (obj.seatNumber || "") : (obj.label || ""))}" style="left:${itemLeft(obj)}px;top:${itemTop(obj)}px;width:${obj.w}px;height:${obj.h}px;transform:rotate(${obj.rotation || 0}deg)">
+                    ${obj.type === "chair" ? `${faceHtml}${obj.tableId ? "" : `<span class="seat-no">${esc(obj.seatNumber || "")}</span>`}` : (pills || `<span class="obj-label">${esc(obj.type === "text" ? (obj.text || "Label") : obj.label)}</span>`)}
+                    ${resize}
+                </div>`;
+            }).join("");
+            root.innerHTML = assets + items + `<div class="marquee" id="marquee" hidden></div>`;
+            layout.assets.forEach(asset => {
+                const el = root.querySelector(`[data-asset="${asset.id}"]`);
+                if (!el || !asset.markup) return;
+                const shadow = el.shadowRoot || el.attachShadow({ mode: "open" });
+                shadow.innerHTML = `<style>:host{display:block;width:100%;height:100%} svg{width:100%;height:100%;display:block}</style>${asset.markup}`;
+            });
         }
 
-        function unpressGuestRow(el) {
-            if (el) el.classList.remove("is-pressed");
+        function tableForm(obj) {
+            const shape = obj.shape || "round";
+            const sides = obj.sides || { top: 0, right: 0, bottom: 0, left: 0 };
+            const shapes = [["round", "Round"], ["rect", "Rectangular"], ["oval", "Oval"], ["ushape", "U-shape"], ["rows", "Chair rows"]];
+            const sideFields = (shape === "rect" || shape === "ushape") ? `<p class="hint">Seats by side. Change the chair total to split them again.</p><div class="side-grid">
+                <label class="field">Top<input id="tblTop" type="number" min="0" max="20" value="${sides.top || 0}" /></label>
+                <label class="field">Right<input id="tblRight" type="number" min="0" max="20" value="${sides.right || 0}" /></label>
+                ${shape === "ushape" ? "" : `<label class="field">Bottom<input id="tblBottom" type="number" min="0" max="20" value="${sides.bottom || 0}" /></label>`}
+                <label class="field">Left<input id="tblLeft" type="number" min="0" max="20" value="${sides.left || 0}" /></label>
+            </div>` : "";
+            return `<h2>${esc(obj.label || "Table")}</h2>
+                <label class="field">Name<input id="propLabel" value="${esc(obj.label || "")}" /></label>
+                <label class="field">Shape<select id="tblShape">${shapes.map(([v, l]) => `<option value="${v}"${v === shape ? " selected" : ""}>${l}</option>`).join("")}</select></label>
+                <label class="field">Chair distance<input id="tblSpace" type="number" min="0" max="200" value="${obj.chairDistance ?? obj.spacing ?? 28}" /></label>
+                <label class="field">Gaps between chairs<select id="tblGap">
+                    ${[["even", "Even"], ["opening", "One larger opening"], ["uneven", "Uneven"]].map(([v, l]) => `<option value="${v}"${(obj.gapStyle || "even") === v ? " selected" : ""}>${l}</option>`).join("")}
+                </select></label>
+                ${shape === "rows" ? "" : `<label class="field">${shape === "round" ? "Diameter" : "Table width"}<input id="tblW" type="number" min="60" max="800" value="${Math.round(obj.tableW || obj.w || 240)}" /></label>
+                ${shape === "round" ? "" : `<label class="field">Table height<input id="tblH" type="number" min="48" max="800" value="${Math.round(obj.tableH || obj.h || 120)}" /></label>`}`}
+                ${shape === "rows" ? `<label class="field">Rows<input id="tblRows" type="number" min="1" max="20" value="${obj.rows || 1}" /></label>
+                    <label class="field">Chairs per row<input id="tblPer" type="number" min="1" max="30" value="${obj.perRow || 10}" /></label>`
+                    : `<label class="field">Chairs<input id="tblSeats" type="number" min="2" max="40" value="${obj.seats || 8}" /></label>${sideFields}`}
+                <p class="hint">${chairsOf(obj).length} chairs with this ${shape === "rows" ? "block" : "table"}.</p>
+                <label class="field">X<input id="propX" type="number" value="${Math.round(itemLeft(obj))}" /></label>
+                <label class="field">Y<input id="propY" type="number" value="${Math.round(itemTop(obj))}" /></label>
+                <div class="row">
+                    <button class="btn primary" type="button" id="applyTable">Apply</button>
+                    <button class="btn" type="button" id="dupBtn2">Duplicate</button>
+                    <button class="btn" type="button" id="delBtn2">Delete</button>
+                </div>`;
+        }
+        function renderProps() {
+            const box = document.getElementById("props");
+            const asset = (active().assets || []).find(a => a.id === selectedAssetId);
+            if (asset && selection.size === 0) {
+                box.innerHTML = `<h2>Floor plan</h2>
+                    <p class="hint">${esc(asset.fileName)} · ${esc(asset.kind || "svg")}<br>${esc(asset.uploadedOn || "")}</p>
+                    <label class="field">X<input id="ax" type="number" value="${Math.round(asset.x)}" /></label>
+                    <label class="field">Y<input id="ay" type="number" value="${Math.round(asset.y)}" /></label>
+                    <label class="field">Scale<input id="as" type="number" min="0.2" max="4" step="0.1" value="${asset.scale || 1}" /></label>
+                    <label class="field">Rotation<input id="ar" type="number" value="${asset.rotation || 0}" /></label>
+                    <div class="row">
+                        <button class="btn" type="button" id="assetApply">Apply</button>
+                        <button class="btn" type="button" data-asset-lock="${asset.id}">${asset.locked ? "Unlock" : "Lock"}</button>
+                        <button class="btn" type="button" data-asset-del="${asset.id}">Delete file</button>
+                    </div>`;
+                return;
+            }
+            const items = selectedObjects();
+            const arrangementId = selectionArrangement();
+            if (arrangementId) { box.innerHTML = arrangementForm(arrangementId); return; }
+            if (!items.length) {
+                box.innerHTML = `<h2>Properties</h2><p class="hint">Select a chair to assign a guest, or click the grid to place the current tool. Guest status is listed below.</p>`;
+                return;
+            }
+            if (items.length > 1) {
+                box.innerHTML = `<h2>${items.length} items</h2>
+                    <div class="row">
+                        <button class="btn" type="button" data-align="left">Align left</button>
+                        <button class="btn" type="button" data-align="hcenter">Center</button>
+                        <button class="btn" type="button" data-align="right">Align right</button>
+                        <button class="btn" type="button" data-align="top">Align top</button>
+                        <button class="btn" type="button" data-align="vcenter">Middle</button>
+                        <button class="btn" type="button" data-align="bottom">Align bottom</button>
+                        <button class="btn" type="button" data-align="hdist">Distribute H</button>
+                        <button class="btn" type="button" data-align="vdist">Distribute V</button>
+                        <button class="btn" type="button" id="groupBtn">Group</button>
+                        <button class="btn" type="button" id="ungroupBtn">Ungroup</button>
+                    </div>
+                    <div class="row"><button class="btn" type="button" id="dupBtn2">Duplicate</button><button class="btn" type="button" id="delBtn2">Delete</button></div>`;
+                return;
+            }
+            const obj = items[0];
+            if (obj.type === "table") { box.innerHTML = tableForm(obj); return; }
+            const record = obj.type === "chair" ? assignment(obj) : null;
+            const assignedName = guestName(record);
+            const parentTable = obj.tableId ? active().objects.find(o => o.id === obj.tableId) : null;
+            const edgeName = { top: "Top side", right: "Right side", bottom: "Bottom side", left: "Left side", ring: "Around the table" };
+            box.innerHTML = `<h2>${esc(obj.type === "chair" ? (obj.seatNumber || "Chair") : (obj.label || obj.type))}</h2>
+                ${parentTable ? `<p class="hint">Parent table: ${esc(parentTable.label || "Table")}${obj.edge ? " · " + edgeName[obj.edge] : ""}${obj.manual ? " · Moved by hand" : ""}</p>` : ""}
+                <label class="field">Name<input id="propLabel" value="${esc(obj.type === "text" ? obj.text : obj.label)}" /></label>
+                ${obj.type === "chair" ? `<label class="field">Seat number<input id="propSeat" value="${esc(obj.seatNumber || "")}" ${record && (record.status || record.Status) === "Assigned" ? "readonly" : ""} /></label>
+                    <p class="hint">Assigned user: <strong style="color:var(--text)">${esc(assignedName || "Unassigned")}</strong></p>
+                    <div class="row">${assignedName ? `<button class="btn" type="button" id="unassignBtn">Remove user</button>` : ""}</div>` : ""}
+                <label class="field">X<input id="propX" type="number" value="${Math.round(obj.x)}" /></label>
+                <label class="field">Y<input id="propY" type="number" value="${Math.round(obj.y)}" /></label>
+                <label class="field">Rotation<input id="propR" type="number" value="${obj.rotation || 0}" /></label>
+                ${RESIZABLE.has(obj.type) ? `<label class="field">Width<input id="propW" type="number" value="${Math.round(obj.w)}" /></label><label class="field">Height<input id="propH" type="number" value="${Math.round(obj.h)}" /></label>` : ""}
+                <div class="row">
+                    <button class="btn" type="button" id="applyProps">Apply</button>
+                    <button class="btn" type="button" id="dupBtn2">Duplicate</button>
+                    <button class="btn" type="button" id="delBtn2">Delete</button>
+                </div>
+                ${obj.type === "chair" ? `<p class="hint">Choose a guest in the list to assign this chair.</p>` : ""}`;
+        }
+        function renderGuestList() {
+            renderRoster();
+        }
+        function renderRoster() {
+            const list = document.getElementById("roster");
+            const counts = document.getElementById("rosterCounts");
+            if (!list || !counts) return;
+            const visible = users.filter(user => guestStatus(user.status) !== "declined");
+            const accepted = visible.filter(user => guestStatus(user.status) === "accepted").length;
+            counts.textContent = visible.length
+                ? `${accepted} accepted · ${visible.length - accepted} pending`
+                : "Guest list loads from the server.";
+            const q = (document.getElementById("rosterSearch")?.value || "").trim().toLowerCase();
+            const chairSelected = selectedObjects().some(obj => obj.type === "chair");
+            const rows = visible.filter(user => !q || [user.name, user.email, user.company, user.seatCode, statusLabel(user.status)].join(" ").toLowerCase().includes(q))
+                .sort((a, b) => Number(!!a.seatCode) - Number(!!b.seatCode) || a.name.localeCompare(b.name));
+            list.innerHTML = rows.map(user => {
+                const seat = user.seatCode ? `Seat ${user.seatCode}` : "No seat";
+                return `<button type="button" class="guest-row" data-user="${esc(user.id)}" data-jump="${esc(user.seatCode || "")}">
+                    <span class="guest-top"><strong>${esc(user.name || user.email)}</strong><span class="guest-status ${guestStatus(user.status)}">${statusLabel(user.status)}</span></span>
+                    <small>${esc(seat)}${user.company ? " · " + esc(user.company) : ""}</small>
+                </button>`;
+            }).join("") || `<p class="hint">${chairSelected ? "No guests to assign." : "No guests match."}</p>`;
+        }
+        function renderFloat() {
+            const menu = document.getElementById("floatMenu");
+            const items = selectedObjects();
+            const arrangementId = selectionArrangement();
+            if (!items.length) { menu.hidden = true; return; }
+            if (arrangementId) {
+                menu.innerHTML = [["edit", "Edit"], ["nudge", "Move"], ["duplicate", "Duplicate"], ["ungroup", "Ungroup"], ["rotate15", "Rotate"], ["delete", "Delete"]]
+                    .map(([id, label]) => `<button class="icon-btn" type="button" data-float="${id}">${label}</button>`).join("");
+                menu.hidden = false;
+                positionFloat();
+                return;
+            }
+            if (items.length !== 1) { menu.hidden = true; return; }
+            const obj = items[0];
+            const acts = [];
+            if (obj.type === "chair") acts.push(["assign", "Assign"]);
+            acts.push(["nudge", "Move"], ["rotate15", "Rotate"], ["duplicate", "Duplicate"]);
+            if (obj.type === "text" || obj.type === "chair") acts.push(["edit", "Edit"]);
+            acts.push(["delete", "Delete"]);
+            menu.innerHTML = acts.map(([id, label]) => `<button class="icon-btn" type="button" data-float="${id}">${label}</button>`).join("");
+            menu.hidden = false;
+            positionFloat();
+        }
+        function positionFloat() {
+            const menu = document.getElementById("floatMenu");
+            if (menu.hidden) return;
+            const obj = selectedObjects().find(o => o.type === "table") || selectedObjects()[0];
+            const el = obj && world().querySelector(`[data-id="${obj.id}"]`);
+            if (!el) { menu.hidden = true; return; }
+            const rect = el.getBoundingClientRect();
+            let left = rect.left;
+            let top = rect.top - menu.offsetHeight - 8;
+            if (top < 64) top = rect.bottom + 8;
+            menu.style.left = Math.max(8, Math.min(left, window.innerWidth - menu.offsetWidth - 8)) + "px";
+            menu.style.top = Math.max(60, top) + "px";
+        }
+        function renderStats() {
+            const chairs = active().objects.filter(o => o.type === "chair");
+            const assigned = chairs.filter(c => assignment(c) && (assignment(c).status || assignment(c).Status) === "Assigned").length;
+            const tables = active().objects.filter(o => (o.type === "table" && o.shape !== "rows") || o.type === "round" || o.type === "rect").length;
+            document.getElementById("stats").innerHTML = `<b>${chairs.length}</b> chairs · <b>${assigned}</b> assigned · <b>${chairs.length - assigned}</b> open · <b>${tables}</b> tables`;
         }
 
-        async function assignSeatToGuest(code, uniqueId, guestName) {
-            if (!code || !uniqueId || assigningGuestId) return;
-            selectedGuestId = uniqueId;
-            assigningGuestId = uniqueId;
-            renderSeatGuestList();
-            setAssignStatus("working", `Assigning ${guestName || "guest"} to ${code}…`);
-            try {
-                const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(code)}/assign`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ uniqueId })
-                });
-                const body = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                    assigningGuestId = "";
-                    renderSeatGuestList();
-                    setAssignStatus("err", body.message || body.Message || "Could not assign seat");
+        function setTool(next) {
+            tool = next;
+            renderTools();
+            viewport().classList.toggle("place", tool !== "select" && tool !== "hand");
+            viewport().classList.toggle("hand", tool === "hand");
+        }
+        function selectOnly(id) {
+            const obj = findObj(id);
+            selection.clear();
+            selectedAssetId = "";
+            if (obj && obj.type === "table" && obj.arrangementId) membersOf(obj.arrangementId).forEach(o => selection.add(o.id));
+            else if (obj && obj.groupId && obj.type !== "table" && !obj.tableId) active().objects.filter(o => o.groupId === obj.groupId).forEach(o => selection.add(o.id));
+            else if (obj) selection.add(id);
+            renderWorld();
+            renderProps();
+            renderFloat();
+            renderGuestList();
+        }
+        function clearSelection() {
+            selection.clear();
+            selectedAssetId = "";
+            renderWorld();
+            renderProps();
+            renderFloat();
+        }
+
+        function cloneObjects(items, dx, dy) {
+            const idMap = new Map();
+            items.forEach(o => idMap.set(o.id, "obj-" + uid()));
+            const groupMap = new Map();
+            let seatCursor = 0;
+            allChairs().forEach(chair => {
+                const n = parseInt(String(chair.seatNumber || "").replace(/\D/g, ""), 10);
+                if (n > seatCursor) seatCursor = n;
+            });
+            const copies = items.map(obj => {
+                const copy = JSON.parse(JSON.stringify(obj));
+                copy.id = idMap.get(obj.id);
+                copy.x = obj.x + dx;
+                copy.y = obj.y + dy;
+                if (copy.groupId) {
+                    if (!groupMap.has(obj.groupId)) groupMap.set(obj.groupId, "grp-" + uid());
+                    copy.groupId = groupMap.get(obj.groupId);
+                }
+                if (copy.arrangementId) {
+                    if (!groupMap.has("arr:" + obj.arrangementId)) groupMap.set("arr:" + obj.arrangementId, "arr-" + uid());
+                    copy.arrangementId = groupMap.get("arr:" + obj.arrangementId);
+                }
+                if (copy.tableId) copy.tableId = idMap.get(copy.tableId) || "";
+                return copy;
+            });
+            copies.forEach(copy => {
+                if (copy.type === "chair") {
+                    seatCursor += 1;
+                    copy.seatNumber = "C-" + String(seatCursor).padStart(3, "0");
+                }
+                active().objects.push(copy);
+            });
+            return copies;
+        }
+        function duplicateSelection() {
+            const items = selectedObjects();
+            if (!items.length) return;
+            const table = items.find(o => o.type === "table");
+            const pack = table ? [table, ...chairsOf(table), ...items.filter(o => o.id !== table.id && o.tableId !== table.id)] : items;
+            pushHistory();
+            const copies = cloneObjects(pack, doc.gridSize * 2, doc.gridSize * 2);
+            const copied = copies.find(o => o.arrangementId) || copies.find(o => o.type === "table") || copies[0];
+            selection = new Set(copied && copied.arrangementId ? copies.filter(o => o.arrangementId === copied.arrangementId).map(o => o.id) : copies.map(o => o.id));
+            renderAll();
+            scheduleSave();
+        }
+        function deleteSelection() {
+            const items = selectedObjects();
+            if (!items.length && !selectedAssetId) return;
+            pushHistory();
+            const ids = new Set(items.map(o => o.id));
+            items.filter(o => o.type === "table").forEach(table => chairsOf(table).forEach(c => ids.add(c.id)));
+            const touched = new Set();
+            items.filter(o => o.type === "chair" && o.tableId && !ids.has(o.tableId)).forEach(c => touched.add(c.tableId));
+            active().objects = active().objects.filter(o => !ids.has(o.id));
+            touched.forEach(id => {
+                const table = active().objects.find(o => o.id === id);
+                if (!table) return;
+                const left = chairsOf(table);
+                if (!left.length) {
+                    active().objects = active().objects.filter(o => o.id !== table.id);
                     return;
                 }
-                const note = (body.zoneWarning || body.ZoneWarning)
-                    ? " Assigned. Guest type does not match this seat zone."
-                    : "";
-                hideSeatHover();
-                await fetchUsers();
-                assigningGuestId = "";
-                await loadSeatMap(false);
-                setAssignStatus("ok", `${guestName || "Guest"} assigned to ${code}.${note}`);
-            } catch (err) {
-                assigningGuestId = "";
-                renderSeatGuestList();
-                setAssignStatus("err", "Could not assign seat. Check the connection and try again.");
-            }
-        }
-
-        async function reserveSelectedSeat(code) {
-            hideSeatHover();
-            setAssignStatus("working", `Reserving ${code}…`);
-            const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(code)}/reserve`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({})
+                left.forEach((chair, index) => { chair.slot = index; });
+                if (table.shape === "rows") {
+                    table.rows = 1;
+                    table.perRow = left.length;
+                }
+                table.seats = left.length;
+                table.sides = null;
+                table.relayout = true;
+                syncTable(table);
+                table.relayout = false;
             });
-            const body = await res.json().catch(() => ({}));
-            if (!res.ok) {
-                setAssignStatus("err", body.message || body.Message || "Could not reserve seat");
-                return;
+            selection.clear();
+            renderAll();
+            scheduleSave();
+        }
+        function rotateSelection() {
+            const items = selectedObjects();
+            if (!items.length) return;
+            const arrangementId = selectionArrangement();
+            pushHistory();
+            if (arrangementId) {
+                arrangementTables(arrangementId).forEach(table => {
+                    table.spin = ((table.spin || 0) + 15) % 360;
+                    table.relayout = true;
+                    syncTable(table);
+                    table.relayout = false;
+                });
+            } else if (items.length === 1 && items[0].type === "table") {
+                const table = items[0];
+                table.spin = ((table.spin || 0) + 15) % 360;
+                table.relayout = true;
+                syncTable(table);
+                table.relayout = false;
+            } else items.forEach(o => { o.rotation = ((o.rotation || 0) + 15) % 360; });
+            renderAll();
+            scheduleSave();
+        }
+        function alignSelection(mode) {
+            const items = selectedObjects();
+            if (items.length < 2) return;
+            pushHistory();
+            const left = Math.min(...items.map(i => i.x));
+            const right = Math.max(...items.map(i => i.x + i.w));
+            const top = Math.min(...items.map(i => i.y));
+            const bottom = Math.max(...items.map(i => i.y + i.h));
+            const cx = (left + right) / 2;
+            const cy = (top + bottom) / 2;
+            if (mode === "hdist" || mode === "vdist") {
+                const sorted = items.slice().sort((a, b) => mode === "hdist" ? a.x - b.x : a.y - b.y);
+                const start = mode === "hdist" ? sorted[0].x : sorted[0].y;
+                const end = mode === "hdist" ? sorted[sorted.length - 1].x : sorted[sorted.length - 1].y;
+                const step = (end - start) / (sorted.length - 1);
+                sorted.forEach((item, index) => {
+                    if (mode === "hdist") item.x = snap(start + step * index);
+                    else item.y = snap(start + step * index);
+                });
+            } else {
+                items.forEach(i => {
+                    if (mode === "left") i.x = left;
+                    if (mode === "right") i.x = right - i.w;
+                    if (mode === "hcenter") i.x = snap(cx - i.w / 2);
+                    if (mode === "top") i.y = top;
+                    if (mode === "bottom") i.y = bottom - i.h;
+                    if (mode === "vcenter") i.y = snap(cy - i.h / 2);
+                });
             }
-            await loadSeatMap(false);
-            setAssignStatus("ok", `${code} reserved.`);
+            renderAll();
+            scheduleSave();
         }
 
-        async function releaseSelectedSeat(code) {
-            hideSeatHover();
-            setAssignStatus("working", `Releasing ${code}…`);
-            const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(code)}/release`, { method: "PUT" });
-            const body = await res.json().catch(() => ({}));
-            if (!res.ok) {
-                setAssignStatus("err", body.message || body.Message || "Could not release seat");
+        function newLayout() {
+            pushHistory();
+            const layout = blankLayout("Layout " + (doc.layouts.length + 1));
+            doc.layouts.push(layout);
+            doc.activeLayoutId = layout.id;
+            clearSelection();
+            renderAll();
+            scheduleSave();
+        }
+        function openLayout(id) {
+            if (!doc.layouts.some(l => l.id === id)) return;
+            doc.activeLayoutId = id;
+            clearSelection();
+            renderAll();
+        }
+        function duplicateLayout(id) {
+            const source = doc.layouts.find(l => l.id === id);
+            if (!source) return;
+            pushHistory();
+            const copy = JSON.parse(JSON.stringify(source));
+            copy.id = "lay-" + uid();
+            copy.name = source.name + " copy";
+            let seatCursor = 0;
+            allChairs().forEach(chair => {
+                const n = parseInt(String(chair.seatNumber || "").replace(/\D/g, ""), 10);
+                if (n > seatCursor) seatCursor = n;
+            });
+            const idMap = new Map();
+            const groupMap = new Map();
+            copy.objects.forEach(obj => idMap.set(obj.id, "obj-" + uid()));
+            copy.objects.forEach(obj => {
+                const previousGroup = obj.groupId;
+                obj.id = idMap.get(obj.id);
+                if (previousGroup) {
+                    if (!groupMap.has(previousGroup)) groupMap.set(previousGroup, "grp-" + uid());
+                    obj.groupId = groupMap.get(previousGroup);
+                }
+                if (obj.tableId) obj.tableId = idMap.get(obj.tableId) || "";
+                if (obj.type === "chair") {
+                    seatCursor += 1;
+                    obj.seatNumber = "C-" + String(seatCursor).padStart(3, "0");
+                }
+            });
+            doc.layouts.push(copy);
+            doc.activeLayoutId = copy.id;
+            clearSelection();
+            renderAll();
+            scheduleSave();
+        }
+        function deleteLayout(id) {
+            if (doc.layouts.length === 1) { toast("Keep at least one layout.", "bad"); return; }
+            const layout = doc.layouts.find(l => l.id === id);
+            if (!layout) return;
+            if (!confirm("Are you sure you want to delete this layout? This action cannot be undone.")) return;
+            pushHistory();
+            doc.layouts = doc.layouts.filter(l => l.id !== id);
+            if (doc.activeLayoutId === id) doc.activeLayoutId = doc.layouts[0].id;
+            clearSelection();
+            renderAll();
+            scheduleSave();
+        }
+
+        function addAsset(fileName, markup, kind) {
+            pushHistory();
+            const asset = {
+                id: "asset-" + uid(), fileName, kind: kind || "svg", markup,
+                visible: true, locked: true, x: 80, y: 80, w: 1200, h: 800, scale: 1, rotation: 0,
+                uploadedOn: new Date().toLocaleString()
+            };
+            active().assets.push(asset);
+            selectedAssetId = asset.id;
+            selection.clear();
+            renderAll();
+            scheduleSave();
+        }
+        function deleteAsset(id) {
+            if (!confirm("Delete this uploaded floor-plan file?")) return;
+            pushHistory();
+            active().assets = active().assets.filter(a => a.id !== id);
+            if (selectedAssetId === id) selectedAssetId = "";
+            renderAll();
+            scheduleSave();
+        }
+
+        async function onUpload(file) {
+            if (!file) return;
+            const ext = (file.name.split(".").pop() || "").toLowerCase();
+            if (ext === "svg") {
+                addAsset(file.name, await file.text(), "svg");
+                toast("Floor plan added. It is locked so chairs stay put.", "ok");
                 return;
             }
-            selectedGuestId = "";
-            assigningGuestId = "";
-            await fetchUsers();
-            await loadSeatMap(false);
-            setAssignStatus("ok", `${code} released.`);
+            toast("Converting CAD floor plan…");
+            const body = new FormData();
+            body.append("file", file);
+            const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/map`, { method: "POST", body });
+            const payload = await res.json().catch(() => ({}));
+            if (!res.ok) { toast(payload.message || payload.Message || "Could not read that CAD file.", "bad"); return; }
+            const svgRes = await fetch(`${baseURL}/api/AramcoFarewell/seats/map`, { cache: "no-store" });
+            const svgText = await svgRes.text();
+            const parsed = readDesigner(svgText);
+            const markup = parsed ? (parsed.layouts?.[0]?.assets?.[0]?.markup || "") : svgText;
+            addAsset(file.name, markup || svgText, ext);
+            toast("Floor plan added under the grid.", "ok");
         }
+
+        function readDesigner(svgText) {
+            if (!svgText || svgText.indexOf("<svg") === -1) return null;
+            const xml = new DOMParser().parseFromString(svgText, "image/svg+xml");
+            const meta = xml.querySelector("[id='aramco-seat-layout']");
+            if (!meta || !meta.textContent) return null;
+            try {
+                const data = JSON.parse(meta.textContent);
+                return data && data.version === 2 ? data : null;
+            } catch (err) { return null; }
+        }
+        function buildSvg() {
+            const chairs = allChairs().map(chair =>
+                `<g data-seat-code="${esc(chair.seatNumber)}" data-zone="General"><rect class="seat-shape" width="36" height="36" fill="#cfc6bb"/></g>`
+            ).join("");
+            const meta = JSON.stringify(doc).replace(/]]>/g, "]] >");
+            const bounds = contentBounds();
+            const x = bounds ? Math.floor(bounds.minX - 40) : 0;
+            const y = bounds ? Math.floor(bounds.minY - 40) : 0;
+            const w = bounds ? Math.max(100, Math.ceil(bounds.maxX - bounds.minX + 80)) : 1000;
+            const h = bounds ? Math.max(100, Math.ceil(bounds.maxY - bounds.minY + 80)) : 1000;
+            return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${w} ${h}">\n<metadata id="aramco-seat-layout"><![CDATA[${meta}]]></metadata>\n${chairs}\n</svg>`;
+        }
+        function scheduleSave() {
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(doc));
+            setSaveState("Unsaved changes");
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(saveNow, 700);
+        }
+        async function saveNow() {
+            localStorage.setItem(DRAFT_KEY, JSON.stringify(doc));
+            if (!allChairs().length) {
+                setSaveState("Only on this browser");
+                toast("This layout is only in this browser. Add a chair, then it saves on the server for every device.");
+                return;
+            }
+            setSaveState("Saving to the server…");
+            toast("Saving to the server…");
+            try {
+                const file = new File([buildSvg()], "seat-plan.svg", { type: "image/svg+xml" });
+                const body = new FormData();
+                body.append("file", file);
+                const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/map`, { method: "POST", body });
+                const payload = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    setSaveState("Only on this browser");
+                    toast(payload.message || payload.Message || "Could not save to the server.", "bad");
+                    return;
+                }
+                await loadSeats();
+                renderWorld();
+                renderProps();
+                renderStats();
+                renderGuestList();
+                renderRoster();
+                setSaveState("Saved on the server");
+                toast("Saved on the server. Open this page on any device to see the same layout.", "ok");
+            } catch (err) {
+                setSaveState("Only on this browser");
+                toast("Could not save the layout to the server.", "bad");
+            }
+        }
+
+        async function loadGuests() {
+            const res = await fetch(`${baseURL}/api/AramcoFarewell/users`, { cache: "no-store" });
+            if (!res.ok) return;
+            const data = await res.json();
+            users = (data || []).map(u => ({
+                id: u.uniqueId || u.UniqueId || "",
+                name: u.fullName || u.FullName || u.userName || u.UserName || "",
+                email: u.emailId || u.EmailId || "",
+                company: u.company || u.Company || "",
+                status: u.status || u.Status || "Pending",
+                seatCode: u.seatCode || u.SeatCode || ""
+            }));
+        }
+        async function loadSeats() {
+            const res = await fetch(`${baseURL}/api/AramcoFarewell/seats`, { cache: "no-store" });
+            if (!res.ok) return;
+            const data = await res.json();
+            seatByCode = new Map();
+            (data.seats || data.Seats || []).forEach(seat => {
+                const code = String(seat.seatCode || seat.SeatCode || "").toUpperCase();
+                if (code) seatByCode.set(code, seat);
+            });
+            const assigned = new Map();
+            seatByCode.forEach((seat, code) => {
+                if ((seat.status || seat.Status) === "Assigned") assigned.set(code, seat.uniqueId || seat.UniqueId || "");
+            });
+            users.forEach(u => {
+                u.seatCode = "";
+                assigned.forEach((id, code) => { if (id === u.id) u.seatCode = code; });
+            });
+        }
+        async function boot() {
+            doc = blankDoc();
+            try {
+                const [svgRes] = await Promise.all([
+                    fetch(`${baseURL}/api/AramcoFarewell/seats/map`, { cache: "no-store" }),
+                    loadGuests(),
+                    loadSeats()
+                ]);
+                const svgText = svgRes.ok ? await svgRes.text() : "";
+                const parsed = readDesigner(svgText);
+                if (parsed) {
+                    doc = parsed;
+                    setSaveState("Opened from the server");
+                } else {
+                    const draft = localStorage.getItem(DRAFT_KEY);
+                    if (draft) {
+                        try { const data = JSON.parse(draft); if (data.version === 2) doc = data; } catch (err) { /* keep blank */ }
+                    }
+                    setSaveState("Only on this browser");
+                    if (svgText && svgText.includes("<svg") && !parsed) {
+                        const layout = active();
+                        if (!layout.assets.length) {
+                            layout.assets.push({
+                                id: "asset-" + uid(), fileName: "Uploaded floor plan.svg", kind: "svg", markup: svgText,
+                                visible: true, locked: true, x: 40, y: 40, w: 1600, h: 1000, scale: 1, rotation: 0,
+                                uploadedOn: ""
+                            });
+                        }
+                    }
+                }
+            } catch (err) {
+                const draft = localStorage.getItem(DRAFT_KEY);
+                if (draft) {
+                    try { const data = JSON.parse(draft); if (data.version === 2) doc = data; } catch (parseErr) { /* keep blank */ }
+                }
+                setSaveState("Only on this browser");
+                toast("Opened a layout from this browser. The server could not be reached.", "bad");
+            }
+            growChairs();
+            history = [JSON.stringify(doc)];
+            historyIndex = 0;
+            booted = true;
+            renderAll();
+            zoom = 1;
+            const bounds = contentBounds();
+            panX = bounds ? 64 - bounds.minX : 64;
+            panY = bounds ? 64 - bounds.minY : 64;
+            applyView();
+            updateHistoryButtons();
+        }
+
+        async function assignGuest(userId) {
+            const chair = selectedObjects().find(o => o.type === "chair");
+            const user = users.find(u => u.id === userId);
+            if (!chair || !user) { toast("Select a chair first.", "bad"); return; }
+            if (user.seatCode && user.seatCode !== chair.seatNumber) {
+                toast(`${user.name} — Assigned to ${user.seatCode}`, "bad");
+                return;
+            }
+            toast("Assigning…");
+            const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(chair.seatNumber)}/assign`, {
+                method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ uniqueId: user.id })
+            });
+            const payload = await res.json().catch(() => ({}));
+            if (!res.ok) { toast(payload.message || payload.Message || "Could not assign that guest.", "bad"); return; }
+            await loadGuests();
+            await loadSeats();
+            renderWorld();
+            renderProps();
+            renderStats();
+            renderGuestList();
+            toast(`${user.name} is seated at ${chair.seatNumber}.`, "ok");
+        }
+        async function unassign() {
+            const chair = selectedObjects().find(o => o.type === "chair");
+            if (!chair) return;
+            const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(chair.seatNumber)}/release`, { method: "PUT" });
+            const payload = await res.json().catch(() => ({}));
+            if (!res.ok) { toast(payload.message || payload.Message || "Could not remove the guest.", "bad"); return; }
+            await loadGuests();
+            await loadSeats();
+            renderWorld();
+            renderProps();
+            renderStats();
+            renderGuestList();
+            toast(`${chair.seatNumber} is open.`, "ok");
+        }
+
+        function applyProps() {
+            const obj = selectedObjects()[0];
+            if (!obj) return;
+            pushHistory();
+            const label = document.getElementById("propLabel");
+            if (label) {
+                if (obj.type === "text") obj.text = label.value;
+                else obj.label = label.value;
+            }
+            const seat = document.getElementById("propSeat");
+            if (seat && obj.type === "chair" && !seat.readOnly) {
+                const next = seat.value.trim().toUpperCase();
+                if (next && !allChairs().some(c => c !== obj && c.seatNumber === next)) obj.seatNumber = next;
+            }
+            obj.x = snap(parseFloat(document.getElementById("propX").value) || obj.x);
+            obj.y = snap(parseFloat(document.getElementById("propY").value) || obj.y);
+            obj.rotation = parseFloat(document.getElementById("propR").value) || 0;
+            if (document.getElementById("propW")) obj.w = Math.max(doc.gridSize, parseFloat(document.getElementById("propW").value) || obj.w);
+            if (document.getElementById("propH")) obj.h = Math.max(doc.gridSize, parseFloat(document.getElementById("propH").value) || obj.h);
+            renderAll();
+            scheduleSave();
+        }
+        function applyTable() {
+            const table = selectedObjects()[0];
+            if (!table || table.type !== "table") return;
+            pushHistory();
+            const label = document.getElementById("propLabel");
+            if (label) table.label = label.value || table.label;
+            const prevShape = table.shape;
+            table.shape = document.getElementById("tblShape").value || table.shape;
+            table.chairDistance = clamp(parseFloat(document.getElementById("tblSpace").value) || 0, 0, 200);
+            table.spacing = table.chairDistance;
+            table.gapStyle = document.getElementById("tblGap")?.value || table.gapStyle || "even";
+            if (document.getElementById("tblW")) table.tableW = clamp(parseFloat(document.getElementById("tblW").value) || table.tableW || 240, 60, 800);
+            if (document.getElementById("tblH")) table.tableH = clamp(parseFloat(document.getElementById("tblH").value) || table.tableH || 120, 48, 800);
+            if (table.shape === "round") table.tableH = table.tableW;
+            if (table.shape === "rows") {
+                table.rows = clamp(parseInt(document.getElementById("tblRows")?.value, 10) || table.rows || 1, 1, 20);
+                table.perRow = clamp(parseInt(document.getElementById("tblPer")?.value, 10) || table.perRow || 10, 1, 30);
+                table.sides = null;
+                table.rowGap = clamp(parseFloat(document.getElementById("tblSpace").value) || table.rowGap || 40, 0, 240);
+            } else if (table.shape === "rect" || table.shape === "ushape") {
+                const seatsEl = document.getElementById("tblSeats");
+                const topEl = document.getElementById("tblTop");
+                if (topEl && prevShape === table.shape) {
+                    const sides = {
+                        top: clamp(parseInt(topEl.value, 10) || 0, 0, 20),
+                        right: clamp(parseInt(document.getElementById("tblRight").value, 10) || 0, 0, 20),
+                        bottom: table.shape === "ushape" ? 0 : clamp(parseInt(document.getElementById("tblBottom")?.value, 10) || 0, 0, 20),
+                        left: clamp(parseInt(document.getElementById("tblLeft").value, 10) || 0, 0, 20)
+                    };
+                    const sum = sides.top + sides.right + sides.bottom + sides.left;
+                    const seats = clamp(parseInt(seatsEl?.value, 10) || sum || 4, 2, 40);
+                    if (seats !== (table.seats || sum)) {
+                        table.seats = seats;
+                        table.sides = null;
+                    } else if (sum >= 2) {
+                        table.sides = sides;
+                        table.seats = sum;
+                    }
+                } else {
+                    table.seats = clamp(parseInt(seatsEl?.value, 10) || table.seats || 8, 2, 40);
+                    table.sides = null;
+                }
+            } else {
+                table.seats = clamp(parseInt(document.getElementById("tblSeats")?.value, 10) || table.seats || 8, 2, 40);
+                table.sides = null;
+            }
+            const nx = snap(parseFloat(document.getElementById("propX").value));
+            const ny = snap(parseFloat(document.getElementById("propY").value));
+            table.relayout = true;
+            syncTable(table);
+            const dx = nx - itemLeft(table);
+            const dy = ny - itemTop(table);
+            if (dx || dy) {
+                table.x += dx;
+                table.y += dy;
+                syncTable(table);
+            }
+            table.relayout = false;
+            renderAll();
+            scheduleSave();
+        }
+
+        function onPointerDown(e) {
+            if (e.button === 2) return;
+            if (!document.getElementById("arrangeModal").hidden) return;
+            const point = worldPoint(e);
+            if (e.button === 1 || tool === "hand" || spaceDown) {
+                drag = { kind: "pan", sx: e.clientX, sy: e.clientY, px: panX, py: panY };
+                viewport().classList.add("panning");
+                return;
+            }
+            const resize = e.target.closest(".resize");
+            const item = e.target.closest(".item");
+            const assetEl = e.target.closest(".asset");
+            if (resize && item) {
+                const obj = findObj(item.dataset.id);
+                if (!obj) return;
+                pushHistory();
+                drag = { kind: "resize", id: obj.id, sx: e.clientX, sy: e.clientY, w: obj.w, h: obj.h, moved: false };
+                return;
+            }
+            if (item) {
+                const obj = findObj(item.dataset.id);
+                if (!obj || layerState(obj.layer).locked) return;
+                if (e.ctrlKey || e.metaKey) {
+                    if (selection.has(obj.id)) selection.delete(obj.id); else selection.add(obj.id);
+                    renderWorld(); renderProps(); renderFloat(); renderGuestList();
+                    return;
+                }
+                if (!selection.has(obj.id)) selectOnly(obj.id);
+                pushHistory();
+                const moving = obj.type === "chair"
+                    ? [obj]
+                    : (obj.arrangementId ? membersOf(obj.arrangementId) : (obj.type === "table" ? [obj, ...chairsOf(obj)] : selectedObjects()));
+                drag = {
+                    kind: "move", sx: e.clientX, sy: e.clientY, moved: false,
+                    origins: moving.map(o => ({ id: o.id, x: o.x, y: o.y }))
+                };
+                return;
+            }
+            if (assetEl && !layerState("background").locked) {
+                const asset = active().assets.find(a => a.id === assetEl.dataset.asset);
+                if (asset && !asset.locked) {
+                    selectedAssetId = asset.id;
+                    selection.clear();
+                    pushHistory();
+                    drag = { kind: "asset", id: asset.id, sx: e.clientX, sy: e.clientY, x: asset.x, y: asset.y, moved: false };
+                    renderWorld(); renderProps();
+                    return;
+                }
+            }
+            if (tool !== "select" && tool !== "hand") {
+                placeAt(tool, point.x, point.y);
+                return;
+            }
+            if (!e.ctrlKey && !e.metaKey) selection.clear();
+            selectedAssetId = "";
+            drag = { kind: "marquee", sx: point.x, sy: point.y, x: point.x, y: point.y };
+            renderProps();
+            renderFloat();
+        }
+        function onPointerMove(e) {
+            if (!drag) return;
+            if (drag.kind === "pan") {
+                panX = drag.px + (e.clientX - drag.sx);
+                panY = drag.py + (e.clientY - drag.sy);
+                applyView();
+                return;
+            }
+            const dx = (e.clientX - drag.sx) / zoom;
+            const dy = (e.clientY - drag.sy) / zoom;
+            if (Math.hypot(dx, dy) > 2) drag.moved = true;
+            if (drag.kind === "move") {
+                const base = drag.origins[0];
+                const sdx = snap(base.x + dx) - base.x;
+                const sdy = snap(base.y + dy) - base.y;
+                drag.origins.forEach(origin => {
+                    const obj = findObj(origin.id);
+                    if (!obj) return;
+                    obj.x = origin.x + sdx;
+                    obj.y = origin.y + sdy;
+                    const el = world().querySelector(`[data-id="${obj.id}"]`);
+                    if (el) { el.style.left = itemLeft(obj) + "px"; el.style.top = itemTop(obj) + "px"; }
+                });
+                positionFloat();
+            } else if (drag.kind === "resize") {
+                const obj = findObj(drag.id);
+                if (!obj) return;
+                obj.w = Math.max(doc.gridSize, snap(drag.w + dx));
+                obj.h = Math.max(doc.gridSize, snap(drag.h + dy));
+                const el = world().querySelector(`[data-id="${obj.id}"]`);
+                if (el) { el.style.width = obj.w + "px"; el.style.height = obj.h + "px"; }
+            } else if (drag.kind === "asset") {
+                const asset = active().assets.find(a => a.id === drag.id);
+                if (!asset) return;
+                asset.x = snap(drag.x + dx);
+                asset.y = snap(drag.y + dy);
+                const el = world().querySelector(`[data-asset="${asset.id}"]`);
+                if (el) { el.style.left = asset.x + "px"; el.style.top = asset.y + "px"; }
+            } else if (drag.kind === "marquee") {
+                const point = worldPoint(e);
+                const box = document.getElementById("marquee");
+                const x = Math.min(drag.sx, point.x);
+                const y = Math.min(drag.sy, point.y);
+                const w = Math.abs(point.x - drag.sx);
+                const h = Math.abs(point.y - drag.sy);
+                box.hidden = false;
+                box.style.left = x + "px";
+                box.style.top = y + "px";
+                box.style.width = w + "px";
+                box.style.height = h + "px";
+                drag.x = x; drag.y = y; drag.w = w; drag.h = h;
+            }
+        }
+        function onPointerUp() {
+            if (!drag) return;
+            const kind = drag.kind;
+            const moved = drag.moved;
+            if (kind === "marquee" && drag.w > 4) {
+                active().objects.forEach(obj => {
+                    const hit = obj.x < drag.x + drag.w && obj.x + obj.w > drag.x && obj.y < drag.y + drag.h && obj.y + obj.h > drag.y;
+                    if (hit && layerState(obj.layer).visible && !layerState(obj.layer).locked) selection.add(obj.id);
+                });
+            }
+            if ((kind === "move" || kind === "resize" || kind === "asset") && !moved) {
+                history.pop();
+                historyIndex = history.length - 1;
+                updateHistoryButtons();
+            } else if (moved) {
+                if (kind === "move" && drag.origins.length === 1) {
+                    const movedObj = findObj(drag.origins[0].id);
+                    if (movedObj && movedObj.type === "chair") movedObj.manual = true;
+                }
+                scheduleSave();
+            }
+            drag = null;
+            viewport().classList.remove("panning");
+            renderAll();
+        }
+
+        document.getElementById("gateForm").addEventListener("submit", (e) => {
+            e.preventDefault();
+            if ((document.getElementById("adminPassword").value || "").trim() === ADMIN_PASSWORD) {
+                sessionStorage.setItem(AUTH_KEY, "1");
+                showApp();
+            } else document.getElementById("gateError").textContent = "Incorrect password.";
+        });
+        function showApp() {
+            document.getElementById("gate").style.display = "none";
+            document.getElementById("app").classList.add("open");
+            boot();
+        }
+        if (sessionStorage.getItem(AUTH_KEY) === "1") showApp();
+
+        document.getElementById("viewport").addEventListener("pointerdown", onPointerDown);
+        window.addEventListener("pointermove", onPointerMove);
+        window.addEventListener("pointerup", onPointerUp);
+        document.getElementById("viewport").addEventListener("wheel", (e) => {
+            e.preventDefault();
+            zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.1 : 1 / 1.1);
+        }, { passive: false });
+        document.getElementById("viewport").addEventListener("dragover", (e) => e.preventDefault());
+        document.getElementById("viewport").addEventListener("drop", (e) => {
+            e.preventDefault();
+            const type = e.dataTransfer.getData("text/tool");
+            if (!type) return;
+            const point = worldPoint(e);
+            placeAt(type, point.x, point.y);
+        });
+
+        document.body.addEventListener("click", (e) => {
+            const step = e.target.closest("[data-step]");
+            if (step) {
+                const input = document.getElementById(step.dataset.step);
+                if (!input) return;
+                const dir = parseInt(step.dataset.dir, 10) || 0;
+                const min = parseInt(input.min, 10);
+                const max = parseInt(input.max, 10);
+                input.value = String(clamp((parseInt(input.value, 10) || 0) + dir, min, max));
+                return;
+            }
+            const editTable = e.target.closest("[data-edit-table]");
+            if (editTable) { selectOnly(editTable.dataset.editTable); return; }
+            const toolBtn = e.target.closest("[data-tool]");
+            if (toolBtn) { setTool(toolBtn.dataset.tool); return; }
+            const open = e.target.closest("[data-open-layout]");
+            if (open) { openLayout(open.dataset.openLayout); return; }
+            const dupL = e.target.closest("[data-dup-layout]");
+            if (dupL) { duplicateLayout(dupL.dataset.dupLayout); return; }
+            const delL = e.target.closest("[data-del-layout]");
+            if (delL) { deleteLayout(delL.dataset.delLayout); return; }
+            const vis = e.target.closest("[data-asset-vis]");
+            if (vis) {
+                const asset = active().assets.find(a => a.id === vis.dataset.assetVis);
+                if (asset) { pushHistory(); asset.visible = !asset.visible; renderAll(); scheduleSave(); }
+                return;
+            }
+            const lock = e.target.closest("[data-asset-lock]");
+            if (lock) {
+                const asset = active().assets.find(a => a.id === lock.dataset.assetLock);
+                if (asset) { pushHistory(); asset.locked = !asset.locked; layerState("background").locked = asset.locked; renderAll(); scheduleSave(); }
+                return;
+            }
+            const openAsset = e.target.closest("[data-open-asset]");
+            if (openAsset) {
+                selectedAssetId = openAsset.dataset.openAsset;
+                selection.clear();
+                renderWorld();
+                renderProps();
+                renderFloat();
+                return;
+            }
+            const delA = e.target.closest("[data-asset-del]");
+            if (delA) { deleteAsset(delA.dataset.assetDel); return; }
+            const lv = e.target.closest("[data-layer-vis]");
+            if (lv) { pushHistory(); layerState(lv.dataset.layerVis).visible = !layerState(lv.dataset.layerVis).visible; renderAll(); scheduleSave(); return; }
+            const ll = e.target.closest("[data-layer-lock]");
+            if (ll) { pushHistory(); layerState(ll.dataset.layerLock).locked = !layerState(ll.dataset.layerLock).locked; renderAll(); scheduleSave(); return; }
+            const align = e.target.closest("[data-align]");
+            if (align) { alignSelection(align.dataset.align); return; }
+            const assign = e.target.closest("[data-user]");
+            if (assign) {
+                const chair = selectedObjects().find(obj => obj.type === "chair");
+                if (chair) { assignGuest(assign.dataset.user); return; }
+                const code = assign.dataset.jump;
+                if (!code) { toast("This guest has no seat yet."); return; }
+                const seated = active().objects.find(obj => obj.type === "chair" && String(obj.seatNumber || "").toUpperCase() === code.toUpperCase());
+                if (!seated) { toast("That seat is not on this layout."); return; }
+                selection = new Set([seated.id]);
+                selectedAssetId = "";
+                renderAll();
+                return;
+            }
+            const act = e.target.closest("[data-float]");
+            if (act) {
+                const id = act.dataset.float;
+                if (id === "rotate15") rotateSelection();
+                if (id === "duplicate") duplicateSelection();
+                if (id === "delete") deleteSelection();
+                if (id === "ungroup") ungroupArrangement(selectionArrangement());
+                if (id === "assign") document.getElementById("rosterSearch")?.focus();
+                if (id === "edit") document.getElementById("editRows")?.focus() || document.getElementById("rosterSearch")?.focus();
+                if (id === "nudge") toast("Drag the selection to move it.");
+            }
+        });
+        document.body.addEventListener("dragstart", (e) => {
+            const btn = e.target.closest("[data-tool]");
+            if (!btn || !btn.dataset.tool || btn.dataset.tool === "select" || btn.dataset.tool === "hand") return;
+            e.dataTransfer.setData("text/tool", btn.dataset.tool);
+        });
+        document.body.addEventListener("input", (e) => {
+            if (e.target.id === "rosterSearch") renderRoster();
+            if (e.target.id === "layoutName" && doc) {
+                active().name = e.target.value || "Untitled";
+                renderLayouts();
+                scheduleSave();
+            }
+        });
+
+        document.getElementById("undoBtn").onclick = undo;
+        document.getElementById("redoBtn").onclick = redo;
+        document.getElementById("saveBtn").onclick = saveNow;
+        document.getElementById("previewBtn").onclick = () => { document.body.classList.toggle("is-preview"); document.getElementById("previewBtn").textContent = document.body.classList.contains("is-preview") ? "Edit" : "Preview"; fit(); };
+        document.getElementById("clearSelBtn").onclick = clearSelection;
+        document.getElementById("dupBtn").onclick = duplicateSelection;
+        document.getElementById("delBtn").onclick = deleteSelection;
+        document.getElementById("newLayoutBtn").onclick = newLayout;
+        document.getElementById("uploadBtn").onclick = () => document.getElementById("fileInput").click();
+        document.getElementById("fileInput").onchange = (e) => { const file = e.target.files && e.target.files[0]; e.target.value = ""; if (file) onUpload(file); };
+        document.getElementById("zoomOutBtn").onclick = () => zoomAt(viewport().clientWidth / 2 + viewport().getBoundingClientRect().left, viewport().clientHeight / 2 + viewport().getBoundingClientRect().top, 1 / 1.15);
+        document.getElementById("zoomInBtn").onclick = () => zoomAt(viewport().clientWidth / 2 + viewport().getBoundingClientRect().left, viewport().clientHeight / 2 + viewport().getBoundingClientRect().top, 1.15);
+        document.getElementById("fitBtn").onclick = fit;
+        document.getElementById("zoom100Btn").onclick = () => { zoom = 1; applyView(); };
+        document.getElementById("snapBtn").onclick = () => { snapOn = !snapOn; renderAll(); };
+        document.getElementById("lockBtn").onclick = () => { sessionStorage.removeItem(AUTH_KEY); location.reload(); };
+        document.addEventListener("visibilitychange", () => {
+            if (document.visibilityState === "hidden" && booted && saveTimer) {
+                clearTimeout(saveTimer);
+                saveTimer = 0;
+                saveNow();
+            }
+        });
+        document.getElementById("arrangeForm").addEventListener("submit", (e) => {
+            e.preventDefault();
+            if (!arrangePoint) return;
+            createArrangement(readArrange(), arrangePoint);
+        });
+        document.getElementById("arrCancel").addEventListener("click", closeArrange);
+        document.getElementById("arrangeForm").addEventListener("input", syncArrangeFields);
+        document.getElementById("arrangeForm").addEventListener("change", syncArrangeFields);
+        document.getElementById("arrangeModal").addEventListener("click", (e) => {
+            if (e.target.id === "arrangeModal") closeArrange();
+        });
+        document.body.addEventListener("click", (e) => {
+            if (e.target.id === "applyProps") applyProps();
+            if (e.target.id === "applyTable") applyTable();
+            if (e.target.id === "applyArr") applyArrangement();
+            if (e.target.id === "ungroupArr") ungroupArrangement(selectionArrangement());
+            if (e.target.id === "dupBtn2") duplicateSelection();
+            if (e.target.id === "delBtn2") deleteSelection();
+            if (e.target.id === "unassignBtn") unassign();
+            if (e.target.id === "groupBtn") {
+                pushHistory();
+                const gid = "grp-" + uid();
+                selectedObjects().forEach(o => { o.groupId = gid; });
+                scheduleSave();
+                toast("Grouped. Clicking one selects the group.");
+            }
+            if (e.target.id === "ungroupBtn") {
+                pushHistory();
+                selectedObjects().forEach(o => { o.groupId = ""; });
+                scheduleSave();
+            }
+            if (e.target.id === "assetApply") {
+                const asset = active().assets.find(a => a.id === selectedAssetId);
+                if (!asset) return;
+                pushHistory();
+                asset.x = snap(parseFloat(document.getElementById("ax").value) || asset.x);
+                asset.y = snap(parseFloat(document.getElementById("ay").value) || asset.y);
+                asset.scale = clamp(parseFloat(document.getElementById("as").value) || 1, 0.2, 4);
+                asset.w = Math.round(1200 * asset.scale);
+                asset.h = Math.round(800 * asset.scale);
+                asset.rotation = parseFloat(document.getElementById("ar").value) || 0;
+                renderAll();
+                scheduleSave();
+            }
+        });
+
+        window.addEventListener("keydown", (e) => {
+            const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName);
+            if (e.code === "Space") spaceDown = true;
+            if (e.key === "Escape") {
+                if (!document.getElementById("arrangeModal").hidden) { closeArrange(); return; }
+                if (!typing) { setTool("select"); clearSelection(); }
+                return;
+            }
+            if (typing) return;
+            const meta = e.ctrlKey || e.metaKey;
+            if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); deleteSelection(); }
+            if (meta && e.key.toLowerCase() === "z" && e.shiftKey) { e.preventDefault(); redo(); }
+            else if (meta && e.key.toLowerCase() === "z") { e.preventDefault(); undo(); }
+            if (meta && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); }
+            if (meta && e.key.toLowerCase() === "d") { e.preventDefault(); duplicateSelection(); }
+            if (meta && e.key.toLowerCase() === "a") { e.preventDefault(); active().objects.forEach(o => selection.add(o.id)); renderAll(); }
+            if (meta && e.key.toLowerCase() === "c") {
+                const items = selectedObjects();
+                const table = items.find(o => o.type === "table");
+                const pack = table ? [table, ...chairsOf(table), ...items.filter(o => o.id !== table.id && o.tableId !== table.id)] : items;
+                clipboard = pack.map(o => JSON.parse(JSON.stringify(o)));
+            }
+            if (meta && e.key.toLowerCase() === "v" && clipboard.length) {
+                e.preventDefault();
+                pushHistory();
+                const copies = cloneObjects(clipboard, 40, 40);
+                const copiedTable = copies.find(o => o.type === "table");
+                selection = new Set(copiedTable ? [copiedTable.id] : copies.map(c => c.id));
+                renderAll();
+                scheduleSave();
+            }
+            if (e.key.toLowerCase() === "v" && !meta) setTool("select");
+            if (e.key.toLowerCase() === "h" && !meta) setTool("hand");
+        });
+        window.addEventListener("keyup", (e) => { if (e.code === "Space") spaceDown = false; });
+        window.addEventListener("resize", () => { if (booted) positionFloat(); });
     </script>
 </body>
-
 </html>
