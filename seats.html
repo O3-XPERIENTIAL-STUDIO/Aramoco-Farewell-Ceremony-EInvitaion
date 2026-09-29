@@ -2314,9 +2314,17 @@
                 if (id === "duplicate") duplicateSelection();
                 if (id === "delete") deleteSelection();
                 if (id === "ungroup") ungroupArrangement(selectionArrangement());
-                if (id === "assign") document.getElementById("rosterSearch")?.focus();
-                if (id === "edit") document.getElementById("editRows")?.focus() || document.getElementById("rosterSearch")?.focus();
-                if (id === "nudge") toast("Drag the selection to move it.");
+                if (id === "nudge") toast("Drag the selection, or set X and Y in the side panel.");
+                const focus = {
+                    assign: "#rosterSearch",
+                    edit: "#editRows, #propSeat, #propLabel",
+                    nudge: "#propX, #editType, #propLabel",
+                    rotate15: "#propR, #editType, #propLabel",
+                    duplicate: "#propLabel, #editType, #props",
+                    ungroup: "#props",
+                    delete: "#rosterSearch"
+                }[id];
+                if (focus) revealSide(id === "assign" || id === "delete" ? "guests" : "details", focus);
             }
         });
         document.body.addEventListener("dragstart", (e) => {
@@ -2337,6 +2345,24 @@
         document.getElementById("redoBtn").onclick = redo;
         document.getElementById("saveBtn").onclick = saveNow;
         document.getElementById("dashBtn").onclick = () => { document.getElementById("leaveModal").hidden = false; };
+        function revealSide(section, selector) {
+            document.body.classList.remove("hide-right");
+            syncSides();
+            const panel = document.querySelector(".props");
+            const target = selector.split(",").map(part => document.querySelector(part.trim())).find(Boolean);
+            requestAnimationFrame(() => {
+                if (panel) panel.scrollIntoView({ block: "nearest" });
+                if (!target) return;
+                if (section === "guests") {
+                    const roster = document.querySelector(".roster");
+                    if (roster && panel) panel.scrollTop = roster.offsetTop;
+                } else if (panel) {
+                    panel.scrollTop = 0;
+                    target.scrollIntoView({ block: "nearest" });
+                }
+                if (typeof target.focus === "function" && target.matches("input, select, textarea, button")) target.focus({ preventScroll: true });
+            });
+        }
         function syncSides() {
             const left = document.body.classList.contains("hide-left");
             const right = document.body.classList.contains("hide-right");
