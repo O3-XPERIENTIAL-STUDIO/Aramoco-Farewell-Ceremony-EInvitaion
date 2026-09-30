@@ -3376,6 +3376,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                     <button class="btn btn-primary" type="button" onclick="focusAddForGroup(${Number(group.id)})">＋ Add guest</button>
                     <button class="btn btn-primary" type="button" onclick="downloadGroupZip(${Number(group.id)}, 'pdf')">⬇ PDFs</button>
                     <button class="btn btn-success" type="button" onclick="downloadGroupZip(${Number(group.id)}, 'qr')">⬇ E-Badges</button>
+                    <button class="btn btn-ghost" type="button" onclick="exportGroupRsvp(${Number(group.id)})">⬇ RSVP report</button>
                     <button class="btn btn-ghost" type="button" onclick="sendGroupInvites(${Number(group.id)})">✉ Send unsent</button>
                     <button class="btn btn-ghost" type="button" onclick="deleteGroup(${Number(group.id)})">Delete group</button>
                 </div>`;
@@ -4334,6 +4335,27 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                 XLSX.writeFile(wb, `aramco_farewell_guests_export_${new Date().toISOString().split('T')[0]}.xlsx`);
             } catch (e) {
                 alert(`Error exporting Excel: ${e.message}`);
+            }
+        }
+
+        function exportGroupRsvp(groupId) {
+            try {
+                const group = guestGroups.find(item => Number(item.id) === Number(groupId));
+                const members = users.filter(user => Number(user.groupId) === Number(groupId));
+                if (!members.length) {
+                    alert('This group has no guests to export.');
+                    return;
+                }
+                if (typeof XLSX === 'undefined' || !XLSX.writeFile) {
+                    throw new Error('Excel library not loaded.');
+                }
+                const wb = buildGuestExportWorkbook(members);
+                const safeName = String(group && group.name ? group.name : 'group')
+                    .replace(/[^\w\-]+/g, '-')
+                    .replace(/^-+|-+$/g, '') || 'group';
+                XLSX.writeFile(wb, `aramco_farewell_rsvp_${safeName}_${new Date().toISOString().split('T')[0]}.xlsx`);
+            } catch (e) {
+                alert(`Error exporting RSVP report: ${e.message}`);
             }
         }
 

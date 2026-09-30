@@ -2067,12 +2067,22 @@
             historyIndex = 0;
             booted = true;
             renderAll();
-            zoom = 1;
-            const bounds = contentBounds();
-            panX = bounds ? 64 - bounds.minX : 64;
-            panY = bounds ? 64 - bounds.minY : 64;
-            applyView();
+            fitWhenReady();
             updateHistoryButtons();
+        }
+
+        function fitWhenReady() {
+            let tries = 0;
+            const run = () => {
+                const rect = viewport().getBoundingClientRect();
+                if ((rect.width < 20 || rect.height < 20) && tries < 30) {
+                    tries += 1;
+                    requestAnimationFrame(run);
+                    return;
+                }
+                fit();
+            };
+            requestAnimationFrame(run);
         }
 
         async function assignGuest(userId) {

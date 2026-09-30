@@ -312,11 +312,13 @@
                 } catch (e) {}
             }
 
-            function addHistory(name, when, returningGuest) {
+            function addHistory(name, when, returningGuest, seat) {
                 var li = document.createElement("li");
-                li.innerHTML = "<strong>" + (name || "Guest") + "</strong>" +
+                var seatText = seat ? (" · Seat " + esc(seat)) : " · No seat";
+                li.innerHTML = "<strong>" + esc(name || "Guest") + "</strong>" +
                     (returningGuest ? " · return" : " · first entry") +
-                    "<div class=\"when\">" + when + "</div>";
+                    seatText +
+                    "<div class=\"when\">" + esc(when) + "</div>";
                 historyList.insertBefore(li, historyList.firstChild);
             }
 
@@ -421,6 +423,7 @@
 
                     var name = body.fullName || body.FullName || "Guest";
                     var status = body.status || body.Status || "";
+                    var seat = (body.seatCode || body.SeatCode || "").toString().trim();
                     var count = body.checkInCount || body.CheckInCount || 1;
                     var returningGuest = !!(body.alreadyCheckedIn || body.AlreadyCheckedIn);
                     var when = formatTime(body.checkedInOn || body.CheckedInOn);
@@ -433,13 +436,15 @@
                     }
                     var type = returningGuest ? "warn" : "ok";
                     var title = returningGuest ? "Already checked in" : "Checked in";
+                    var seatLine = seat ? ("Seat: " + esc(seat)) : "Seat: not assigned";
                     beep(true);
                     showResult(type, title,
                         "<strong>" + esc(name) + "</strong><br>" +
+                        seatLine + "<br>" +
                         "Status: " + esc(status) + "<br>" +
                         "Check-ins: " + count + "<br>" +
                         esc(when) + previousHtml);
-                    addHistory(name, when, returningGuest);
+                    addHistory(name, when, returningGuest, seat);
                 }).catch(function(err) {
                     beep(false);
                     showResult("err", "Network error", "Could not reach the check-in API.");
