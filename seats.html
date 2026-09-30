@@ -83,6 +83,8 @@
         .item.chair .who.is-name { display: block; width: 90%; font-size: 34px; font-weight: 700; line-height: 1.08; text-align: center; white-space: normal; }
         .item.chair.is-assigned { background: #ffe14a; color: #1a1408; box-shadow: 0 0 0 5px rgba(255, 210, 40, .55), 0 12px 22px rgba(180, 120, 0, .35); }
         .item.chair.is-assigned .who { color: #1a1408; }
+        .item.chair.is-assigned.is-declined { background: #e23b32; color: #fff; box-shadow: 0 0 0 5px rgba(226, 59, 50, .5), 0 12px 22px rgba(140, 20, 16, .35); }
+        .item.chair.is-assigned.is-declined .who { color: #fff; }
         .item.table { z-index: 1; border: none; border-radius: 16px; background: #f3ecdf; color: #1d2836; box-shadow: 0 10px 22px rgba(30,24,16,.14); }
         .item.table.shape-round, .item.table.shape-oval { border-radius: 50%; }
         .item.table.shape-square { border-radius: 16px; }
@@ -440,6 +442,15 @@
         }
         function guestName(record) {
             return record ? (record.guestName || record.GuestName || "") : "";
+        }
+        function assignedGuest(record) {
+            if (!record) return null;
+            const id = record.uniqueId || record.UniqueId || "";
+            return users.find(user => user.id === id) || null;
+        }
+        function assignmentDeclined(record) {
+            const guest = assignedGuest(record);
+            return !!(guest && guestStatus(guest.status) === "declined");
         }
         function guestStatus(value) {
             const status = String(value || "pending").toLowerCase();
@@ -1371,6 +1382,7 @@
                 const selected = selection.has(obj.id);
                 const record = obj.type === "chair" ? assignment(obj) : null;
                 const assigned = record && (record.status || record.Status) === "Assigned";
+                const declined = assigned && assignmentDeclined(record);
                 const name = guestName(record);
                 const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]).join("").toUpperCase();
                 const parent = obj.tableId ? layout.objects.find(o => o.id === obj.tableId) : null;
@@ -1382,7 +1394,10 @@
                     : `<span class="who">${esc(assigned ? (initials || "•") : index)}</span>`;
                 const pills = obj.shape === "rows" ? rowPills(obj) : "";
                 const font = obj.type === "text" ? ` style="font-size:${clamp(obj.fontSize || 28, 8, 240)}px"` : "";
-                return `<div class="item ${esc(obj.type)}${obj.type === "table" ? " shape-" + esc(obj.shape || "round") : ""}${assigned ? " is-assigned" : ""}${selected ? " is-selected" : ""}" data-id="${esc(obj.id)}" title="${esc(obj.type === "chair" ? (obj.seatNumber || "") : (obj.label || ""))}" style="left:${itemLeft(obj)}px;top:${itemTop(obj)}px;width:${obj.w}px;height:${obj.h}px;transform:rotate(${obj.rotation || 0}deg)">
+                const chairTitle = obj.type === "chair"
+                    ? (obj.seatNumber || "") + (declined ? " · Declined" : "")
+                    : (obj.label || "");
+                return `<div class="item ${esc(obj.type)}${obj.type === "table" ? " shape-" + esc(obj.shape || "round") : ""}${assigned ? " is-assigned" : ""}${declined ? " is-declined" : ""}${selected ? " is-selected" : ""}" data-id="${esc(obj.id)}" title="${esc(chairTitle)}" style="left:${itemLeft(obj)}px;top:${itemTop(obj)}px;width:${obj.w}px;height:${obj.h}px;transform:rotate(${obj.rotation || 0}deg)">
                     ${obj.type === "chair" ? `${faceHtml}${obj.tableId ? "" : `<span class="seat-no">${esc(obj.seatNumber || "")}</span>`}` : (pills || `<span class="obj-label"${font}>${esc(obj.type === "text" ? (obj.text || "Label") : obj.label)}</span>`)}
                 </div>`;
             }).join("");
@@ -1479,7 +1494,7 @@
                 <label class="field">Name<input id="propLabel" value="${esc(obj.type === "text" ? obj.text : obj.label)}" /></label>
                 ${obj.type === "text" ? `<label class="field">Font size<input id="propFont" type="number" min="8" max="240" value="${clamp(obj.fontSize || 28, 8, 240)}" /></label>` : ""}
                 ${obj.type === "chair" ? `<label class="field">Seat number<input id="propSeat" value="${esc(obj.seatNumber || "")}" ${record && (record.status || record.Status) === "Assigned" ? "readonly" : ""} /></label>
-                    <p class="hint">Assigned user: <strong style="color:var(--text)">${esc(assignedName || "Unassigned")}</strong></p>
+                    <p class="hint">Assigned user: <strong style="color:${assignmentDeclined(record) ? "#e23b32" : "var(--text)"}">${esc(assignedName || "Unassigned")}</strong>${assignmentDeclined(record) ? " · Declined" : ""}</p>
                     <div class="row">${assignedName ? `<button class="btn" type="button" id="unassignBtn">Remove user</button>` : ""}</div>` : ""}
                 <label class="field">X<input id="propX" type="number" value="${Math.round(obj.x)}" /></label>
                 <label class="field">Y<input id="propY" type="number" value="${Math.round(obj.y)}" /></label>
