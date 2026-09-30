@@ -78,9 +78,9 @@
         .stepper button, .add-card .btn { flex: 1; }
         .side-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
         .item { position: absolute; display: flex; align-items: center; justify-content: center; flex-direction: column; border: 1px solid rgba(237,231,222,.35); user-select: none; }
-        .item.chair { z-index: 2; border: none; border-radius: 42px; background: #2f4c72; color: #fff; box-shadow: 0 8px 16px rgba(20,32,52,.22); overflow: hidden; }
-        .item.chair .who, .item.chair .seat-no { position: relative; z-index: 1; font-size: 48px; font-weight: 700; line-height: 1; }
-        .item.chair .who.is-name { display: block; width: 90%; font-size: 34px; font-weight: 700; line-height: 1.08; text-align: center; white-space: normal; }
+        .item.chair { z-index: 2; border: none; border-radius: 42px; background: #2f4c72; color: #fff; box-shadow: 0 8px 16px rgba(20,32,52,.22); overflow: visible; }
+        .item.chair .who, .item.chair .seat-no { position: relative; z-index: 1; font-size: 72px; font-weight: 700; line-height: 1; transform-origin: center center; }
+        .item.chair .who.is-name { display: block; width: 90%; font-size: 48px; font-weight: 700; line-height: 1.08; text-align: center; white-space: normal; }
         .item.chair.is-assigned { background: #ffe14a; color: #1a1408; box-shadow: 0 0 0 5px rgba(255, 210, 40, .55), 0 12px 22px rgba(180, 120, 0, .35); }
         .item.chair.is-assigned .who { color: #1a1408; }
         .item.chair.is-assigned.is-declined { background: #e23b32; color: #fff; box-shadow: 0 0 0 5px rgba(226, 59, 50, .5), 0 12px 22px rgba(140, 20, 16, .35); }
@@ -89,7 +89,7 @@
         .item.table.shape-round, .item.table.shape-oval { border-radius: 50%; }
         .item.table.shape-square { border-radius: 16px; }
         .item.table.shape-crescent { border-radius: 0 0 999px 999px; }
-        .item.table .obj-label { font-size: 16px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
+        .item.table .obj-label { font-size: 40px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; transform-origin: center center; }
         .preview-box { background: #f3f5f8; border: 1px solid var(--line); border-radius: 12px; min-height: 150px; margin: 8px 0; overflow: hidden; }
         .preview-box svg { width: 100%; height: 160px; display: block; }
         .item.table.shape-rows { background: transparent; box-shadow: none; overflow: visible; }
@@ -116,7 +116,7 @@
         .xform .handle.w { left: 0; top: 50%; transform: translate(-50%, -50%); cursor: ew-resize; }
         .xform .handle.rotate { left: 50%; top: 0; border-radius: 50%; background: #2563eb; cursor: grab; transform: translate(-50%, calc(-100% - 22px / var(--z, 1))); }
         .item:hover { filter: brightness(1.08); }
-        .seat-no, .obj-label { font-size: 10px; font-weight: 700; line-height: 1.1; text-align: center; pointer-events: none; }
+        .seat-no, .obj-label { font-size: 28px; font-weight: 700; line-height: 1.1; text-align: center; pointer-events: none; }
         .who { font-size: 12px; font-weight: 700; pointer-events: none; }
         .hover-name { display: none; position: absolute; left: 50%; top: calc(100% + 6px); transform: translateX(-50%); background: #111; color: #fff; border-radius: 6px; padding: 3px 6px; font-size: 11px; white-space: nowrap; z-index: 3; }
         .item.chair:hover .hover-name, .item.chair.is-selected .hover-name { display: block; }
@@ -280,6 +280,29 @@
                 <button class="btn primary" type="button" id="renumberApply">Renumber</button>
             </div>
         </div>
+    </div>
+    <div class="sheet-modal" id="numberModal" hidden>
+        <form class="sheet" id="numberForm">
+            <h3>Number tables</h3>
+            <p class="hint">Pick a start number and a direction. Tables are numbered from their position on the map. Guests stay on the same chair.</p>
+            <div class="sheet-grid">
+                <label class="field">Start at
+                    <input id="numberStart" type="number" min="1" max="999" value="1" />
+                </label>
+                <label class="field">Direction
+                    <select id="numberDirection">
+                        <option value="across">Across each row</option>
+                        <option value="down">Down each column</option>
+                        <option value="snake">Snake, row by row</option>
+                    </select>
+                </label>
+            </div>
+            <p class="hint" id="numberPreview"></p>
+            <div class="actions">
+                <button class="btn" type="button" id="numberCancel">Cancel</button>
+                <button class="btn primary" type="submit">Apply numbers</button>
+            </div>
+        </form>
     </div>
     <div class="sheet-modal" id="arrangeModal" hidden>
         <form class="sheet" id="arrangeForm">
@@ -916,10 +939,159 @@
             let max = 0;
             active().objects.forEach(obj => {
                 if (obj.type !== "table" || obj.shape === "rows") return;
-                const match = String(obj.label || "").match(/(\d+)\s*$/);
-                if (match) max = Math.max(max, parseInt(match[1], 10));
+                max = Math.max(max, tableNumberValue(obj));
             });
             return max;
+        }
+        function tableNumberValue(table) {
+            const stored = parseInt(table.tableNo, 10);
+            if (stored) return stored;
+            const match = String(table.label || "").match(/(\d+)\s*$/);
+            return match ? parseInt(match[1], 10) : 0;
+        }
+        function tableCenter(table) {
+            return { x: itemLeft(table) + (table.w || 0) / 2, y: itemTop(table) + (table.h || 0) / 2 };
+        }
+        function bandTables(tables, axis) {
+            const key = table => axis === "x" ? tableCenter(table).x : tableCenter(table).y;
+            const other = table => axis === "x" ? tableCenter(table).y : tableCenter(table).x;
+            const sizes = tables.map(table => axis === "x" ? (table.w || 80) : (table.h || 80)).sort((a, b) => a - b);
+            const tol = Math.max(80, (sizes[Math.floor(sizes.length / 2)] || 80) * 0.55);
+            const bands = [];
+            tables.slice().sort((a, b) => key(a) - key(b)).forEach(table => {
+                const k = key(table);
+                const band = bands.find(item => Math.abs(item.k - k) <= tol);
+                if (band) {
+                    band.items.push(table);
+                    band.k = band.items.reduce((sum, item) => sum + key(item), 0) / band.items.length;
+                } else bands.push({ k, items: [table] });
+            });
+            bands.forEach(band => band.items.sort((a, b) => other(a) - other(b)));
+            return bands;
+        }
+        function orderTables(tables, direction) {
+            const vertical = direction === "down";
+            const bands = bandTables(tables, vertical ? "x" : "y");
+            const ordered = [];
+            bands.forEach((band, index) => {
+                const items = band.items.slice();
+                if (direction === "snake" && index % 2 === 1) items.reverse();
+                ordered.push(...items);
+            });
+            return ordered;
+        }
+        function selectedTables() {
+            return selectedObjects().filter(obj => obj.type === "table" && obj.shape !== "rows");
+        }
+        function tableNumberPlan() {
+            const tables = orderTables(selectedTables(), document.getElementById("numberDirection").value || "across");
+            const start = Math.max(1, parseInt(document.getElementById("numberStart").value, 10) || 1);
+            const used = new Set();
+            const chosen = new Set(tables.map(table => table.id));
+            active().objects.forEach(obj => {
+                if (obj.type !== "table" || obj.shape === "rows" || chosen.has(obj.id)) return;
+                const n = tableNumberValue(obj);
+                if (n) used.add(n);
+            });
+            const numbers = [];
+            let n = start;
+            while (numbers.length < tables.length && n < 10000) {
+                if (!used.has(n)) numbers.push(n);
+                n += 1;
+            }
+            return { tables, numbers, skipped: numbers.length ? numbers[0] !== start || numbers[numbers.length - 1] - numbers[0] + 1 !== numbers.length : false };
+        }
+        function refreshNumberPreview() {
+            const note = document.getElementById("numberPreview");
+            if (!note) return;
+            const plan = tableNumberPlan();
+            if (!plan.tables.length) {
+                note.textContent = "Select one or more tables first.";
+                return;
+            }
+            const labels = plan.numbers.map(n => "Table " + String(n).padStart(2, "0"));
+            const sample = labels.slice(0, 4).join(", ");
+            const direction = { across: "Across each row", down: "Down each column", snake: "Snake, row by row" }[document.getElementById("numberDirection").value] || "Across each row";
+            note.textContent = plan.tables.length + " tables. " + direction + ": " + sample + (labels.length > 4 ? ", and the rest follow" : "") + "."
+                + (plan.skipped ? " Numbers already used by other tables are skipped." : "");
+        }
+        function openNumberModal() {
+            if (!selectedTables().length) {
+                toast("Select one or more tables first.", "bad");
+                return;
+            }
+            document.getElementById("numberStart").value = "1";
+            document.getElementById("numberDirection").value = "across";
+            document.getElementById("numberModal").hidden = false;
+            refreshNumberPreview();
+        }
+        function chairCodeForTable(chair, oldNo, newNo) {
+            const code = String(chair.seatNumber || "");
+            const oldPrefix = "T" + String(oldNo || 0).padStart(2, "0");
+            if (!oldNo || !code.toUpperCase().startsWith(oldPrefix.toUpperCase() + "-")) return code;
+            return "T" + String(newNo).padStart(2, "0") + code.slice(oldPrefix.length);
+        }
+        async function applyTableNumbers() {
+            const plan = tableNumberPlan();
+            if (!plan.tables.length || plan.numbers.length < plan.tables.length) return;
+            pushHistory();
+            const moves = [];
+            const rewrites = [];
+            const claimed = new Set();
+            plan.tables.forEach((table, index) => {
+                const newNo = plan.numbers[index];
+                const oldNo = tableNumberValue(table);
+                chairsOf(table).forEach(chair => {
+                    const next = chairCodeForTable(chair, oldNo, newNo);
+                    if (!next || next.toUpperCase() === String(chair.seatNumber || "").toUpperCase()) return;
+                    const fromKey = String(chair.seatNumber || "").toUpperCase();
+                    const record = claimed.has(fromKey) ? null : assignment(chair);
+                    const guestId = record && (record.status || record.Status) === "Assigned" ? (record.uniqueId || record.UniqueId || "") : "";
+                    if (guestId) claimed.add(fromKey);
+                    rewrites.push({ chair, from: chair.seatNumber, to: next, guestId });
+                });
+                table.tableNo = newNo;
+                table.label = "Table " + String(newNo).padStart(2, "0");
+            });
+            rewrites.forEach((item, index) => {
+                const temp = "Z" + String(index + 1).padStart(4, "0");
+                if (item.guestId) retargetAssignment(item.from, temp);
+                item.chair.seatNumber = temp;
+                item.temp = temp;
+            });
+            rewrites.forEach(item => {
+                if (item.guestId) {
+                    retargetAssignment(item.temp, item.to);
+                    moves.push({ uniqueId: item.guestId, to: item.to });
+                }
+                item.chair.seatNumber = item.to;
+            });
+            renderAll();
+            clearTimeout(saveTimer);
+            if (!moves.length) {
+                scheduleSave();
+                toast("Tables numbered.", "ok");
+                return;
+            }
+            const saved = await saveNow();
+            if (!saved) {
+                toast("Numbers are updated on this plan. Save the layout so guests stay on these chairs.");
+                return;
+            }
+            let failed = false;
+            for (const move of moves) {
+                const assigned = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(move.to)}/assign`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ uniqueId: move.uniqueId })
+                });
+                if (!assigned.ok) failed = true;
+            }
+            await loadSeats();
+            renderAll();
+            toast(failed
+                ? "Tables numbered. Save again if a guest did not stay on the chair."
+                : "Tables numbered. Guests stayed on the same chairs.", failed ? "bad" : "ok");
         }
         function makeTable(config, x, y, label) {
             const shape = config.type;
@@ -1391,14 +1563,13 @@
                 const upright = `transform:rotate(${-(obj.rotation || 0)}deg)`;
                 const faceHtml = assigned && name
                     ? `<span class="who is-name" style="${upright}">${esc(name)}</span>`
-                    : `<span class="who">${esc(assigned ? (initials || "•") : index)}</span>`;
+                    : `<span class="who" style="${upright}">${esc(assigned ? (initials || "•") : index)}</span>`;
                 const pills = obj.shape === "rows" ? rowPills(obj) : "";
-                const font = obj.type === "text" ? ` style="font-size:${clamp(obj.fontSize || 28, 8, 240)}px"` : "";
                 const chairTitle = obj.type === "chair"
                     ? (obj.seatNumber || "") + (declined ? " · Declined" : "")
                     : (obj.label || "");
                 return `<div class="item ${esc(obj.type)}${obj.type === "table" ? " shape-" + esc(obj.shape || "round") : ""}${assigned ? " is-assigned" : ""}${declined ? " is-declined" : ""}${selected ? " is-selected" : ""}" data-id="${esc(obj.id)}" title="${esc(chairTitle)}" style="left:${itemLeft(obj)}px;top:${itemTop(obj)}px;width:${obj.w}px;height:${obj.h}px;transform:rotate(${obj.rotation || 0}deg)">
-                    ${obj.type === "chair" ? `${faceHtml}${obj.tableId ? "" : `<span class="seat-no">${esc(obj.seatNumber || "")}</span>`}` : (pills || `<span class="obj-label"${font}>${esc(obj.type === "text" ? (obj.text || "Label") : obj.label)}</span>`)}
+                    ${obj.type === "chair" ? `${faceHtml}${obj.tableId ? "" : `<span class="seat-no" style="${upright}">${esc(obj.seatNumber || "")}</span>`}` : (pills || `<span class="obj-label" style="${obj.type === "text" ? `font-size:${clamp(obj.fontSize || 28, 8, 240)}px` : upright}">${esc(obj.type === "text" ? (obj.text || "Label") : obj.label)}</span>`)}
                 </div>`;
             }).join("");
             root.innerHTML = assets + items + `<div class="marquee" id="marquee" hidden></div>`;
@@ -1537,18 +1708,26 @@
             const arrangementId = selectionArrangement();
             if (!items.length) { menu.hidden = true; return; }
             if (arrangementId) {
-                menu.innerHTML = [["edit", "Edit"], ["nudge", "Move"], ["duplicate", "Duplicate"], ["ungroup", "Ungroup"], ["rotate15", "Rotate"], ["delete", "Delete"]]
+                menu.innerHTML = [["edit", "Edit"], ["number", "Number"], ["nudge", "Move"], ["duplicate", "Duplicate"], ["ungroup", "Ungroup"], ["rotate15", "Rotate"], ["delete", "Delete"]]
                     .map(([id, label]) => `<button class="icon-btn" type="button" data-float="${id}">${label}</button>`).join("");
                 menu.hidden = false;
                 positionFloat();
                 return;
             }
-            if (items.length !== 1) { menu.hidden = true; return; }
+            if (items.length !== 1) {
+                if (!selectedTables().length) { menu.hidden = true; return; }
+                menu.innerHTML = [["number", "Number"], ["duplicate", "Duplicate"], ["delete", "Delete"]]
+                    .map(([id, label]) => `<button class="icon-btn" type="button" data-float="${id}">${label}</button>`).join("");
+                menu.hidden = false;
+                positionFloat();
+                return;
+            }
             const obj = items[0];
             const acts = [];
             if (obj.type === "chair") acts.push(["assign", "Assign"]);
             acts.push(["nudge", "Move"], ["rotate15", "Rotate"], ["duplicate", "Duplicate"]);
             if (obj.type === "text" || obj.type === "chair") acts.push(["edit", "Edit"]);
+            if (obj.type === "table" && obj.shape !== "rows") acts.push(["number", "Number"]);
             acts.push(["delete", "Delete"]);
             menu.innerHTML = acts.map(([id, label]) => `<button class="icon-btn" type="button" data-float="${id}">${label}</button>`).join("");
             menu.hidden = false;
@@ -2356,6 +2535,7 @@
             if (!document.getElementById("arrangeModal").hidden) return;
             if (!document.getElementById("leaveModal").hidden) return;
             if (!document.getElementById("renumberModal").hidden) return;
+            if (!document.getElementById("numberModal").hidden) return;
             activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
             if (e.pointerType !== "mouse") {
                 try { viewport().setPointerCapture(e.pointerId); } catch (err) { /* already captured */ }
@@ -2691,6 +2871,7 @@
                 if (id === "duplicate") duplicateSelection();
                 if (id === "delete") deleteSelection();
                 if (id === "ungroup") ungroupArrangement(selectionArrangement());
+                if (id === "number") openNumberModal();
                 if (id === "nudge") toast("Drag the selection, or set X and Y in the side panel.");
                 const focus = {
                     assign: "#rosterSearch",
@@ -2777,6 +2958,14 @@
             document.getElementById("renumberModal").hidden = true;
             applyRenumber();
         };
+        document.getElementById("numberCancel").onclick = () => { document.getElementById("numberModal").hidden = true; };
+        document.getElementById("numberStart").addEventListener("input", refreshNumberPreview);
+        document.getElementById("numberDirection").addEventListener("change", refreshNumberPreview);
+        document.getElementById("numberForm").addEventListener("submit", (e) => {
+            e.preventDefault();
+            document.getElementById("numberModal").hidden = true;
+            applyTableNumbers();
+        });
         document.getElementById("leaveSkip").onclick = () => { location.href = "dashboard.html"; };
         document.getElementById("leaveForm").addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -2853,6 +3042,7 @@
             const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName);
             if (e.code === "Space") spaceDown = true;
             if (e.key === "Escape") {
+                if (!document.getElementById("numberModal").hidden) { document.getElementById("numberModal").hidden = true; return; }
                 if (!document.getElementById("renumberModal").hidden) { document.getElementById("renumberModal").hidden = true; return; }
                 if (!document.getElementById("leaveModal").hidden) { document.getElementById("leaveModal").hidden = true; return; }
                 if (!document.getElementById("arrangeModal").hidden) { closeArrange(); return; }
@@ -2861,6 +3051,7 @@
             }
             if (typing) return;
             if (!document.getElementById("renumberModal").hidden) return;
+            if (!document.getElementById("numberModal").hidden) return;
             const meta = e.ctrlKey || e.metaKey;
             if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); deleteSelection(); }
             if (meta && e.key.toLowerCase() === "z" && e.shiftKey) { e.preventDefault(); redo(); }
