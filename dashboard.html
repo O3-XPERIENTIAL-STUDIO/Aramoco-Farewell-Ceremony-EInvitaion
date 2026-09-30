@@ -479,6 +479,81 @@
             gap: 8px;
         }
 
+        .card-admin {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .card-admin select,
+        .edit-modal select,
+        .edit-modal input {
+            background: var(--surface2);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font: inherit;
+        }
+
+        .edit-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            background: rgba(0, 0, 0, .55);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .edit-modal[hidden] {
+            display: none;
+        }
+
+        .edit-sheet {
+            width: min(520px, 100%);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 18px;
+        }
+
+        .edit-sheet h3 {
+            margin: 0 0 6px;
+            font-size: 18px;
+        }
+
+        .edit-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .edit-grid label,
+        .edit-sheet .edit-wide {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .edit-grid .edit-wide,
+        .edit-sheet .edit-wide {
+            grid-column: 1 / -1;
+        }
+
+        .edit-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
         .guest-group-empty {
             padding: 14px 4px 6px;
             color: var(--text-muted);
@@ -1739,7 +1814,8 @@
                 <div class="import-hint">
                     Supported: <strong>CSV / Excel</strong>. Required columns: <strong>FullName</strong>,
                     <strong>EmailId</strong>. Optional: <strong>Company</strong>, <strong>Position</strong>,
-                    <strong>PhoneNumber</strong>. Every guest is General.
+                    <strong>PhoneNumber</strong>, <strong>Status</strong> (Accept, Decline, or Pending).
+                    A blank status is Pending. Every guest is General.
                 </div>
                 <div id="importStatus" class="import-status"></div>
             </div>
@@ -1777,6 +1853,27 @@
 
     </div>
 
+    <div class="edit-modal" id="editUserModal" hidden>
+        <form class="edit-sheet" id="editUserForm">
+            <h3>Edit guest</h3>
+            <p class="hint" id="editUserHint" style="color:var(--text-muted);font-size:13px;">Changes are saved on this guest and written into activity notes. The E-Badge id stays the same.</p>
+            <div class="edit-grid">
+                <label class="edit-wide">Full name<input id="editFullName" type="text" required /></label>
+                <label>Email<input id="editEmail" type="email" required /></label>
+                <label>Phone<input id="editPhone" type="tel" /></label>
+                <label>Company<input id="editCompany" type="text" /></label>
+                <label>Position<input id="editPosition" type="text" /></label>
+                <label class="edit-wide">Group
+                    <select id="editGroup" required></select>
+                </label>
+                <p class="hint edit-wide" style="color:var(--text-muted);font-size:12px;margin:0;">Choose a different group to move this guest. The E-Badge id stays the same.</p>
+            </div>
+            <div class="edit-actions">
+                <button class="btn btn-ghost" type="button" id="editUserCancel">Cancel</button>
+                <button class="btn btn-primary" type="submit">Save guest</button>
+            </div>
+        </form>
+    </div>
     <script>
         const baseURL = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
         const publicSiteUrl = "https://aramcocorporateevents.com";
@@ -1882,6 +1979,7 @@
                 position: header.findIndex(h => ['position', 'userposition', 'designation', 'title'].includes(h)),
                 company: header.findIndex(h => ['company', 'companyname', 'organization', 'org'].includes(h)),
                 userType: header.findIndex(h => ['usertype', 'invitetype', 'type'].includes(h)),
+                status: header.findIndex(h => ['status', 'rsvp', 'rsvpstatus'].includes(h)),
             };
             return rows.slice(1).map(r => ({
                 fullName: (idx.fullName >= 0 ? r[idx.fullName] : r[0]) || '',
@@ -1890,14 +1988,15 @@
                 position: idx.position >= 0 ? r[idx.position] : '',
                 company: idx.company >= 0 ? r[idx.company] : '',
                 userType: idx.userType >= 0 ? r[idx.userType] : '',
+                status: idx.status >= 0 ? r[idx.status] : '',
             }));
         }
 
         function downloadImportTemplate() {
-            const template = `FullName,EmailId,PhoneNumber,Company,Position
-John Doe,john.doe@example.com,+966501234567,ARAMCO,Manager
-Maryam Ali,maryam.ali@example.com,0599449820,Saudi Aramco,Director
-Sara Khan,sara.khan@example.com,,Partner Co,Advisor
+            const template = `FullName,EmailId,PhoneNumber,Company,Position,Status
+John Doe,john.doe@example.com,+966501234567,ARAMCO,Manager,Pending
+Maryam Ali,maryam.ali@example.com,0599449820,Saudi Aramco,Director,Accepted
+Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
 `;
             const blob = new Blob([template], {
                 type: 'text/csv;charset=utf-8'
@@ -2824,6 +2923,9 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor
             const key = (action || '').toString();
             const map = {
                 UserAdded: 'Added',
+                UserUpdated: 'Details changed',
+                NameChanged: 'Name changed',
+                GroupMoved: 'Moved to another group',
                 EmailSent: 'Email sent',
                 ReminderSent: 'Reminder sent',
                 FinalReminderSent: 'Final reminder',
@@ -2893,6 +2995,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor
                 userType: 'General',
                 company: (o.company || '').toString().trim(),
                 position: (o.position || '').toString().trim(),
+                status: (o.status || '').toString().trim(),
             })).filter(o => o.fullName || o.emailId || o.userType || o.company || o.position || o.phoneNumber);
             if (!objects.length) {
                 setImportStatus('No valid rows found.');
@@ -2913,6 +3016,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor
                     if (!item.fullName) throw new Error('Missing FullName');
                     if (!item.emailId) throw new Error('Missing EmailId');
                     if (!isValidEmail(item.emailId)) throw new Error('Invalid EmailId');
+                    const status = normalizeImportStatus(item.status);
 
                     const response = await fetch(`${baseURL}/api/AramcoFarewell/create-user`, {
                         method: 'POST',
@@ -2926,6 +3030,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor
                             userType: item.userType,
                             company: item.company,
                             position: item.position,
+                            status: status,
                             groupId: groupId
                         })
                     });
@@ -3272,6 +3377,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor
                     <button class="btn btn-primary" type="button" onclick="downloadGroupZip(${Number(group.id)}, 'pdf')">⬇ PDFs</button>
                     <button class="btn btn-success" type="button" onclick="downloadGroupZip(${Number(group.id)}, 'qr')">⬇ E-Badges</button>
                     <button class="btn btn-ghost" type="button" onclick="sendGroupInvites(${Number(group.id)})">✉ Send unsent</button>
+                    <button class="btn btn-ghost" type="button" onclick="deleteGroup(${Number(group.id)})">Delete group</button>
                 </div>`;
             return header;
         }
@@ -3471,6 +3577,16 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor
               <span><strong>Status changed:</strong> ${statusChangedLabel}</span>
             </div>
 
+            <div class="card-admin">
+              <select aria-label="Guest status" onchange="changeUserStatus('${safeUid}', this)">
+                <option value="pending"${statusRaw === 'pending' ? ' selected' : ''}>Pending</option>
+                <option value="accepted"${statusRaw === 'accepted' ? ' selected' : ''}>Accepted</option>
+                <option value="declined"${statusRaw === 'declined' ? ' selected' : ''}>Declined</option>
+              </select>
+              <button class="btn btn-ghost" type="button" onclick="openEditUser('${safeUid}')">Edit</button>
+              <button class="btn btn-ghost" type="button" onclick="deleteGuest('${safeUid}')">Delete</button>
+            </div>
+
             <div class="url-row">
               <span class="url-icon">✉️</span>
               <div class="url-text" title="${emailInviteLink || ''}">${emailInviteLink || 'No email invite link available'}</div>
@@ -3608,21 +3724,194 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor
             return (document.getElementById('bulkDownloadEmails')?.value || '').trim();
         }
 
-        async function downloadGroupZip(groupId, kind) {
-            const emails = users
-                .filter(user => Number(user.groupId) === Number(groupId) && (user.emailId || '').trim())
-                .map(user => user.emailId.trim())
-                .join('\n');
-            if (!emails) {
-                alert('This group has no guests with an email address.');
+        function normalizeImportStatus(value) {
+            const status = (value || '').toString().trim().toLowerCase();
+            if (!status || status === 'pending' || status === 'pendng') return 'Pending';
+            if (status === 'accept' || status === 'accepted') return 'Accepted';
+            if (status === 'decline' || status === 'declined' || status === 'declain') return 'Declined';
+            throw new Error('Status must be accept, decline, or pending');
+        }
+
+        function guestById(uniqueId) {
+            return users.find(user => String(user.uniqueId) === String(uniqueId)) || null;
+        }
+
+        async function readApiError(response) {
+            let message = `${response.status} ${response.statusText}`;
+            try {
+                const text = await response.text();
+                if (text) {
+                    try {
+                        const body = JSON.parse(text);
+                        message = body.message || body.Message || body.title || text;
+                    } catch (e) {
+                        message = text;
+                    }
+                }
+            } catch (e) {}
+            return message;
+        }
+
+        async function changeUserStatus(uniqueId, selectEl) {
+            const user = guestById(uniqueId);
+            const next = normalizeImportStatus(selectEl.value);
+            const current = normalizeImportStatus(user && user.status);
+            if (!user || next === current) return;
+            const label = next;
+            if (!confirm(`Change ${user.userName || 'this guest'} from ${current} to ${label}? This is recorded as status changed by admin.`)) {
+                selectEl.value = current.toLowerCase();
                 return;
             }
-            return downloadBulkZip(kind, emails);
+            selectEl.disabled = true;
+            try {
+                const response = await fetch(`${baseURL}/api/AramcoFarewell/admin/user-status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uniqueId: user.uniqueId, status: next })
+                });
+                if (!response.ok) throw new Error(await readApiError(response));
+                await fetchUsers(true);
+            } catch (e) {
+                alert(e.message || 'Could not change the status.');
+                selectEl.value = current.toLowerCase();
+            } finally {
+                selectEl.disabled = false;
+            }
+        }
+
+        function fillEditGroups(selectedId) {
+            const select = document.getElementById('editGroup');
+            select.innerHTML = guestGroups.map(group =>
+                `<option value="${Number(group.id)}">${escapeHtml(group.name || 'Group')}</option>`
+            ).join('');
+            if (selectedId) select.value = String(selectedId);
+        }
+
+        function openEditUser(uniqueId) {
+            const user = guestById(uniqueId);
+            if (!user) return;
+            document.getElementById('editUserForm').dataset.uniqueId = user.uniqueId;
+            document.getElementById('editFullName').value = user.userName || '';
+            document.getElementById('editEmail').value = user.emailId || '';
+            document.getElementById('editPhone').value = user.phoneNumber || '';
+            document.getElementById('editCompany').value = user.company || '';
+            document.getElementById('editPosition').value = user.position || '';
+            fillEditGroups(user.groupId);
+            document.getElementById('editUserModal').hidden = false;
+        }
+
+        function closeEditUser() {
+            document.getElementById('editUserModal').hidden = true;
+        }
+
+        async function saveEditUser(event) {
+            event.preventDefault();
+            const uniqueId = document.getElementById('editUserForm').dataset.uniqueId;
+            const user = guestById(uniqueId);
+            if (!user) return;
+            const payload = {
+                uniqueId: user.uniqueId,
+                fullName: document.getElementById('editFullName').value.trim(),
+                emailId: document.getElementById('editEmail').value.trim(),
+                phoneNumber: document.getElementById('editPhone').value.trim(),
+                company: document.getElementById('editCompany').value.trim(),
+                position: document.getElementById('editPosition').value.trim(),
+                groupId: Number(document.getElementById('editGroup').value)
+            };
+            if (!payload.fullName || !payload.emailId) {
+                alert('Name and email are required.');
+                return;
+            }
+            if (!isValidEmail(payload.emailId)) {
+                alert('Enter a valid email.');
+                return;
+            }
+            if (!payload.groupId) {
+                alert('Choose a group.');
+                return;
+            }
+            try {
+                const response = await fetch(`${baseURL}/api/AramcoFarewell/update-user`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error(await readApiError(response));
+                closeEditUser();
+                await fetchUsers(true);
+            } catch (e) {
+                alert(e.message || 'Could not save this guest.');
+            }
+        }
+
+        function guestNeedsDeleteWarning(user) {
+            const status = normalizeStatus(user && user.status);
+            const mailed = !!(user && (user.inviteSend || user.InviteSend));
+            const noted = (user && user.activities || []).some(item => {
+                const action = (item.action || '').toString();
+                return action === 'EmailSent' || action === 'ReminderSent' || action === 'FinalReminderSent' || action === 'ConfirmationSent' || action === 'StatusChanged';
+            });
+            return status !== 'pending' || mailed || noted;
+        }
+
+        async function deleteGuest(uniqueId) {
+            const user = guestById(uniqueId);
+            if (!user) return;
+            const warned = guestNeedsDeleteWarning(user);
+            const message = warned
+                ? `${user.userName || 'This guest'} already has an invitation, a status other than pending, or activity notes. Delete anyway? This cannot be undone.`
+                : `Delete ${user.userName || 'this guest'}? This cannot be undone.`;
+            if (!confirm(message)) return;
+            try {
+                const response = await fetch(`${baseURL}/api/AramcoFarewell/users/${encodeURIComponent(user.uniqueId)}?confirm=true`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) throw new Error(await readApiError(response));
+                await fetchUsers(true);
+            } catch (e) {
+                alert(e.message || 'Could not delete this guest.');
+            }
+        }
+
+        async function deleteGroup(groupId) {
+            const group = guestGroups.find(item => Number(item.id) === Number(groupId));
+            const name = group ? group.name : 'this group';
+            const count = users.filter(user => Number(user.groupId) === Number(groupId)).length;
+            if (count > 0) {
+                alert(`${name} still has ${count} guest${count === 1 ? '' : 's'}. Move or delete them first.`);
+                return;
+            }
+            if (!confirm(`Delete the group "${name}"? Guests are not removed, and an empty group is the only one that can be deleted.`)) return;
+            try {
+                const response = await fetch(`${baseURL}/api/AramcoFarewell/groups/${encodeURIComponent(groupId)}`, {
+                    method: 'DELETE'
+                });
+                if (!response.ok) throw new Error(await readApiError(response));
+                await fetchUsers(true);
+            } catch (e) {
+                alert(e.message || 'Could not delete this group.');
+            }
+        }
+
+        async function downloadGroupZip(groupId, kind) {
+            const members = users.filter(user => Number(user.groupId) === Number(groupId));
+            if (!members.length) {
+                alert('This group has no guests.');
+                return;
+            }
+            const uniqueIds = members.map(user => user.uniqueId).filter(Boolean);
+            if (!uniqueIds.length) {
+                alert('This group has no guests.');
+                return;
+            }
+            const emails = members.map(user => (user.emailId || '').trim()).filter(Boolean).join('\n');
+            return downloadBulkZip(kind, { groupId: Number(groupId), uniqueIds, emails });
         }
 
         async function downloadBulkZip(kind, emailsOverride) {
-            const emails = (emailsOverride != null ? emailsOverride : getBulkDownloadEmailsText()).trim();
-            if (!emails) {
+            const byGroup = !!(emailsOverride && typeof emailsOverride === 'object' && !Array.isArray(emailsOverride));
+            const emails = byGroup ? '' : (emailsOverride != null ? String(emailsOverride) : getBulkDownloadEmailsText()).trim();
+            if (!emails && !byGroup) {
                 setBulkDownloadStatus('Paste at least one email address.', 'error');
                 return;
             }
@@ -3631,7 +3920,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor
             const endpoint = isPdf ?
                 `${baseURL}/api/AramcoFarewell/bulk-download-pdf` :
                 `${baseURL}/api/AramcoFarewell/bulk-download-qr`;
-            const btn = emailsOverride != null ? null : document.getElementById(isPdf ? 'btnBulkPdfZip' : 'btnBulkQrZip');
+            const btn = byGroup ? null : document.getElementById(isPdf ? 'btnBulkPdfZip' : 'btnBulkQrZip');
             const label = btn ? btn.textContent : '';
             if (btn) {
                 btn.disabled = true;
@@ -3646,9 +3935,11 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor
                         'Content-Type': 'application/json',
                         'Accept': 'application/zip, application/json'
                     },
-                    body: JSON.stringify({
-                        emails
-                    })
+                    body: JSON.stringify(byGroup ? {
+                        groupId: emailsOverride.groupId,
+                        uniqueIds: emailsOverride.uniqueIds || [],
+                        emails: emailsOverride.emails || ''
+                    } : { emails })
                 });
 
                 if (!res.ok) {
@@ -3658,7 +3949,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor
                         if (text) {
                             try {
                                 const body = JSON.parse(text);
-                                msg = body.message || body.Message || body.title || text;
+                                msg = (typeof body === 'string' ? body : (body.message || body.Message || body.title)) || text;
                             } catch (e) {
                                 msg = text;
                             }
@@ -4276,6 +4567,9 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor
             document.getElementById('tabManual').classList.toggle('active', tab === 'manual');
             document.getElementById('tabBulk').classList.toggle('active', tab === 'bulk');
         }
+
+        document.getElementById('editUserCancel').onclick = closeEditUser;
+        document.getElementById('editUserForm').onsubmit = saveEditUser;
 
         // Kick off
         fetchUsers(false);

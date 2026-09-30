@@ -334,6 +334,18 @@
                 }
             }
 
+            function esc(value) {
+                return String(value == null ? "" : value).replace(/[&<>"']/g, function(ch) {
+                    return ({
+                        "&": "&amp;",
+                        "<": "&lt;",
+                        ">": "&gt;",
+                        '"': "&quot;",
+                        "'": "&#39;"
+                    })[ch];
+                });
+            }
+
             function formatTime(value) {
                 if (!value) return '';
                 var raw = String(value).trim();
@@ -412,14 +424,21 @@
                     var count = body.checkInCount || body.CheckInCount || 1;
                     var returningGuest = !!(body.alreadyCheckedIn || body.AlreadyCheckedIn);
                     var when = formatTime(body.checkedInOn || body.CheckedInOn);
+                    var previous = body.previousNames || body.PreviousNames || [];
+                    var previousHtml = "";
+                    if (previous.length) {
+                        previousHtml = "<br>Names used before:<br>" + previous.map(function(item) {
+                            return esc(item);
+                        }).join("<br>");
+                    }
                     var type = returningGuest ? "warn" : "ok";
                     var title = returningGuest ? "Already checked in" : "Checked in";
                     beep(true);
                     showResult(type, title,
-                        "<strong>" + name + "</strong><br>" +
-                        "Status: " + status + "<br>" +
+                        "<strong>" + esc(name) + "</strong><br>" +
+                        "Status: " + esc(status) + "<br>" +
                         "Check-ins: " + count + "<br>" +
-                        when);
+                        esc(when) + previousHtml);
                     addHistory(name, when, returningGuest);
                 }).catch(function(err) {
                     beep(false);
