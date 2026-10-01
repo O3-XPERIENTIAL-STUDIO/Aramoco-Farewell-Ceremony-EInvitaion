@@ -336,10 +336,10 @@
             <div class="brand">
                 <div>
                     <h1>EventPass</h1>
-                    <p id="brandNote">Choose a scanner to start</p>
+                    <p id="brandNote">Barcode scanner</p>
                 </div>
             </div>
-            <button class="settings-btn" id="btnChangeDevice" type="button" aria-label="Change device" title="Change device">
+            <button class="settings-btn" id="btnChangeDevice" type="button" aria-label="Settings" title="Settings">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <circle cx="12" cy="12" r="3"></circle>
                     <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 1-2 0 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 1 0-2 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 1 2 0 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 .6 1 1.65 1.65 0 0 1 0 2 1.65 1.65 0 0 0-.6 1z"></path>
@@ -355,21 +355,20 @@
             <div class="status" id="laserStatus">Click this page so it is in front, then scan. If Notepad is the front window, the code goes there instead.</div>
         </div>
 
-        <div class="chooser" id="chooser">
-            <h2>Choose a scanner</h2>
-            <p class="lead">Cameras are listed below. The WM930 does not appear by name. Scan a badge and the code shows in the box above.</p>
+        <div class="chooser" id="chooser" hidden>
+            <h2>Settings</h2>
+            <p class="lead">Cameras are listed here. A barcode reader does not appear by name — scan a badge and it checks in from the box above.</p>
             <div class="device-list" id="deviceList"></div>
             <button class="btn-gold" id="btnFindCameras" type="button">Find cameras</button>
+            <div class="status" id="cameraStatus">Camera is off.</div>
+            <div class="actions">
+                <button class="btn-gold" id="btnCamera" type="button">Start camera</button>
+            </div>
         </div>
 
-        <div id="scanApp" hidden>
-        <div class="reader-shell">
+        <div id="scanApp">
+        <div class="reader-shell" hidden>
             <div id="reader"></div>
-        </div>
-        <div class="status" id="cameraStatus">Camera is off. Tap to start.</div>
-
-        <div class="actions">
-            <button class="btn-gold" id="btnCamera" type="button">Start camera</button>
         </div>
 
         <div class="result" id="resultBox">
@@ -682,6 +681,8 @@
                     function() {}
                 ).then(function() {
                     setCameraButton(true);
+                    if (readerShell) readerShell.hidden = false;
+                    if (chooser) chooser.hidden = true;
                     cameraStatus.textContent = "Point the camera at the guest E-Badge.";
                 }).catch(function(err) {
                     setCameraButton(false);
@@ -695,10 +696,12 @@
                 cameraBtn.disabled = true;
                 scanner.stop().then(function() {
                     setCameraButton(false);
-                    cameraStatus.textContent = "Camera is off. Tap to start.";
+                    if (readerShell) readerShell.hidden = true;
+                    cameraStatus.textContent = "Camera is off.";
                 }).catch(function() {
                     setCameraButton(false);
-                    cameraStatus.textContent = "Camera is off. Tap to start.";
+                    if (readerShell) readerShell.hidden = true;
+                    cameraStatus.textContent = "Camera is off.";
                 });
             }
 
@@ -709,8 +712,6 @@
 
             var laserInput = document.getElementById("laserInput");
             var wedgeTimer = null;
-            var lastKeyAt = 0;
-            var burstFast = true;
             var scanSettled = false;
 
             function focusLaser() {
@@ -760,12 +761,12 @@
             function submitLaser(raw) {
                 var value = restoreGuidHyphens(String(raw || "").replace(/[\r\n\t]+/g, "").trim());
                 clearTimeout(wedgeTimer);
-                lastKeyAt = 0;
-                burstFast = true;
                 if (!value) return;
-                if (laserInput) laserInput.value = value;
                 scanSettled = true;
-                if (chooser && !chooser.hidden) {
+                if (laserInput) laserInput.value = value;
+                markHeard("Checking in…");
+                if (chooser) chooser.hidden = true;
+                if (!running) {
                     laserMode = true;
                     showScanApp();
                     applyMode();
@@ -773,6 +774,14 @@
                 }
                 recordCheckIn(value);
                 focusLaser();
+            }
+
+            function queueScanSubmit() {
+                clearTimeout(wedgeTimer);
+                wedgeTimer = setTimeout(function() {
+                    var value = laserInput ? laserInput.value.trim() : "";
+                    if (value.length >= 4 && !scanSettled) submitLaser(value);
+                }, 500);
             }
 
             document.addEventListener("keydown", function(e) {
@@ -791,30 +800,21 @@
                 if (scanSettled) {
                     laserInput.value = "";
                     scanSettled = false;
-                    burstFast = true;
-                    lastKeyAt = 0;
                 }
-                var now = Date.now();
-                if (lastKeyAt && now - lastKeyAt > 180) burstFast = false;
-                lastKeyAt = now;
                 if (document.activeElement !== laserInput) {
                     e.preventDefault();
                     laserInput.value += ch;
                     focusLaser();
                 }
                 markHeard("Reading: " + laserInput.value);
-                clearTimeout(wedgeTimer);
-                wedgeTimer = setTimeout(function() {
-                    var value = laserInput ? laserInput.value.trim() : "";
-                    lastKeyAt = 0;
-                    if (burstFast && value.length >= 4 && !scanSettled) submitLaser(value);
-                    burstFast = true;
-                }, 700);
+                queueScanSubmit();
             }, true);
 
             if (laserInput) {
                 laserInput.addEventListener("input", function() {
-                    if (!scanSettled && laserInput.value) markHeard("Reading: " + laserInput.value);
+                    if (scanSettled) return;
+                    if (laserInput.value) markHeard("Reading: " + laserInput.value);
+                    queueScanSubmit();
                 });
             }
 
@@ -848,24 +848,16 @@
             }
 
             function showChooser() {
-                if (running) stopCamera();
-                laserMode = false;
-                chooser.hidden = false;
-                scanApp.hidden = true;
-                if (brandNote) brandNote.textContent = "Choose a scanner to start";
-                loadDevices();
-                focusLaser();
+                chooser.hidden = !chooser.hidden;
+                if (!chooser.hidden) loadDevices();
             }
 
             function showScanApp() {
-                chooser.hidden = true;
                 scanApp.hidden = false;
             }
 
             function applyMode() {
-                if (readerShell) readerShell.hidden = laserMode;
-                if (cameraStatus) cameraStatus.hidden = laserMode;
-                if (cameraBtn) cameraBtn.hidden = laserMode;
+                if (readerShell) readerShell.hidden = laserMode || !running;
             }
 
             function setInputKind(kind) {
@@ -880,13 +872,15 @@
                     input.inputMode = "text";
                 }
                 if (status) {
-                    status.textContent = "Scan the badge. The code appears in this box. Set the WM930 to keyboard mode and end each scan with Enter.";
+                    status.textContent = "Scan the badge. Check-in runs as soon as the code appears.";
                 }
             }
 
             function chooseLaser() {
+                if (running) stopCamera();
                 laserMode = true;
                 selectedCameraId = "";
+                chooser.hidden = true;
                 showScanApp();
                 applyMode();
                 setInputKind("laser");
@@ -895,12 +889,14 @@
             }
 
             function chooseKeyboard() {
+                if (running) stopCamera();
                 laserMode = true;
                 selectedCameraId = "";
+                chooser.hidden = true;
                 showScanApp();
                 applyMode();
                 setInputKind("keyboard");
-                if (brandNote) brandNote.textContent = "Keyboard";
+                if (brandNote) brandNote.textContent = "Barcode scanner";
                 focusLaser();
             }
 
@@ -908,7 +904,6 @@
                 laserMode = false;
                 selectedCameraId = deviceId || "";
                 showScanApp();
-                applyMode();
                 if (brandNote) brandNote.textContent = label || "Camera";
                 if (running) {
                     stopCamera();
@@ -976,7 +971,10 @@
             }
 
             document.getElementById("btnChangeDevice").addEventListener("click", showChooser);
-            showChooser();
+            laserMode = true;
+            applyMode();
+            setInputKind("keyboard");
+            focusLaser();
         })();
     </script>
 </body>
