@@ -143,12 +143,27 @@
             border-bottom: 1px solid var(--line);
         }
 
-        .statusbar {
-            border-bottom: 0;
-            border-top: 1px solid var(--line);
-            color: var(--muted);
-            font-size: 12px;
-            min-height: 40px;
+        .refresh-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .refresh-box select {
+            background: #1c1815;
+            color: inherit;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            padding: 4px 6px;
+            font: inherit;
+        }
+
+        #refreshStatus.is-ok {
+            color: var(--green);
+        }
+
+        #refreshStatus.is-bad {
+            color: var(--danger);
         }
 
         .mark {
@@ -497,6 +512,16 @@
 
         .item.chair.is-assigned .who {
             color: #1a1408;
+        }
+
+        .item.chair.is-assigned.is-seated {
+            background: #1f8a5b;
+            color: #fff;
+            box-shadow: 0 0 0 5px rgba(31, 138, 91, .45), 0 12px 22px rgba(16, 90, 52, .35);
+        }
+
+        .item.chair.is-assigned.is-seated .who {
+            color: #fff;
         }
 
         .item.chair.is-assigned.is-declined {
@@ -1158,6 +1183,20 @@
             <button class="icon-btn" id="zoom100Btn" type="button">100%</button>
             <button class="icon-btn" id="snapBtn" type="button">Snap on</button>
             <span class="stat" id="stats"></span>
+            <label class="refresh-box">Auto refresh
+                <select id="refreshEvery" aria-label="Auto refresh">
+                    <option value="0">Off</option>
+                    <option value="5000">5 seconds</option>
+                    <option value="10000">10 seconds</option>
+                    <option value="15000">15 seconds</option>
+                    <option value="30000">30 seconds</option>
+                    <option value="60000">60 seconds</option>
+                    <option value="120000">2 minutes</option>
+                    <option value="300000">5 minutes</option>
+                </select>
+            </label>
+            <button class="icon-btn" id="refreshBtn" type="button">Refresh</button>
+            <span class="stat" id="refreshStatus"></span>
             <span id="saveState">Not saved yet</span>
             <span class="toast" id="toast"></span>
             <button class="mini" type="button" id="lockBtn">Lock</button>
@@ -1424,6 +1463,12 @@
 
         function assignment(chair) {
             return seatByCode.get(String(chair.seatNumber || "").toUpperCase()) || null;
+        }
+
+        function seatIsSeated(record) {
+            if (!record) return false;
+            const at = record.seatedAt || record.SeatedAt;
+            return !!(record.isSeated || record.IsSeated || at);
         }
 
         function guestName(record) {
@@ -2852,14 +2897,15 @@
                 const index = obj.tableId ? String(perRow ? ((obj.slot || 0) % perRow) + 1 : (obj.slot || 0) + 1) : "";
                 const upright = `transform:rotate(${-(obj.rotation || 0)}deg)`;
                 const label = obj.type === "chair" ? chairDisplayLabel(obj) : "";
+                const seated = assigned && !declined && seatIsSeated(record);
                 const faceHtml = assigned && name ?
                     `<span class="who is-name" style="${upright}">${esc(name)}</span>` :
                     `<span class="who is-code" style="${upright}">${esc(label || index)}</span>`;
                 const pills = obj.shape === "rows" ? rowPills(obj) : "";
                 const chairTitle = obj.type === "chair" ?
-                    label + (declined ? " · Declined" : "") :
+                    label + (declined ? " · Declined" : "") + (seated ? " · Seated" : "") :
                     (obj.label || "");
-                return `<div class="item ${esc(obj.type)}${obj.type === "table" ? " shape-" + esc(obj.shape || "round") : ""}${assigned ? " is-assigned" : ""}${declined ? " is-declined" : ""}${selected ? " is-selected" : ""}" data-id="${esc(obj.id)}" title="${esc(chairTitle)}" style="left:${itemLeft(obj)}px;top:${itemTop(obj)}px;width:${obj.w}px;height:${obj.h}px;transform:rotate(${obj.rotation || 0}deg)">
+                return `<div class="item ${esc(obj.type)}${obj.type === "table" ? " shape-" + esc(obj.shape || "round") : ""}${assigned ? " is-assigned" : ""}${seated ? " is-seated" : ""}${declined ? " is-declined" : ""}${selected ? " is-selected" : ""}" data-id="${esc(obj.id)}" title="${esc(chairTitle)}" style="left:${itemLeft(obj)}px;top:${itemTop(obj)}px;width:${obj.w}px;height:${obj.h}px;transform:rotate(${obj.rotation || 0}deg)">
                     ${obj.type === "chair" ? faceHtml : (pills || `<span class="obj-label" style="${obj.type === "text" ? `font-size:${clamp(obj.fontSize || 28, 8, 240)}px` : upright}">${esc(obj.type === "text" ? (obj.text || "Label") : obj.label)}</span>`)}
                 </div>`;
             }).join("");
@@ -3633,7 +3679,7 @@
             const res = await fetch(`${baseURL}/api/AramcoFarewell/seats`, {
                 cache: "no-store"
             });
-            if (!res.ok) return;
+            if (!res.ok) return false;
             const data = await res.json();
             seatByCode = new Map();
             (data.seats || data.Seats || []).forEach(seat => {
@@ -3650,6 +3696,99 @@
                     if (id === u.id) u.seatCode = code;
                 });
             });
+            return true;
+        }
+
+        let seatRefreshing = false;
+        let seatRefreshTimer = null;
+        let seatRefreshLastOk = null;
+        const SEAT_REFRESH_KEY = "aramcoFarewellSeatRefresh";
+
+        function formatRefreshClock(date) {
+            return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" });
+        }
+
+        function setRefreshStatus(state) {
+            const el = document.getElementById("refreshStatus");
+            if (!el) return;
+            el.classList.remove("is-ok", "is-bad");
+            if (state === "updating") {
+                el.textContent = "Updating...";
+                return;
+            }
+            if (state === "bad") {
+                el.classList.add("is-bad");
+                el.textContent = seatRefreshLastOk
+                    ? ("Update failed · last " + formatRefreshClock(seatRefreshLastOk))
+                    : "Update failed";
+                return;
+            }
+            el.classList.add("is-ok");
+            el.textContent = seatRefreshLastOk ? ("Updated " + formatRefreshClock(seatRefreshLastOk)) : "Live";
+        }
+
+        function paintSeatStatus() {
+            const root = world();
+            if (!root) return;
+            root.querySelectorAll(".item.chair").forEach(el => {
+                const obj = findObj(el.dataset.id);
+                if (!obj || obj.type !== "chair") return;
+                const record = assignment(obj);
+                const assigned = !!(record && (record.status || record.Status) === "Assigned");
+                const declined = assigned && assignmentDeclined(record);
+                const seated = assigned && !declined && seatIsSeated(record);
+                el.classList.toggle("is-assigned", assigned);
+                el.classList.toggle("is-declined", declined);
+                el.classList.toggle("is-seated", seated);
+                const who = el.querySelector(".who");
+                const name = guestName(record);
+                if (who) {
+                    if (assigned && name) {
+                        who.className = "who is-name";
+                        who.textContent = name;
+                    } else {
+                        who.className = "who is-code";
+                        who.textContent = chairDisplayLabel(obj);
+                    }
+                }
+                const label = chairDisplayLabel(obj);
+                el.title = label + (declined ? " · Declined" : "") + (seated ? " · Seated" : "");
+            });
+        }
+
+        async function refreshSeatingData() {
+            if (seatRefreshing) return;
+            seatRefreshing = true;
+            setRefreshStatus("updating");
+            try {
+                const ok = await loadSeats();
+                if (!ok) {
+                    setRefreshStatus("bad");
+                    return;
+                }
+                paintSeatStatus();
+                renderStats();
+                renderRoster();
+                seatRefreshLastOk = new Date();
+                setRefreshStatus("ok");
+            } catch (err) {
+                setRefreshStatus("bad");
+            } finally {
+                seatRefreshing = false;
+            }
+        }
+
+        function applyRefreshInterval(ms) {
+            if (seatRefreshTimer) {
+                clearInterval(seatRefreshTimer);
+                seatRefreshTimer = null;
+            }
+            const n = parseInt(ms, 10) || 0;
+            localStorage.setItem(SEAT_REFRESH_KEY, String(n));
+            if (n > 0) seatRefreshTimer = setInterval(() => {
+                if (document.hidden) return;
+                refreshSeatingData();
+            }, n);
         }
         async function boot() {
             doc = blankDoc();
@@ -3716,6 +3855,13 @@
             renderAll();
             fitWhenReady();
             updateHistoryButtons();
+            const savedRefresh = localStorage.getItem(SEAT_REFRESH_KEY);
+            const refreshMs = savedRefresh == null ? 30000 : (parseInt(savedRefresh, 10) || 0);
+            const refreshSelect = document.getElementById("refreshEvery");
+            if (refreshSelect) refreshSelect.value = String(refreshMs);
+            applyRefreshInterval(refreshMs);
+            seatRefreshLastOk = new Date();
+            setRefreshStatus("ok");
         }
 
         function fitWhenReady() {
@@ -4675,6 +4821,16 @@
             snapOn = !snapOn;
             renderAll();
         };
+        document.getElementById("refreshBtn").onclick = () => {
+            refreshSeatingData();
+        };
+        document.getElementById("refreshEvery").onchange = (e) => {
+            applyRefreshInterval(e.target.value);
+        };
+        document.addEventListener("visibilitychange", () => {
+            const every = parseInt(document.getElementById("refreshEvery").value, 10) || 0;
+            if (!document.hidden && every > 0) refreshSeatingData();
+        });
         document.getElementById("lockBtn").onclick = () => {
             sessionStorage.removeItem(AUTH_KEY);
             location.reload();

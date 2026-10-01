@@ -236,8 +236,38 @@
             text-align: center;
         }
 
-        .seat[hidden] {
+        .seat-action {
+            margin: 0 0 16px;
+            text-align: center;
+        }
+
+        .seat-action[hidden] {
             display: none;
+        }
+
+        .seat-action-guest {
+            font-size: 1rem;
+            font-weight: 700;
+            margin-bottom: 6px;
+        }
+
+        .seat-action-status {
+            color: #d5dde6;
+            margin-bottom: 10px;
+            line-height: 1.4;
+        }
+
+        .seat-action .btn-gold,
+        .seat-action .btn-ghost {
+            width: 100%;
+        }
+
+        .seat-action .btn-ghost:disabled {
+            opacity: 1;
+            color: #8ee0b5;
+            border-color: rgba(31, 138, 91, 0.55);
+            background: rgba(31, 138, 91, 0.16);
+            cursor: default;
         }
 
         .seat-label {
@@ -384,6 +414,13 @@
             <div class="seat-code" id="seatCode"></div>
         </div>
 
+        <div class="seat-action" id="seatAction" hidden>
+            <p class="seat-action-guest" id="seatActionGuest"></p>
+            <p class="seat-action-status" id="seatActionStatus"></p>
+            <button class="btn-gold" id="btnMarkSeated" type="button">✓ Mark as Seated</button>
+            <div class="status" id="seatActionNote"></div>
+        </div>
+
         <div class="history">
             <h3 id="sessionLabel">Scan history</h3>
             <ul id="historyList">
@@ -402,6 +439,8 @@
             var lastAt = 0;
             var selectedCameraId = "";
             var laserMode = false;
+            var currentGuest = null;
+            var markingSeat = false;
 
             var cameraBtn = document.getElementById("btnCamera");
             var cameraStatus = document.getElementById("cameraStatus");
@@ -477,6 +516,111 @@
             function hideSeat() {
                 var box = document.getElementById("seatDisplay");
                 if (box) box.hidden = true;
+            }
+
+            function hideSeatAction() {
+                var box = document.getElementById("seatAction");
+                if (box) box.hidden = true;
+                currentGuest = null;
+                markingSeat = false;
+            }
+
+            function renderSeatAction(guest) {
+                currentGuest = guest;
+                var box = document.getElementById("seatAction");
+                var guestEl = document.getElementById("seatActionGuest");
+                var statusEl = document.getElementById("seatActionStatus");
+                var btn = document.getElementById("btnMarkSeated");
+                var note = document.getElementById("seatActionNote");
+                if (!box || !guestEl || !statusEl || !btn || !note) return;
+                box.hidden = false;
+                var who = guest.name || "Guest";
+                if (guest.company) who += " · " + guest.company;
+                if (guest.position) who += " · " + guest.position;
+                guestEl.textContent = who;
+                note.textContent = "";
+                if (!guest.seat) {
+                    statusEl.textContent = "No Seat Assigned";
+                    btn.hidden = true;
+                    note.textContent = "This guest does not have an assigned seat.";
+                    return;
+                }
+                btn.hidden = false;
+                if (guest.isSeated) {
+                    statusEl.textContent = "Seat: " + guest.seat;
+                    btn.disabled = true;
+                    btn.textContent = "✓ Already Seated";
+                    btn.className = "btn-ghost";
+                    note.textContent = guest.seatedAt ? ("Seated at: " + formatTime(guest.seatedAt)) : "✓ Seated";
+                    return;
+                }
+                statusEl.textContent = "Seat: " + guest.seat + " · Not seated";
+                btn.disabled = false;
+                btn.textContent = "✓ Mark as Seated";
+                btn.className = "btn-gold";
+            }
+
+            function markSeated() {
+                if (!currentGuest || !currentGuest.uniqueId || !currentGuest.seat || currentGuest.isSeated || markingSeat) return;
+                markingSeat = true;
+                var btn = document.getElementById("btnMarkSeated");
+                var note = document.getElementById("seatActionNote");
+                if (btn) {
+                    btn.disabled = true;
+                    btn.textContent = "Marking…";
+                }
+                if (note) note.textContent = "";
+                fetch(API_BASE + "/api/AramcoFarewell/seats/mark-seated?uniqueId=" + encodeURIComponent(currentGuest.uniqueId), {
+                    method: "POST",
+                    mode: "cors",
+                    cache: "no-store",
+                    headers: { "Accept": "application/json" }
+                }).then(function(res) {
+                    return res.text().then(function(text) {
+                        var body = {};
+                        try { body = text ? JSON.parse(text) : {}; } catch (e) {}
+                        return { ok: res.ok, status: res.status, body: body };
+                    });
+                }).then(function(result) {
+                    var body = result.body || {};
+                    var message = body.message || body.Message || "";
+                    if (!result.ok) {
+                        if (note) note.textContent = message || "Could not mark this guest as seated.";
+                        if (result.status === 409) {
+                            renderSeatAction({
+                                uniqueId: currentGuest.uniqueId,
+                                name: currentGuest.name,
+                                company: currentGuest.company,
+                                position: currentGuest.position,
+                                seat: ""
+                            });
+                        } else if (btn && currentGuest && !currentGuest.isSeated) {
+                            btn.disabled = false;
+                            btn.textContent = "✓ Mark as Seated";
+                            btn.className = "btn-gold";
+                        }
+                        return;
+                    }
+                    currentGuest.isSeated = true;
+                    currentGuest.seatedAt = body.seatedAt || body.SeatedAt || new Date().toISOString();
+                    renderSeatAction(currentGuest);
+                    if (note) {
+                        var whenSeated = currentGuest.seatedAt ? (" Seated at: " + formatTime(currentGuest.seatedAt)) : "";
+                        note.textContent = (body.alreadySeated || body.AlreadySeated)
+                            ? ("Guest is already seated." + whenSeated)
+                            : ("Guest marked as seated." + whenSeated);
+                    }
+                    beep(true);
+                }).catch(function() {
+                    if (note) note.textContent = "Could not reach the check-in API.";
+                    if (btn && currentGuest && !currentGuest.isSeated) {
+                        btn.disabled = false;
+                        btn.textContent = "✓ Mark as Seated";
+                        btn.className = "btn-gold";
+                    }
+                }).finally(function() {
+                    markingSeat = false;
+                });
             }
 
             function showGuestHistory(name, checks) {
@@ -580,6 +724,7 @@
 
                 showResult("warn", "Checking in…", uniqueId);
                 hideSeat();
+                hideSeatAction();
 
                 return fetch(API_BASE + "/api/AramcoFarewell/check-in?uniqueId=" + encodeURIComponent(uniqueId), {
                     method: "POST",
@@ -605,6 +750,7 @@
                     if (result.status === 404) {
                         beep(false);
                         hideSeat();
+                        hideSeatAction();
                         showResult("err", "Guest not found", "This E-Badge is not in the Aramco Farewells guest list.");
                         if (sessionLabel) sessionLabel.textContent = "Scan history";
                         if (historyList) historyList.innerHTML = "<li>Guest not found.</li>";
@@ -613,13 +759,18 @@
                     if (!result.ok) {
                         beep(false);
                         hideSeat();
+                        hideSeatAction();
                         showResult("err", "Check-in failed", body.message || body.Message || "The API did not accept this scan.");
                         return;
                     }
 
                     var name = body.fullName || body.FullName || "Guest";
                     var status = body.status || body.Status || "";
+                    var company = body.company || body.Company || "";
+                    var position = body.position || body.Position || "";
                     var seat = (body.seatCode || body.SeatCode || "").toString().trim();
+                    var seatedAt = body.seatedAt || body.SeatedAt || "";
+                    var isSeated = !!(body.isSeated || body.IsSeated || seatedAt);
                     var count = body.checkInCount || body.CheckInCount || 1;
                     var returningGuest = !!(body.alreadyCheckedIn || body.AlreadyCheckedIn);
                     var when = formatTime(body.checkedInOn || body.CheckedInOn);
@@ -635,13 +786,26 @@
                     beep(true);
                     showSeat(seat);
                     showResult(type, title,
-                        "<strong>" + esc(name) + "</strong><br>" +
-                        "Status: " + esc(status) + "<br>" +
+                        "<strong>" + esc(name) + "</strong>" +
+                        (company ? "<br>" + esc(company) : "") +
+                        (position ? "<br>" + esc(position) : "") +
+                        "<br>Status: " + esc(status) + "<br>" +
                         "Check-ins: " + count + "<br>" +
                         esc(when) + previousHtml);
+                    renderSeatAction({
+                        uniqueId: body.uniqueId || body.UniqueId || uniqueId,
+                        name: name,
+                        company: company,
+                        position: position,
+                        seat: seat,
+                        isSeated: isSeated,
+                        seatedAt: seatedAt
+                    });
                     addHistory(name, body.checkIns || body.CheckIns || []);
                 }).catch(function(err) {
                     beep(false);
+                    hideSeat();
+                    hideSeatAction();
                     showResult("err", "Network error", "Could not reach the check-in API.");
                     console.error(err);
                 }).finally(function() {
@@ -971,6 +1135,8 @@
             }
 
             document.getElementById("btnChangeDevice").addEventListener("click", showChooser);
+            var markBtn = document.getElementById("btnMarkSeated");
+            if (markBtn) markBtn.addEventListener("click", markSeated);
             laserMode = true;
             applyMode();
             setInputKind("keyboard");
