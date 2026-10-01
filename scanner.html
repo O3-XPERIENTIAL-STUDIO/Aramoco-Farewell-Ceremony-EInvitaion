@@ -73,6 +73,19 @@
             color: #b7c2ce;
         }
 
+        .laser {
+            margin-bottom: 14px;
+        }
+
+        .laser label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.78rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--gold);
+        }
+
         .reader-shell {
             position: relative;
             overflow: hidden;
@@ -199,6 +212,61 @@
             margin-bottom: 10px;
         }
 
+        .settings-btn {
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            flex: none;
+            background: #0b1a2a;
+            color: var(--gold);
+            border: 1px solid rgba(203, 168, 134, 0.45);
+        }
+
+        .settings-btn svg {
+            width: 22px;
+            height: 22px;
+            display: block;
+        }
+
+        .seat {
+            margin: 8px 0 16px;
+            text-align: center;
+        }
+
+        .seat[hidden] {
+            display: none;
+        }
+
+        .seat-label {
+            font-size: 0.78rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--gold);
+            margin-bottom: 4px;
+        }
+
+        .seat-code {
+            font-size: 100px;
+            line-height: 0.95;
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            word-break: break-word;
+        }
+
+        .seat-code.is-empty {
+            font-size: 48px;
+        }
+
+        .history ul {
+            max-height: 52vh;
+            overflow: auto;
+            margin: 0;
+            padding: 0;
+        }
+
         .history li {
             list-style: none;
             padding: 10px 0;
@@ -217,6 +285,48 @@
             margin-top: 8px;
             min-height: 1.2em;
         }
+
+        .chooser h2 {
+            font-size: 1.25rem;
+            margin-bottom: 8px;
+        }
+
+        .chooser .lead {
+            color: #b7c2ce;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 16px;
+        }
+
+        .device-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+
+        .device-choice {
+            width: 100%;
+            text-align: left;
+            border-radius: 14px;
+            padding: 14px 16px;
+            background: #0b1a2a;
+            color: var(--white);
+            border: 1px solid rgba(203, 168, 134, 0.35);
+        }
+
+        .device-choice small {
+            display: block;
+            margin-top: 4px;
+            color: #9aabbb;
+            font-size: 0.78rem;
+            font-weight: 500;
+        }
+
+        .chooser[hidden],
+        #scanApp[hidden] {
+            display: none;
+        }
     </style>
 </head>
 
@@ -226,12 +336,33 @@
             <div class="brand">
                 <div>
                     <h1>EventPass</h1>
-                    <p>Scan guest E-Badge to record check-in</p>
+                    <p id="brandNote">Choose a scanner to start</p>
                 </div>
-
             </div>
+            <button class="settings-btn" id="btnChangeDevice" type="button" aria-label="Change device" title="Change device">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.65 1.65 0 0 0 15 19.4a1.65 1.65 0 0 0-1 .6 1.65 1.65 0 0 1-2 0 1.65 1.65 0 0 0-1-.6 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-.6-1 1.65 1.65 0 0 1 0-2 1.65 1.65 0 0 0 .6-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-.6 1.65 1.65 0 0 1 2 0 1.65 1.65 0 0 0 1 .6 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 .6 1 1.65 1.65 0 0 1 0 2 1.65 1.65 0 0 0-.6 1z"></path>
+                </svg>
+            </button>
         </div>
 
+        <div class="laser" id="scanField">
+            <label for="laserInput">Barcode scanner</label>
+            <div class="manual">
+                <input id="laserInput" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="text" placeholder="Scan the E-Badge — the code appears here" aria-label="Barcode scanner" />
+            </div>
+            <div class="status" id="laserStatus">Click this page so it is in front, then scan. If Notepad is the front window, the code goes there instead.</div>
+        </div>
+
+        <div class="chooser" id="chooser">
+            <h2>Choose a scanner</h2>
+            <p class="lead">Cameras are listed below. The WM930 does not appear by name. Scan a badge and the code shows in the box above.</p>
+            <div class="device-list" id="deviceList"></div>
+            <button class="btn-gold" id="btnFindCameras" type="button">Find cameras</button>
+        </div>
+
+        <div id="scanApp" hidden>
         <div class="reader-shell">
             <div id="reader"></div>
         </div>
@@ -247,9 +378,18 @@
         </div>
 
 
+        </div>
+
+        <div class="seat" id="seatDisplay" hidden>
+            <div class="seat-label">Seat</div>
+            <div class="seat-code" id="seatCode"></div>
+        </div>
+
         <div class="history">
-            <h3 id="sessionLabel">This session</h3>
-            <ul id="historyList"></ul>
+            <h3 id="sessionLabel">Scan history</h3>
+            <ul id="historyList">
+                <li>Scan a badge to see this guest's scans.</li>
+            </ul>
         </div>
     </div>
 
@@ -261,6 +401,8 @@
             var busy = false;
             var lastCode = "";
             var lastAt = 0;
+            var selectedCameraId = "";
+            var laserMode = false;
 
             var cameraBtn = document.getElementById("btnCamera");
             var cameraStatus = document.getElementById("cameraStatus");
@@ -275,17 +417,24 @@
             var resultTitle = document.getElementById("resultTitle");
             var resultMeta = document.getElementById("resultMeta");
             var historyList = document.getElementById("historyList");
+            var sessionLabel = document.getElementById("sessionLabel");
+
+            function restoreGuidHyphens(value) {
+                return String(value || "").replace(/([0-9a-fA-F]{8})\/([0-9a-fA-F]{4})\/([0-9a-fA-F]{4})\/([0-9a-fA-F]{4})\/([0-9a-fA-F]{12})/g, "$1-$2-$3-$4-$5");
+            }
 
             function extractUniqueId(raw) {
-                var value = (raw || "").trim();
+                var value = restoreGuidHyphens((raw || "").trim());
                 if (!value) return "";
+                var fromPath = value.match(/\/(?:e-badge|qr-card|wallet)\/([^/?#]+)/i);
+                if (fromPath) return decodeURIComponent(fromPath[1]).replace(/\.pkpass$/i, "");
                 try {
                     var url = new URL(value);
-                    return (url.searchParams.get("uniqueId") || url.searchParams.get("UniqueId") || value).trim();
-                } catch (e) {
-                    var match = value.match(/[?&]uniqueId=([^&#]+)/i);
-                    return match ? decodeURIComponent(match[1]) : value;
-                }
+                    var fromQuery = (url.searchParams.get("uniqueId") || url.searchParams.get("UniqueId") || "").trim();
+                    if (fromQuery) return fromQuery;
+                } catch (e) {}
+                var match = value.match(/[?&]uniqueId=([^&#]+)/i);
+                return match ? decodeURIComponent(match[1]) : value;
             }
 
             function showResult(type, title, meta) {
@@ -312,14 +461,57 @@
                 } catch (e) {}
             }
 
-            function addHistory(name, when, returningGuest, seat) {
-                var li = document.createElement("li");
-                var seatText = seat ? (" · Seat " + esc(seat)) : " · No seat";
-                li.innerHTML = "<strong>" + esc(name || "Guest") + "</strong>" +
-                    (returningGuest ? " · return" : " · first entry") +
-                    seatText +
-                    "<div class=\"when\">" + esc(when) + "</div>";
-                historyList.insertBefore(li, historyList.firstChild);
+            function showSeat(code) {
+                var box = document.getElementById("seatDisplay");
+                var value = document.getElementById("seatCode");
+                if (!box || !value) return;
+                box.hidden = false;
+                if (code) {
+                    value.textContent = code;
+                    value.className = "seat-code";
+                } else {
+                    value.textContent = "No seat";
+                    value.className = "seat-code is-empty";
+                }
+            }
+
+            function hideSeat() {
+                var box = document.getElementById("seatDisplay");
+                if (box) box.hidden = true;
+            }
+
+            function showGuestHistory(name, checks) {
+                var rows = (checks || []).map(function(item, index) {
+                    var whenRaw = item.checkedInOn || item.CheckedInOn || "";
+                    var whenMs = Date.parse(String(whenRaw));
+                    if (isNaN(whenMs)) {
+                        var iso = /Z$|[+-]\d{2}:\d{2}$/.test(String(whenRaw)) ? String(whenRaw) : String(whenRaw).replace(" ", "T") + "Z";
+                        whenMs = Date.parse(iso);
+                    }
+                    return {
+                        when: formatTime(whenRaw),
+                        whenMs: isNaN(whenMs) ? 0 : whenMs,
+                        returning: index > 0,
+                        n: index + 1
+                    };
+                });
+                rows.sort(function(a, b) { return b.whenMs - a.whenMs; });
+                if (sessionLabel) {
+                    sessionLabel.textContent = (name || "Guest") + " · " + rows.length + " scan" + (rows.length === 1 ? "" : "s");
+                }
+                if (!historyList) return;
+                if (!rows.length) {
+                    historyList.innerHTML = "<li>No scans yet.</li>";
+                    return;
+                }
+                historyList.innerHTML = rows.map(function(row) {
+                    return "<li><strong>" + (row.returning ? "Return" : "First entry") + "</strong> · scan " + row.n +
+                        "<div class=\"when\">" + esc(row.when) + "</div></li>";
+                }).join("");
+            }
+
+            function addHistory(name, checks) {
+                showGuestHistory(name, checks);
             }
 
             function getViewerTimeZoneLabel() {
@@ -388,6 +580,7 @@
                 busy = true;
 
                 showResult("warn", "Checking in…", uniqueId);
+                hideSeat();
 
                 return fetch(API_BASE + "/api/AramcoFarewell/check-in?uniqueId=" + encodeURIComponent(uniqueId), {
                     method: "POST",
@@ -412,11 +605,15 @@
                     var body = result.body || {};
                     if (result.status === 404) {
                         beep(false);
+                        hideSeat();
                         showResult("err", "Guest not found", "This E-Badge is not in the Aramco Farewells guest list.");
+                        if (sessionLabel) sessionLabel.textContent = "Scan history";
+                        if (historyList) historyList.innerHTML = "<li>Guest not found.</li>";
                         return;
                     }
                     if (!result.ok) {
                         beep(false);
+                        hideSeat();
                         showResult("err", "Check-in failed", body.message || body.Message || "The API did not accept this scan.");
                         return;
                     }
@@ -436,15 +633,14 @@
                     }
                     var type = returningGuest ? "warn" : "ok";
                     var title = returningGuest ? "Already checked in" : "Checked in";
-                    var seatLine = seat ? ("Seat: " + esc(seat)) : "Seat: not assigned";
                     beep(true);
+                    showSeat(seat);
                     showResult(type, title,
                         "<strong>" + esc(name) + "</strong><br>" +
-                        seatLine + "<br>" +
                         "Status: " + esc(status) + "<br>" +
                         "Check-ins: " + count + "<br>" +
                         esc(when) + previousHtml);
-                    addHistory(name, when, returningGuest, seat);
+                    addHistory(name, body.checkIns || body.CheckIns || []);
                 }).catch(function(err) {
                     beep(false);
                     showResult("err", "Network error", "Could not reach the check-in API.");
@@ -474,9 +670,8 @@
                 scanner = scanner || new Html5Qrcode("reader");
                 cameraBtn.disabled = true;
                 cameraStatus.textContent = "Starting camera…";
-                scanner.start({
-                        facingMode: "environment"
-                    }, {
+                var source = selectedCameraId ? { deviceId: { exact: selectedCameraId } } : { facingMode: "environment" };
+                scanner.start(source, {
                         fps: 10,
                         aspectRatio: 3 / 4,
                         qrbox: getQrBoxSize
@@ -512,10 +707,276 @@
                 else startCamera();
             });
 
-            var sessionLabel = document.getElementById("sessionLabel");
-            if (sessionLabel) {
-                sessionLabel.textContent = "This session · " + getViewerTimeZoneLabel();
+            var laserInput = document.getElementById("laserInput");
+            var wedgeTimer = null;
+            var lastKeyAt = 0;
+            var burstFast = true;
+            var scanSettled = false;
+
+            function focusLaser() {
+                if (!laserInput || document.activeElement === laserInput) return;
+                try {
+                    laserInput.focus({ preventScroll: true });
+                } catch (e) {
+                    laserInput.focus();
+                }
             }
+
+            function scanChar(e) {
+                if (e.key && e.key.length === 1) return e.key;
+                var named = e.code || "";
+                if (/^Key[A-Z]$/.test(named)) {
+                    var letter = named.charAt(3);
+                    return e.shiftKey ? letter : letter.toLowerCase();
+                }
+                if (/^Digit[0-9]$/.test(named)) return named.charAt(5);
+                if (/^Numpad[0-9]$/.test(named)) return named.charAt(6);
+                if (named === "Minus") return e.shiftKey ? "_" : "-";
+                if (named === "Equal") return e.shiftKey ? "+" : "=";
+                if (named === "Slash") return "/";
+                if (named === "Backslash") return "\\";
+                if (named === "Period") return ".";
+                if (named === "Comma") return ",";
+                if (named === "Semicolon") return e.shiftKey ? ":" : ";";
+                if (named === "Quote") return e.shiftKey ? "\"" : "'";
+                if (named === "BracketLeft") return e.shiftKey ? "{" : "[";
+                if (named === "BracketRight") return e.shiftKey ? "}" : "]";
+                var code = e.keyCode || e.which || 0;
+                if (code >= 48 && code <= 57) return String.fromCharCode(code);
+                if (code >= 96 && code <= 105) return String(code - 96);
+                if (code >= 65 && code <= 90) {
+                    var fromCode = String.fromCharCode(code);
+                    return e.shiftKey ? fromCode : fromCode.toLowerCase();
+                }
+                return "";
+            }
+
+            function markHeard(text) {
+                var status = document.getElementById("laserStatus");
+                if (!status) return;
+                status.textContent = text;
+            }
+
+            function submitLaser(raw) {
+                var value = restoreGuidHyphens(String(raw || "").replace(/[\r\n\t]+/g, "").trim());
+                clearTimeout(wedgeTimer);
+                lastKeyAt = 0;
+                burstFast = true;
+                if (!value) return;
+                if (laserInput) laserInput.value = value;
+                scanSettled = true;
+                if (chooser && !chooser.hidden) {
+                    laserMode = true;
+                    showScanApp();
+                    applyMode();
+                    if (brandNote) brandNote.textContent = "Barcode scanner";
+                }
+                recordCheckIn(value);
+                focusLaser();
+            }
+
+            document.addEventListener("keydown", function(e) {
+                var submitKey = e.key === "Enter" || e.key === "Tab" || e.key === "NumpadEnter";
+                if (submitKey) {
+                    var ready = laserInput ? laserInput.value.trim() : "";
+                    if (!ready) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    submitLaser(ready);
+                    return;
+                }
+                var ch = scanChar(e);
+                if (!ch || e.ctrlKey || e.metaKey || e.altKey) return;
+                if (!laserInput) return;
+                if (scanSettled) {
+                    laserInput.value = "";
+                    scanSettled = false;
+                    burstFast = true;
+                    lastKeyAt = 0;
+                }
+                var now = Date.now();
+                if (lastKeyAt && now - lastKeyAt > 180) burstFast = false;
+                lastKeyAt = now;
+                if (document.activeElement !== laserInput) {
+                    e.preventDefault();
+                    laserInput.value += ch;
+                    focusLaser();
+                }
+                markHeard("Reading: " + laserInput.value);
+                clearTimeout(wedgeTimer);
+                wedgeTimer = setTimeout(function() {
+                    var value = laserInput ? laserInput.value.trim() : "";
+                    lastKeyAt = 0;
+                    if (burstFast && value.length >= 4 && !scanSettled) submitLaser(value);
+                    burstFast = true;
+                }, 700);
+            }, true);
+
+            if (laserInput) {
+                laserInput.addEventListener("input", function() {
+                    if (!scanSettled && laserInput.value) markHeard("Reading: " + laserInput.value);
+                });
+            }
+
+            window.addEventListener("blur", function() {
+                markHeard("This page is behind another window. Click here, then scan. Notepad keeps the code when Notepad is in front.");
+            });
+            window.addEventListener("focus", function() {
+                focusLaser();
+                markHeard("Ready. Scan now. The code will appear in the box.");
+            });
+            document.addEventListener("visibilitychange", function() {
+                if (!document.hidden) focusLaser();
+            });
+            document.addEventListener("click", function(e) {
+                if (e.target.closest("button, a, input, textarea, select")) return;
+                focusLaser();
+            });
+
+            var chooser = document.getElementById("chooser");
+            var scanApp = document.getElementById("scanApp");
+            var deviceList = document.getElementById("deviceList");
+            var findCamerasBtn = document.getElementById("btnFindCameras");
+            var brandNote = document.getElementById("brandNote");
+            var laserBlock = document.querySelector(".laser");
+            var readerShell = document.querySelector(".reader-shell");
+
+            function cameraLabel(device, index) {
+                var label = (device.label || "").trim();
+                if (!label) return "Camera " + (index + 1);
+                return label;
+            }
+
+            function showChooser() {
+                if (running) stopCamera();
+                laserMode = false;
+                chooser.hidden = false;
+                scanApp.hidden = true;
+                if (brandNote) brandNote.textContent = "Choose a scanner to start";
+                loadDevices();
+                focusLaser();
+            }
+
+            function showScanApp() {
+                chooser.hidden = true;
+                scanApp.hidden = false;
+            }
+
+            function applyMode() {
+                if (readerShell) readerShell.hidden = laserMode;
+                if (cameraStatus) cameraStatus.hidden = laserMode;
+                if (cameraBtn) cameraBtn.hidden = laserMode;
+            }
+
+            function setInputKind(kind) {
+                var input = document.getElementById("laserInput");
+                var label = laserBlock ? laserBlock.querySelector("label") : null;
+                var status = document.getElementById("laserStatus");
+                var isKeyboard = kind === "keyboard";
+                if (label) label.textContent = isKeyboard ? "Wireless barcode scanner" : "Laser scanner";
+                if (input) {
+                    input.setAttribute("aria-label", isKeyboard ? "Wireless barcode scanner" : "Laser scanner");
+                    input.placeholder = "Scan the E-Badge — the code appears here";
+                    input.inputMode = "text";
+                }
+                if (status) {
+                    status.textContent = "Scan the badge. The code appears in this box. Set the WM930 to keyboard mode and end each scan with Enter.";
+                }
+            }
+
+            function chooseLaser() {
+                laserMode = true;
+                selectedCameraId = "";
+                showScanApp();
+                applyMode();
+                setInputKind("laser");
+                if (brandNote) brandNote.textContent = "Laser scanner";
+                focusLaser();
+            }
+
+            function chooseKeyboard() {
+                laserMode = true;
+                selectedCameraId = "";
+                showScanApp();
+                applyMode();
+                setInputKind("keyboard");
+                if (brandNote) brandNote.textContent = "Keyboard";
+                focusLaser();
+            }
+
+            function chooseCamera(deviceId, label) {
+                laserMode = false;
+                selectedCameraId = deviceId || "";
+                showScanApp();
+                applyMode();
+                if (brandNote) brandNote.textContent = label || "Camera";
+                if (running) {
+                    stopCamera();
+                    setTimeout(startCamera, 400);
+                } else {
+                    startCamera();
+                }
+            }
+
+            function loadDevices() {
+                var list = navigator.mediaDevices && navigator.mediaDevices.enumerateDevices
+                    ? navigator.mediaDevices.enumerateDevices()
+                    : Promise.resolve([]);
+                list.then(function(devices) {
+                    var cameras = (devices || []).filter(function(device) {
+                        return device.kind === "videoinput";
+                    });
+                    var html = cameras.map(function(device, index) {
+                        var label = cameraLabel(device, index);
+                        return '<button class="device-choice" type="button" data-camera="' + esc(device.deviceId) + '" data-label="' + esc(label) + '">' +
+                            esc(label) + '<small>Camera</small></button>';
+                    }).join("");
+                    html += '<button class="device-choice" type="button" data-keyboard="1">Wireless barcode scanner<small>WM930 and any scanner that types</small></button>';
+                    html += '<button class="device-choice" type="button" data-laser="1">Laser scanner<small>MUNBYN and any other laser</small></button>';
+                    deviceList.innerHTML = html;
+                    if (findCamerasBtn) {
+                        var unnamed = cameras.some(function(device) { return !(device.label || "").trim(); });
+                        findCamerasBtn.hidden = cameras.length > 0 && !unnamed;
+                        findCamerasBtn.textContent = cameras.length ? "Show camera names" : "Find cameras";
+                    }
+                }).catch(function() {
+                    deviceList.innerHTML = '<button class="device-choice" type="button" data-keyboard="1">Wireless barcode scanner<small>WM930 and any scanner that types</small></button>' +
+                        '<button class="device-choice" type="button" data-laser="1">Laser scanner<small>MUNBYN and any other laser</small></button>';
+                });
+            }
+
+            deviceList.addEventListener("click", function(e) {
+                var button = e.target.closest("button");
+                if (!button) return;
+                if (button.dataset.keyboard) {
+                    chooseKeyboard();
+                    return;
+                }
+                if (button.dataset.laser) {
+                    chooseLaser();
+                    return;
+                }
+                if (button.dataset.camera != null) chooseCamera(button.dataset.camera, button.dataset.label || "Camera");
+            });
+
+            if (findCamerasBtn) {
+                findCamerasBtn.addEventListener("click", function() {
+                    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                        loadDevices();
+                        return;
+                    }
+                    findCamerasBtn.disabled = true;
+                    navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
+                        stream.getTracks().forEach(function(track) { track.stop(); });
+                    }).catch(function() {}).finally(function() {
+                        findCamerasBtn.disabled = false;
+                        loadDevices();
+                    });
+                });
+            }
+
+            document.getElementById("btnChangeDevice").addEventListener("click", showChooser);
+            showChooser();
         })();
     </script>
 </body>

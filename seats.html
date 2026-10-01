@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,180 +10,1076 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
         :root {
-            --bg: #1c1815; --panel: #241f1c; --panel-2: #2e2824; --line: rgba(237,231,222,.12);
-            --text: #ede7de; --muted: #aa9f92; --coral: #e45c44; --green: #7dcea0; --amber: #e2b657; --danger: #f07167;
+            --bg: #1c1815;
+            --panel: #241f1c;
+            --panel-2: #2e2824;
+            --line: rgba(237, 231, 222, .12);
+            --text: #ede7de;
+            --muted: #aa9f92;
+            --coral: #e45c44;
+            --green: #7dcea0;
+            --amber: #e2b657;
+            --danger: #f07167;
             --grid: 20px;
         }
-        * { box-sizing: border-box; }
-        html, body { height: 100%; margin: 0; }
-        body { font-family: Inter, system-ui, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; }
-        button, input, select, textarea { font-family: inherit; color: inherit; }
-        button { cursor: pointer; }
-        .gate { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); }
-        .gate form { width: min(380px, calc(100% - 32px)); background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 24px; }
-        .gate h1 { margin: 0 0 6px; font-size: 1.2rem; }
-        .gate p { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
-        .gate input, .field input, .field textarea, .field select, .search {
-            width: 100%; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 8px 10px; font-size: 13px;
+
+        * {
+            box-sizing: border-box;
         }
-        .err { color: var(--danger); min-height: 18px; font-size: 12px; }
-        .btn, .icon-btn {
-            border: 1px solid var(--line); background: var(--panel-2); color: var(--text); border-radius: 8px; padding: 7px 10px; font-size: 12px; font-weight: 600;
+
+        html,
+        body {
+            height: 100%;
+            margin: 0;
         }
-        .btn.primary { background: var(--coral); border-color: var(--coral); color: #fff; }
-        .btn:disabled, .icon-btn:disabled { opacity: .4; cursor: default; }
-        .app { display: none; height: 100vh; height: 100dvh; grid-template-rows: auto minmax(0, 1fr) auto; }
-        .app.open { display: grid; }
-        .topbar, .statusbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
-        .statusbar { border-bottom: 0; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; min-height: 40px; }
-        .mark { width: 28px; height: 28px; border-radius: 8px; background: var(--coral); display: grid; place-items: center; font-weight: 700; flex: 0 0 auto; }
-        .namebox { min-width: 0; width: min(220px, 36vw); flex: 1 1 140px; }
-        .spacer { flex: 1; }
-        .workspace { display: grid; grid-template-columns: minmax(180px, 250px) minmax(0, 1fr) minmax(220px, 300px); min-height: 0; min-width: 0; }
-        .tools, .props { background: var(--panel); overflow: auto; padding: 12px; min-width: 0; min-height: 0; }
-        .tools { border-right: 1px solid var(--line); }
-        .props { border-left: 1px solid var(--line); }
-        h2 { margin: 14px 0 8px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
-        h2:first-child { margin-top: 0; }
-        .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-        .tool, .layout-row, .asset-row, .guest-row {
-            border: 1px solid var(--line); background: transparent; border-radius: 10px; color: var(--text); text-align: left;
+
+        body {
+            font-family: Inter, system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            overflow: hidden;
         }
-        .tool { padding: 8px; font-size: 12px; font-weight: 600; }
-        .tool.on, .layout-row.on { border-color: var(--coral); background: rgba(228,92,68,.12); }
-        .hint { color: var(--muted); font-size: 12px; line-height: 1.4; margin: 8px 0; }
-        .layout-row, .asset-row { width: 100%; display: flex; align-items: center; gap: 6px; padding: 6px 8px; margin-bottom: 6px; }
-        .layout-row span, .asset-row span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13px; }
-        .mini { border: 0; background: transparent; color: var(--muted); font-size: 11px; font-weight: 700; }
-        .viewport { position: relative; overflow: hidden; min-width: 0; min-height: 0; background-color: #f3f5f8; background-image: linear-gradient(rgba(55,70,95,.14) 1px, transparent 1px), linear-gradient(90deg, rgba(55,70,95,.14) 1px, transparent 1px); touch-action: none; }
-        .canvas-nav { position: absolute; z-index: 6; top: 12px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; padding: 6px; background: rgba(28,24,21,.94); border: 1px solid rgba(237,231,222,.18); border-radius: 14px; box-shadow: 0 10px 28px rgba(0,0,0,.28); }
-        .canvas-nav .tool { min-width: 72px; text-align: center; background: transparent; color: #ede7de; }
-        body.sides-hidden .tools, body.hide-left .tools,
-        body.sides-hidden .props, body.hide-right .props { display: none; }
-        body.sides-hidden .workspace { grid-template-columns: minmax(0, 1fr) !important; grid-template-rows: minmax(0, 1fr) !important; grid-template-areas: "canvas" !important; }
-        .side-bar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; }
-        .side-bar span { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
-        .side-close { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--text); font-size: 18px; line-height: 1; cursor: pointer; }
-        .side-reopen { position: absolute; z-index: 6; top: 58px; border: 1px solid rgba(237,231,222,.18); background: rgba(28,24,21,.94); color: #ede7de; border-radius: 10px; padding: 8px 10px; font-size: 12px; font-weight: 700; }
-        .side-reopen[hidden] { display: none; }
-        .side-reopen-left { left: 12px; }
-        .side-reopen-right { right: 12px; }
-        .viewport.place { cursor: crosshair; }
-        .viewport.hand, .viewport.panning { cursor: grab; }
-        #world { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
-        .add-card { border: 1px solid var(--line); border-radius: 12px; padding: 10px; margin-bottom: 8px; background: #2a2420; }
-        .add-card strong { display: block; font-size: 13px; }
-        .add-card .sub { color: var(--muted); font-size: 11px; }
-        .stepper { display: flex; align-items: center; gap: 4px; margin: 8px 0; }
-        .stepper input { width: 72px; text-align: center; border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 6px; }
-        .stepper button, .add-card .btn { flex: 1; }
-        .side-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-        .item { position: absolute; display: flex; align-items: center; justify-content: center; flex-direction: column; border: 1px solid rgba(237,231,222,.35); user-select: none; }
-        .item.chair { z-index: 2; border: none; border-radius: 42px; background: #2f4c72; color: #fff; box-shadow: 0 8px 16px rgba(20,32,52,.22); overflow: visible; }
-        .item.chair .who, .item.chair .seat-no { position: relative; z-index: 1; font-size: 72px; font-weight: 700; line-height: 1; transform-origin: center center; }
-        .item.chair .who.is-name { display: block; width: 90%; font-size: 48px; font-weight: 700; line-height: 1.08; text-align: center; white-space: normal; }
-        .item.chair.is-assigned { background: #ffe14a; color: #1a1408; box-shadow: 0 0 0 5px rgba(255, 210, 40, .55), 0 12px 22px rgba(180, 120, 0, .35); }
-        .item.chair.is-assigned .who { color: #1a1408; }
-        .item.chair.is-assigned.is-declined { background: #e23b32; color: #fff; box-shadow: 0 0 0 5px rgba(226, 59, 50, .5), 0 12px 22px rgba(140, 20, 16, .35); }
-        .item.chair.is-assigned.is-declined .who { color: #fff; }
-        .item.table { z-index: 1; border: none; border-radius: 16px; background: #f3ecdf; color: #1d2836; box-shadow: 0 10px 22px rgba(30,24,16,.14); }
-        .item.table.shape-round, .item.table.shape-oval { border-radius: 50%; }
-        .item.table.shape-square { border-radius: 16px; }
-        .item.table.shape-crescent { border-radius: 0 0 999px 999px; }
-        .item.table .obj-label { font-size: 40px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; transform-origin: center center; }
-        .preview-box { background: #f3f5f8; border: 1px solid var(--line); border-radius: 12px; min-height: 150px; margin: 8px 0; overflow: hidden; }
-        .preview-box svg { width: 100%; height: 160px; display: block; }
-        .item.table.shape-rows { background: transparent; box-shadow: none; overflow: visible; }
-        .row-pill { position: absolute; left: 0; width: 258px; border-radius: 42px; background: #2f4c72; color: #fff; font-size: 40px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 16px rgba(20,32,52,.18); }
-        .item.round { border-radius: 50%; background: rgba(237,231,222,.08); }
-        .item.rect, .item.sofa, .item.booth, .item.stage, .item.custom { border-radius: 12px; background: rgba(237,231,222,.06); }
-        .item.stage { background: rgba(228,92,68,.18); }
-        .item.sofa { background: rgba(125,206,160,.15); }
-        .item.wall { background: #cfc6bb; border-radius: 4px; }
-        .item.door, .item.entrance, .item.exit { border-radius: 8px; background: rgba(226,182,87,.16); }
-        .item.text { background: transparent; border-style: dashed; overflow: hidden; }
-        .item.text .obj-label { font-size: 28px; line-height: 1.15; width: 92%; }
-        .item.is-selected { outline: 2px solid #2563eb; outline-offset: 3px; z-index: 4; }
-        .xform { position: absolute; z-index: 6; box-sizing: border-box; border: calc(1.5px / var(--z, 1)) solid #2563eb; pointer-events: none; transform-origin: center center; }
-        .xform .rot-stem { position: absolute; left: 50%; top: 0; width: calc(1.5px / var(--z, 1)); height: calc(22px / var(--z, 1)); background: #2563eb; transform: translate(-50%, -100%); }
-        .xform .handle { position: absolute; width: calc(14px / var(--z, 1)); height: calc(14px / var(--z, 1)); background: #fff; border: calc(2px / var(--z, 1)) solid #2563eb; border-radius: calc(2px / var(--z, 1)); pointer-events: auto; touch-action: none; }
-        .xform .handle.nw { left: 0; top: 0; transform: translate(-50%, -50%); cursor: nwse-resize; }
-        .xform .handle.n { left: 50%; top: 0; transform: translate(-50%, -50%); cursor: ns-resize; }
-        .xform .handle.ne { left: 100%; top: 0; transform: translate(-50%, -50%); cursor: nesw-resize; }
-        .xform .handle.e { left: 100%; top: 50%; transform: translate(-50%, -50%); cursor: ew-resize; }
-        .xform .handle.se { left: 100%; top: 100%; transform: translate(-50%, -50%); cursor: nwse-resize; }
-        .xform .handle.s { left: 50%; top: 100%; transform: translate(-50%, -50%); cursor: ns-resize; }
-        .xform .handle.sw { left: 0; top: 100%; transform: translate(-50%, -50%); cursor: nesw-resize; }
-        .xform .handle.w { left: 0; top: 50%; transform: translate(-50%, -50%); cursor: ew-resize; }
-        .xform .handle.rotate { left: 50%; top: 0; border-radius: 50%; background: #2563eb; cursor: grab; transform: translate(-50%, calc(-100% - 22px / var(--z, 1))); }
-        .item:hover { filter: brightness(1.08); }
-        .seat-no, .obj-label { font-size: 28px; font-weight: 700; line-height: 1.1; text-align: center; pointer-events: none; }
-        .who { font-size: 12px; font-weight: 700; pointer-events: none; }
-        .hover-name { display: none; position: absolute; left: 50%; top: calc(100% + 6px); transform: translateX(-50%); background: #111; color: #fff; border-radius: 6px; padding: 3px 6px; font-size: 11px; white-space: nowrap; z-index: 3; }
-        .item.chair:hover .hover-name, .item.chair.is-selected .hover-name { display: block; }
-        .resize { position: absolute; right: -5px; bottom: -5px; width: 10px; height: 10px; background: #fff; border-radius: 2px; cursor: nwse-resize; }
-        .asset { position: absolute; transform-origin: 0 0; }
-        .asset.is-selected { outline: 1px dashed var(--amber); }
-        .marquee { position: absolute; border: 1px solid var(--coral); background: rgba(228,92,68,.15); pointer-events: none; }
-        .float { position: fixed; z-index: 20; display: flex; gap: 4px; padding: 6px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
-        .float[hidden] { display: none; }
-        .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; font-size: 12px; color: var(--muted); }
-        .row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-        .guest-row { width: 100%; padding: 8px; margin-bottom: 6px; text-align: left; }
-        .guest-row small { display: block; color: var(--muted); font-size: 11px; margin-top: 3px; }
-        .guest-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-        .guest-top strong { font-size: 13px; line-height: 1.3; }
-        .guest-status { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 7px; }
-        .guest-status::before { content: ""; width: 6px; height: 6px; border-radius: 50%; }
-        .guest-status.pending { color: #e2b657; background: rgba(226,182,87,.14); border: 1px solid rgba(226,182,87,.35); }
-        .guest-status.pending::before { background: #e2b657; }
-        .guest-status.accepted { color: #7dcea0; background: rgba(125,206,160,.14); border: 1px solid rgba(125,206,160,.35); }
-        .guest-status.accepted::before { background: #7dcea0; }
-        .guest-status.declined { color: #f07167; background: rgba(240,113,103,.14); border: 1px solid rgba(240,113,103,.35); }
-        .guest-status.declined::before { background: #f07167; }
-        .roster { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 8px; }
-        .guest-row.is-taken { opacity: .7; }
-        .stat b { color: var(--text); }
-        .toast { margin-left: auto; max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .toast.bad { color: var(--danger); }
-        .toast.ok { color: var(--green); }
-        .sheet-modal { position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; padding: 16px; }
-        .sheet-modal[hidden] { display: none; }
-        .sheet { width: min(440px, 100%); max-height: calc(100vh - 32px); overflow: auto; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 18px 18px 14px; }
-        .sheet h3 { margin: 0 0 4px; font-size: 18px; }
-        .sheet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; }
-        .sheet .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
-        body.is-preview .tools, body.is-preview .props, body.is-preview .float { display: none; }
-        body.is-preview .workspace { grid-template-columns: minmax(0, 1fr); grid-template-areas: "canvas"; }
+
+        button,
+        input,
+        select,
+        textarea {
+            font-family: inherit;
+            color: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .gate {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+        }
+
+        .gate form {
+            width: min(380px, calc(100% - 32px));
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 24px;
+        }
+
+        .gate h1 {
+            margin: 0 0 6px;
+            font-size: 1.2rem;
+        }
+
+        .gate p {
+            margin: 0 0 14px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .gate input,
+        .field input,
+        .field textarea,
+        .field select,
+        .search {
+            width: 100%;
+            border: 1px solid var(--line);
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 13px;
+        }
+
+        .err {
+            color: var(--danger);
+            min-height: 18px;
+            font-size: 12px;
+        }
+
+        .btn,
+        .icon-btn {
+            border: 1px solid var(--line);
+            background: var(--panel-2);
+            color: var(--text);
+            border-radius: 8px;
+            padding: 7px 10px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .btn.primary {
+            background: var(--coral);
+            border-color: var(--coral);
+            color: #fff;
+        }
+
+        .btn:disabled,
+        .icon-btn:disabled {
+            opacity: .4;
+            cursor: default;
+        }
+
+        .app {
+            display: none;
+            height: 100vh;
+            height: 100dvh;
+            grid-template-rows: auto minmax(0, 1fr) auto;
+        }
+
+        .app.open {
+            display: grid;
+        }
+
+        .topbar,
+        .statusbar {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--panel);
+            border-bottom: 1px solid var(--line);
+        }
+
+        .statusbar {
+            border-bottom: 0;
+            border-top: 1px solid var(--line);
+            color: var(--muted);
+            font-size: 12px;
+            min-height: 40px;
+        }
+
+        .mark {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: var(--coral);
+            display: grid;
+            place-items: center;
+            font-weight: 700;
+            flex: 0 0 auto;
+        }
+
+        .namebox {
+            min-width: 0;
+            width: min(220px, 36vw);
+            flex: 1 1 140px;
+        }
+
+        .spacer {
+            flex: 1;
+        }
+
+        .workspace {
+            display: grid;
+            grid-template-columns: minmax(180px, 250px) minmax(0, 1fr) minmax(380px, 420px);
+            min-height: 0;
+            min-width: 0;
+        }
+
+        .tools,
+        .props {
+            background: var(--panel);
+            overflow: auto;
+            padding: 12px;
+            min-width: 0;
+            min-height: 0;
+        }
+
+        .tools {
+            border-right: 1px solid var(--line);
+        }
+
+        .props {
+            border-left: 1px solid var(--line);
+        }
+
+        h2 {
+            margin: 14px 0 8px;
+            font-size: 11px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        #props h2.seat-banner {
+            font-size: 80px;
+            line-height: 1.05;
+            letter-spacing: -0.03em;
+            text-transform: none;
+            color: var(--text);
+            word-break: break-word;
+        }
+
+        h2:first-child {
+            margin-top: 0;
+        }
+
+        .tool-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .tool,
+        .layout-row,
+        .asset-row,
+        .guest-row {
+            border: 1px solid var(--line);
+            background: transparent;
+            border-radius: 10px;
+            color: var(--text);
+            text-align: left;
+        }
+
+        .tool {
+            padding: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .tool.on,
+        .layout-row.on {
+            border-color: var(--coral);
+            background: rgba(228, 92, 68, .12);
+        }
+
+        .hint {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.4;
+            margin: 8px 0;
+        }
+
+        .layout-row,
+        .asset-row {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 8px;
+            margin-bottom: 6px;
+        }
+
+        .layout-row span,
+        .asset-row span {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 13px;
+        }
+
+        .mini {
+            border: 0;
+            background: transparent;
+            color: var(--muted);
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .viewport {
+            position: relative;
+            overflow: hidden;
+            min-width: 0;
+            min-height: 0;
+            background-color: #f3f5f8;
+            background-image: linear-gradient(rgba(55, 70, 95, .14) 1px, transparent 1px), linear-gradient(90deg, rgba(55, 70, 95, .14) 1px, transparent 1px);
+            touch-action: none;
+        }
+
+        .canvas-nav {
+            position: absolute;
+            z-index: 6;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 6px;
+            padding: 6px;
+            background: rgba(28, 24, 21, .94);
+            border: 1px solid rgba(237, 231, 222, .18);
+            border-radius: 14px;
+            box-shadow: 0 10px 28px rgba(0, 0, 0, .28);
+        }
+
+        .canvas-nav .tool {
+            min-width: 72px;
+            text-align: center;
+            background: transparent;
+            color: #ede7de;
+        }
+
+        body.sides-hidden .tools,
+        body.hide-left .tools,
+        body.sides-hidden .props,
+        body.hide-right .props {
+            display: none;
+        }
+
+        body.sides-hidden .workspace {
+            grid-template-columns: minmax(0, 1fr) !important;
+            grid-template-rows: minmax(0, 1fr) !important;
+            grid-template-areas: "canvas" !important;
+        }
+
+        .side-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin: 0 0 8px;
+        }
+
+        .side-bar span {
+            font-size: 11px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .side-close {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            border: 1px solid var(--line);
+            background: transparent;
+            color: var(--text);
+            font-size: 18px;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .side-reopen {
+            position: absolute;
+            z-index: 6;
+            top: 58px;
+            border: 1px solid rgba(237, 231, 222, .18);
+            background: rgba(28, 24, 21, .94);
+            color: #ede7de;
+            border-radius: 10px;
+            padding: 8px 10px;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .side-reopen[hidden] {
+            display: none;
+        }
+
+        .side-reopen-left {
+            left: 12px;
+        }
+
+        .side-reopen-right {
+            right: 12px;
+        }
+
+        .viewport.place {
+            cursor: crosshair;
+        }
+
+        .viewport.hand,
+        .viewport.panning {
+            cursor: grab;
+        }
+
+        #world {
+            position: absolute;
+            left: 0;
+            top: 0;
+            transform-origin: 0 0;
+        }
+
+        .add-card {
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #2a2420;
+        }
+
+        .add-card strong {
+            display: block;
+            font-size: 13px;
+        }
+
+        .add-card .sub {
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .stepper {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            margin: 8px 0;
+        }
+
+        .stepper input {
+            width: 72px;
+            text-align: center;
+            border: 1px solid var(--line);
+            background: var(--bg);
+            border-radius: 8px;
+            padding: 6px;
+        }
+
+        .stepper button,
+        .add-card .btn {
+            flex: 1;
+        }
+
+        .side-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+
+        .item {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            border: 1px solid rgba(237, 231, 222, .35);
+            user-select: none;
+        }
+
+        .item.chair {
+            z-index: 2;
+            border: none;
+            border-radius: 42px;
+            background: #2f4c72;
+            color: #fff;
+            box-shadow: 0 8px 16px rgba(20, 32, 52, .22);
+            overflow: visible;
+        }
+
+        .item.chair .who,
+        .item.chair .seat-no {
+            position: relative;
+            z-index: 1;
+            font-size: 72px;
+            font-weight: 700;
+            line-height: 1;
+            transform-origin: center center;
+        }
+
+        .item.chair .who.is-name {
+            display: block;
+            width: 90%;
+            font-size: 48px;
+            font-weight: 700;
+            line-height: 1.08;
+            text-align: center;
+            white-space: normal;
+        }
+
+        .item.chair .who.is-code {
+            display: block;
+            width: 92%;
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1.15;
+            text-align: center;
+            white-space: normal;
+        }
+
+        .item.chair.is-assigned {
+            background: #ffe14a;
+            color: #1a1408;
+            box-shadow: 0 0 0 5px rgba(255, 210, 40, .55), 0 12px 22px rgba(180, 120, 0, .35);
+        }
+
+        .item.chair.is-assigned .who {
+            color: #1a1408;
+        }
+
+        .item.chair.is-assigned.is-declined {
+            background: #e23b32;
+            color: #fff;
+            box-shadow: 0 0 0 5px rgba(226, 59, 50, .5), 0 12px 22px rgba(140, 20, 16, .35);
+        }
+
+        .item.chair.is-assigned.is-declined .who {
+            color: #fff;
+        }
+
+        .item.table {
+            z-index: 1;
+            border: none;
+            border-radius: 16px;
+            background: #f3ecdf;
+            color: #1d2836;
+            box-shadow: 0 10px 22px rgba(30, 24, 16, .14);
+        }
+
+        .item.table.shape-round,
+        .item.table.shape-oval {
+            border-radius: 50%;
+        }
+
+        .item.table.shape-square {
+            border-radius: 16px;
+        }
+
+        .item.table.shape-crescent {
+            border-radius: 0 0 999px 999px;
+        }
+
+        .item.table .obj-label {
+            font-size: 40px;
+            font-weight: 700;
+            letter-spacing: -.02em;
+            line-height: 1.15;
+            transform-origin: center center;
+        }
+
+        .preview-box {
+            background: #f3f5f8;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            min-height: 150px;
+            margin: 8px 0;
+            overflow: hidden;
+        }
+
+        .preview-box svg {
+            width: 100%;
+            height: 160px;
+            display: block;
+        }
+
+        .item.table.shape-rows {
+            background: transparent;
+            box-shadow: none;
+            overflow: visible;
+        }
+
+        .row-pill {
+            position: absolute;
+            left: 0;
+            width: 258px;
+            border-radius: 42px;
+            background: #2f4c72;
+            color: #fff;
+            font-size: 40px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 16px rgba(20, 32, 52, .18);
+        }
+
+        .item.round {
+            border-radius: 50%;
+            background: rgba(237, 231, 222, .08);
+        }
+
+        .item.rect,
+        .item.sofa,
+        .item.booth,
+        .item.stage,
+        .item.custom {
+            border-radius: 12px;
+            background: rgba(237, 231, 222, .06);
+        }
+
+        .item.stage {
+            background: rgba(228, 92, 68, .18);
+        }
+
+        .item.sofa {
+            background: rgba(125, 206, 160, .15);
+        }
+
+        .item.wall {
+            background: #cfc6bb;
+            border-radius: 4px;
+        }
+
+        .item.door,
+        .item.entrance,
+        .item.exit {
+            border-radius: 8px;
+            background: rgba(226, 182, 87, .16);
+        }
+
+        .item.text {
+            background: transparent;
+            border-style: dashed;
+            overflow: hidden;
+        }
+
+        .item.text .obj-label {
+            font-size: 28px;
+            line-height: 1.15;
+            width: 92%;
+        }
+
+        .item.is-selected {
+            outline: 2px solid #2563eb;
+            outline-offset: 3px;
+            z-index: 4;
+        }
+
+        .xform {
+            position: absolute;
+            z-index: 6;
+            box-sizing: border-box;
+            border: calc(1.5px / var(--z, 1)) solid #2563eb;
+            pointer-events: none;
+            transform-origin: center center;
+        }
+
+        .xform .rot-stem {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: calc(1.5px / var(--z, 1));
+            height: calc(22px / var(--z, 1));
+            background: #2563eb;
+            transform: translate(-50%, -100%);
+        }
+
+        .xform .handle {
+            position: absolute;
+            width: calc(14px / var(--z, 1));
+            height: calc(14px / var(--z, 1));
+            background: #fff;
+            border: calc(2px / var(--z, 1)) solid #2563eb;
+            border-radius: calc(2px / var(--z, 1));
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        .xform .handle.nw {
+            left: 0;
+            top: 0;
+            transform: translate(-50%, -50%);
+            cursor: nwse-resize;
+        }
+
+        .xform .handle.n {
+            left: 50%;
+            top: 0;
+            transform: translate(-50%, -50%);
+            cursor: ns-resize;
+        }
+
+        .xform .handle.ne {
+            left: 100%;
+            top: 0;
+            transform: translate(-50%, -50%);
+            cursor: nesw-resize;
+        }
+
+        .xform .handle.e {
+            left: 100%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            cursor: ew-resize;
+        }
+
+        .xform .handle.se {
+            left: 100%;
+            top: 100%;
+            transform: translate(-50%, -50%);
+            cursor: nwse-resize;
+        }
+
+        .xform .handle.s {
+            left: 50%;
+            top: 100%;
+            transform: translate(-50%, -50%);
+            cursor: ns-resize;
+        }
+
+        .xform .handle.sw {
+            left: 0;
+            top: 100%;
+            transform: translate(-50%, -50%);
+            cursor: nesw-resize;
+        }
+
+        .xform .handle.w {
+            left: 0;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            cursor: ew-resize;
+        }
+
+        .xform .handle.rotate {
+            left: 50%;
+            top: 0;
+            border-radius: 50%;
+            background: #2563eb;
+            cursor: grab;
+            transform: translate(-50%, calc(-100% - 22px / var(--z, 1)));
+        }
+
+        .item:hover {
+            filter: brightness(1.08);
+        }
+
+        .seat-no,
+        .obj-label {
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1.1;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .who {
+            font-size: 12px;
+            font-weight: 700;
+            pointer-events: none;
+        }
+
+        .hover-name {
+            display: none;
+            position: absolute;
+            left: 50%;
+            top: calc(100% + 6px);
+            transform: translateX(-50%);
+            background: #111;
+            color: #fff;
+            border-radius: 6px;
+            padding: 3px 6px;
+            font-size: 11px;
+            white-space: nowrap;
+            z-index: 3;
+        }
+
+        .item.chair:hover .hover-name,
+        .item.chair.is-selected .hover-name {
+            display: block;
+        }
+
+        .resize {
+            position: absolute;
+            right: -5px;
+            bottom: -5px;
+            width: 10px;
+            height: 10px;
+            background: #fff;
+            border-radius: 2px;
+            cursor: nwse-resize;
+        }
+
+        .asset {
+            position: absolute;
+            transform-origin: 0 0;
+        }
+
+        .asset.is-selected {
+            outline: 1px dashed var(--amber);
+        }
+
+        .marquee {
+            position: absolute;
+            border: 1px solid var(--coral);
+            background: rgba(228, 92, 68, .15);
+            pointer-events: none;
+        }
+
+        .float {
+            position: fixed;
+            z-index: 20;
+            display: flex;
+            gap: 4px;
+            padding: 6px;
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .35);
+        }
+
+        .float[hidden] {
+            display: none;
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .guest-row {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 6px;
+            text-align: left;
+        }
+
+        .guest-row small {
+            display: block;
+            color: var(--muted);
+            font-size: 11px;
+            margin-top: 3px;
+        }
+
+        .guest-row small.seat-assigned {
+            color: var(--text);
+            font-size: 40px;
+            font-weight: 700;
+            line-height: 1.05;
+            margin-top: 6px;
+            white-space: nowrap;
+        }
+
+        .guest-top {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .guest-top strong {
+            font-size: 13px;
+            line-height: 1.3;
+        }
+
+        .guest-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            flex-shrink: 0;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 7px;
+        }
+
+        .guest-status::before {
+            content: "";
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        .guest-status.pending {
+            color: #e2b657;
+            background: rgba(226, 182, 87, .14);
+            border: 1px solid rgba(226, 182, 87, .35);
+        }
+
+        .guest-status.pending::before {
+            background: #e2b657;
+        }
+
+        .guest-status.accepted {
+            color: #7dcea0;
+            background: rgba(125, 206, 160, .14);
+            border: 1px solid rgba(125, 206, 160, .35);
+        }
+
+        .guest-status.accepted::before {
+            background: #7dcea0;
+        }
+
+        .guest-status.declined {
+            color: #f07167;
+            background: rgba(240, 113, 103, .14);
+            border: 1px solid rgba(240, 113, 103, .35);
+        }
+
+        .guest-status.declined::before {
+            background: #f07167;
+        }
+
+        .roster {
+            border-top: 1px solid var(--line);
+            margin-top: 12px;
+            padding-top: 8px;
+        }
+
+        .guest-row.is-taken {
+            opacity: .7;
+        }
+
+        .stat b {
+            color: var(--text);
+        }
+
+        .toast {
+            margin-left: auto;
+            max-width: 420px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .toast.bad {
+            color: var(--danger);
+        }
+
+        .toast.ok {
+            color: var(--green);
+        }
+
+        .sheet-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 40;
+            background: rgba(0, 0, 0, .5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .sheet-modal[hidden] {
+            display: none;
+        }
+
+        .sheet {
+            width: min(440px, 100%);
+            max-height: calc(100vh - 32px);
+            overflow: auto;
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 18px 18px 14px;
+        }
+
+        .sheet h3 {
+            margin: 0 0 4px;
+            font-size: 18px;
+        }
+
+        .sheet-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px 10px;
+        }
+
+        .sheet .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        body.is-preview .tools,
+        body.is-preview .props,
+        body.is-preview .float {
+            display: none;
+        }
+
+        body.is-preview .workspace {
+            grid-template-columns: minmax(0, 1fr);
+            grid-template-areas: "canvas";
+        }
+
         @media (max-width: 1100px) {
-            .workspace { grid-template-columns: minmax(160px, 210px) minmax(0, 1fr) minmax(180px, 250px); }
+            .workspace {
+                grid-template-columns: minmax(160px, 210px) minmax(0, 1fr) minmax(380px, 420px);
+            }
         }
+
         @media (max-width: 860px) {
-            .workspace { grid-template-columns: 1fr 1fr; grid-template-rows: minmax(280px, 1fr) minmax(180px, 36dvh); grid-template-areas: "canvas canvas" "tools props"; }
-            .viewport { grid-area: canvas; }
-            .tools { grid-area: tools; border-right: 0; border-top: 1px solid var(--line); }
-            .props { grid-area: props; border-left: 1px solid var(--line); border-top: 1px solid var(--line); }
-            .toast { max-width: 100%; margin-left: 0; }
+            .workspace {
+                grid-template-columns: 1fr 1fr;
+                grid-template-rows: minmax(280px, 1fr) minmax(180px, 36dvh);
+                grid-template-areas: "canvas canvas""tools props";
+            }
+
+            .viewport {
+                grid-area: canvas;
+            }
+
+            .tools {
+                grid-area: tools;
+                border-right: 0;
+                border-top: 1px solid var(--line);
+            }
+
+            .props {
+                grid-area: props;
+                border-left: 1px solid var(--line);
+                border-top: 1px solid var(--line);
+            }
+
+            .toast {
+                max-width: 100%;
+                margin-left: 0;
+            }
         }
+
         @media (max-width: 640px) {
-            .workspace { grid-template-columns: 1fr; grid-template-rows: minmax(240px, 1fr) auto auto; grid-template-areas: "canvas" "tools" "props"; }
-            .tools, .props { max-height: 30dvh; }
-            .canvas-nav .tool { min-width: 72px; }
+            .workspace {
+                grid-template-columns: 1fr;
+                grid-template-rows: minmax(240px, 1fr) auto auto;
+                grid-template-areas: "canvas""tools""props";
+            }
+
+            .tools,
+            .props {
+                max-height: 30dvh;
+            }
+
+            .canvas-nav .tool {
+                min-width: 72px;
+            }
         }
-        body.hide-left:not(.hide-right) .workspace { grid-template-columns: minmax(0, 1fr) minmax(220px, 300px); }
-        body.hide-right:not(.hide-left) .workspace { grid-template-columns: minmax(180px, 250px) minmax(0, 1fr); }
+
+        body.hide-left:not(.hide-right) .workspace {
+            grid-template-columns: minmax(0, 1fr) minmax(380px, 420px);
+        }
+
+        body.hide-right:not(.hide-left) .workspace {
+            grid-template-columns: minmax(180px, 250px) minmax(0, 1fr);
+        }
+
         @media (max-width: 860px) {
-            body.hide-left:not(.hide-right) .workspace { grid-template-columns: 1fr; grid-template-rows: minmax(280px, 1fr) minmax(180px, 36dvh); grid-template-areas: "canvas" "props"; }
-            body.hide-right:not(.hide-left) .workspace { grid-template-columns: 1fr; grid-template-rows: minmax(280px, 1fr) minmax(180px, 36dvh); grid-template-areas: "canvas" "tools"; }
+            body.hide-left:not(.hide-right) .workspace {
+                grid-template-columns: 1fr;
+                grid-template-rows: minmax(280px, 1fr) minmax(180px, 36dvh);
+                grid-template-areas: "canvas""props";
+            }
+
+            body.hide-right:not(.hide-left) .workspace {
+                grid-template-columns: 1fr;
+                grid-template-rows: minmax(280px, 1fr) minmax(180px, 36dvh);
+                grid-template-areas: "canvas""tools";
+            }
         }
+
         @media (max-width: 640px) {
+
             body.hide-left:not(.hide-right) .workspace,
-            body.hide-right:not(.hide-left) .workspace { grid-template-columns: 1fr; grid-template-rows: minmax(240px, 1fr) auto; }
-            body.hide-left:not(.hide-right) .workspace { grid-template-areas: "canvas" "props"; }
-            body.hide-right:not(.hide-left) .workspace { grid-template-areas: "canvas" "tools"; }
+            body.hide-right:not(.hide-left) .workspace {
+                grid-template-columns: 1fr;
+                grid-template-rows: minmax(240px, 1fr) auto;
+            }
+
+            body.hide-left:not(.hide-right) .workspace {
+                grid-template-areas: "canvas""props";
+            }
+
+            body.hide-right:not(.hide-left) .workspace {
+                grid-template-areas: "canvas""tools";
+            }
         }
     </style>
 </head>
+
 <body>
     <div class="gate" id="gate">
         <form id="gateForm">
@@ -241,6 +1138,13 @@
                 <div class="roster">
                     <h2>Guests</h2>
                     <p class="hint" id="rosterCounts"></p>
+                    <select class="search" id="rosterFilter" aria-label="Filter guests">
+                        <option value="all">All guests</option>
+                        <option value="assigned">Assigned</option>
+                        <option value="open">Not assigned</option>
+                        <option value="accepted">Accepted</option>
+                        <option value="declined">Declined</option>
+                    </select>
                     <input class="search" id="rosterSearch" placeholder="Search guests" />
                     <div id="roster"></div>
                 </div>
@@ -381,12 +1285,32 @@
         ];
         const SEATING_TOOLS = new Set(["round", "rect", "banquet", "rows"]);
         const SIZES = {
-            chair: [156, 156], round: [180, 180], rect: [240, 110], sofa: [150, 64], booth: [110, 110],
-            stage: [340, 130], door: [48, 90], entrance: [80, 48], exit: [80, 48], wall: [220, 14], text: [180, 48], custom: [120, 80]
+            chair: [156, 156],
+            round: [180, 180],
+            rect: [240, 110],
+            sofa: [150, 64],
+            booth: [110, 110],
+            stage: [340, 130],
+            door: [48, 90],
+            entrance: [80, 48],
+            exit: [80, 48],
+            wall: [220, 14],
+            text: [180, 48],
+            custom: [120, 80]
         };
         const LAYER_OF = {
-            chair: "chairs", round: "furniture", rect: "furniture", sofa: "furniture", booth: "furniture", stage: "furniture",
-            door: "structure", entrance: "structure", exit: "structure", wall: "structure", text: "labels", custom: "furniture"
+            chair: "chairs",
+            round: "furniture",
+            rect: "furniture",
+            sofa: "furniture",
+            booth: "furniture",
+            stage: "furniture",
+            door: "structure",
+            entrance: "structure",
+            exit: "structure",
+            wall: "structure",
+            text: "labels",
+            custom: "furniture"
         };
         const RESIZABLE = new Set(["round", "rect", "sofa", "booth", "stage", "door", "entrance", "exit", "wall", "text", "custom"]);
 
@@ -415,30 +1339,64 @@
         const uid = () => Math.random().toString(36).slice(2, 10);
         const clamp = (n, a, b) => Math.max(a, Math.min(b, n));
         const snap = (n) => snapOn ? Math.round(n / doc.gridSize) * doc.gridSize : Math.round(n);
-        const esc = (v) => String(v ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+        const esc = (v) => String(v ?? "").replace(/[&<>"']/g, ch => ({
+            "&": "&amp;",
+            "<": "&lt;",
+            ">": "&gt;",
+            '"': "&quot;",
+            "'": "&#39;"
+        } [ch]));
 
         function blankLayout(name) {
             return {
-                id: "lay-" + uid(), name,
-                objects: [], assets: [],
+                id: "lay-" + uid(),
+                name,
+                objects: [],
+                assets: [],
                 layers: {
-                    chairs: { visible: true, locked: false },
-                    furniture: { visible: true, locked: false },
-                    structure: { visible: true, locked: false },
-                    labels: { visible: true, locked: false },
-                    background: { visible: true, locked: true }
+                    chairs: {
+                        visible: true,
+                        locked: false
+                    },
+                    furniture: {
+                        visible: true,
+                        locked: false
+                    },
+                    structure: {
+                        visible: true,
+                        locked: false
+                    },
+                    labels: {
+                        visible: true,
+                        locked: false
+                    },
+                    background: {
+                        visible: true,
+                        locked: true
+                    }
                 }
             };
         }
+
         function blankDoc() {
             const layout = blankLayout("Main Hall");
-            return { version: 2, gridSize: 20, activeLayoutId: layout.id, layouts: [layout] };
+            return {
+                version: 2,
+                gridSize: 20,
+                activeLayoutId: layout.id,
+                layouts: [layout]
+            };
         }
+
         function layerState(name) {
             const layout = active();
             layout.layers = layout.layers || blankLayout("").layers;
-            return layout.layers[name] || { visible: true, locked: false };
+            return layout.layers[name] || {
+                visible: true,
+                locked: false
+            };
         }
+
         function findObj(id) {
             for (const layout of doc.layouts) {
                 const obj = layout.objects.find(o => o.id === id);
@@ -446,12 +1404,15 @@
             }
             return null;
         }
+
         function selectedObjects() {
             return active().objects.filter(o => selection.has(o.id));
         }
+
         function allChairs() {
             return doc.layouts.flatMap(l => l.objects.filter(o => o.type === "chair"));
         }
+
         function nextSeat() {
             let max = 0;
             allChairs().forEach(c => {
@@ -460,33 +1421,70 @@
             });
             return "C-" + String(max + 1).padStart(3, "0");
         }
+
         function assignment(chair) {
             return seatByCode.get(String(chair.seatNumber || "").toUpperCase()) || null;
         }
+
         function guestName(record) {
             return record ? (record.guestName || record.GuestName || "") : "";
         }
+
         function assignedGuest(record) {
             if (!record) return null;
             const id = record.uniqueId || record.UniqueId || "";
             return users.find(user => user.id === id) || null;
         }
+
         function assignmentDeclined(record) {
             const guest = assignedGuest(record);
             return !!(guest && guestStatus(guest.status) === "declined");
         }
+
+        function tableOfChair(chair) {
+            if (!chair || !chair.tableId) return null;
+            return active().objects.find(obj => obj.id === chair.tableId) || null;
+        }
+
+        function chairLocalCode(chair) {
+            const stored = String(chair && chair.seatNumber || "").trim();
+            const table = tableOfChair(chair);
+            if (!table) return stored;
+            const chairs = chairsOf(table);
+            const index = chairs.findIndex(item => item.id === chair.id);
+            const n = index >= 0 ? index + 1 : ((parseInt(chair.slot, 10) || 0) + 1);
+            return "C-" + String(n).padStart(3, "0");
+        }
+
+        function chairDisplayLabel(chair) {
+            const table = tableOfChair(chair);
+            const code = chairLocalCode(chair);
+            if (!table) return code || "Chair";
+            const number = parseInt(table.tableNo, 10);
+            const tableText = number ? ("Table " + number) : (table.label || "Table");
+            return code ? (tableText + " - " + code) : tableText;
+        }
+
+        function displayForSeatCode(code) {
+            if (!code) return "No seat";
+            const chair = allChairs().find(item => String(item.seatNumber || "").toUpperCase() === String(code).toUpperCase());
+            return chair ? chairDisplayLabel(chair) : String(code);
+        }
+
         function guestStatus(value) {
             const status = String(value || "pending").toLowerCase();
             if (status.indexOf("accept") === 0) return "accepted";
             if (status.indexOf("declin") === 0) return "declined";
             return "pending";
         }
+
         function statusLabel(value) {
             const status = guestStatus(value);
             if (status === "accepted") return "Accepted";
             if (status === "declined") return "Declined";
             return "Pending";
         }
+
         function setSaveState(message) {
             const el = document.getElementById("saveState");
             if (el) el.textContent = message || "";
@@ -499,6 +1497,7 @@
             historyIndex = history.length - 1;
             updateHistoryButtons();
         }
+
         function restoreHistory(snapshot) {
             const next = JSON.parse(snapshot);
             doc = next;
@@ -506,18 +1505,21 @@
             selectedAssetId = "";
             renderAll();
         }
+
         function undo() {
             if (historyIndex <= 0) return;
             historyIndex -= 1;
             restoreHistory(history[historyIndex]);
             scheduleSave();
         }
+
         function redo() {
             if (historyIndex >= history.length - 1) return;
             historyIndex += 1;
             restoreHistory(history[historyIndex]);
             scheduleSave();
         }
+
         function updateHistoryButtons() {
             document.getElementById("undoBtn").disabled = historyIndex <= 0;
             document.getElementById("redoBtn").disabled = historyIndex >= history.length - 1;
@@ -532,10 +1534,15 @@
         function createObject(type, x, y) {
             const size = SIZES[type] || [80, 80];
             const obj = {
-                id: "obj-" + uid(), type,
-                x: snap(x), y: snap(y), w: size[0], h: size[1], rotation: 0,
+                id: "obj-" + uid(),
+                type,
+                x: snap(x),
+                y: snap(y),
+                w: size[0],
+                h: size[1],
+                rotation: 0,
                 layer: LAYER_OF[type] || "furniture",
-                label: CATALOG.find(c => c[0] === type)?.[1] || "Item",
+                label: CATALOG.find(c => c[0] === type) ?. [1] || "Item",
                 text: type === "text" ? "Label" : "",
                 fontSize: type === "text" ? 28 : 0
             };
@@ -546,36 +1553,69 @@
         function chairsOf(table) {
             return active().objects.filter(o => o.tableId === table.id).sort((a, b) => (a.slot || 0) - (b.slot || 0));
         }
+
         function distributeSides(seats, shape, mode, bodyW, bodyH) {
             const n = clamp(parseInt(seats, 10) || 4, 1, 24);
             if (shape === "ushape") {
                 const side = Math.max(1, Math.floor(n / 4));
-                return { top: Math.max(1, n - side * 2), right: side, bottom: 0, left: side };
+                return {
+                    top: Math.max(1, n - side * 2),
+                    right: side,
+                    bottom: 0,
+                    left: side
+                };
             }
             if (mode === "long") {
                 const top = Math.ceil(n / 2);
-                return { top, right: 0, bottom: n - top, left: 0 };
+                return {
+                    top,
+                    right: 0,
+                    bottom: n - top,
+                    left: 0
+                };
             }
             if (mode === "short") {
                 const left = Math.ceil(n / 2);
-                return { top: 0, right: n - left, bottom: 0, left };
+                return {
+                    top: 0,
+                    right: n - left,
+                    bottom: 0,
+                    left
+                };
             }
             if (mode === "equal" || mode === "all" || bodyW <= bodyH * 1.15 && bodyH <= bodyW * 1.15) {
                 const base = Math.floor(n / 4);
                 let rem = n - base * 4;
-                const sides = { top: base, right: base, bottom: base, left: base };
-                ["top", "right", "bottom", "left"].forEach(edge => { if (rem > 0) { sides[edge] += 1; rem -= 1; } });
+                const sides = {
+                    top: base,
+                    right: base,
+                    bottom: base,
+                    left: base
+                };
+                ["top", "right", "bottom", "left"].forEach(edge => {
+                    if (rem > 0) {
+                        sides[edge] += 1;
+                        rem -= 1;
+                    }
+                });
                 return sides;
             }
             const ends = Math.max(1, Math.round(n * 0.2));
             const long = Math.max(0, n - ends * 2);
             const top = Math.ceil(long / 2);
-            return { top, bottom: long - top, left: ends, right: n - top - (long - top) - ends };
+            return {
+                top,
+                bottom: long - top,
+                left: ends,
+                right: n - top - (long - top) - ends
+            };
         }
+
         function chairDistanceOf(table) {
             const raw = table.chairDistance != null ? table.chairDistance : table.spacing;
             return clamp(Number(raw) || 0, 0, 200);
         }
+
         function tableSlots(table) {
             const dist = chairDistanceOf(table);
             const shape = table.shape || "round";
@@ -597,13 +1637,29 @@
                 for (let r = 0; r < rows; r++) {
                     let x = ROW_LABEL + 42;
                     for (let c = 0; c < per; c++) {
-                        slots.push({ x, y: r * (CHAIR + gapY), rot: 0, edge: "row", row: r });
+                        slots.push({
+                            x,
+                            y: r * (CHAIR + gapY),
+                            rot: 0,
+                            edge: "row",
+                            row: r
+                        });
                         if (c < steps.length) x += steps[c];
                     }
                 }
                 const w = ROW_LABEL + 42 + steps.reduce((sum, step) => sum + step, 0) + CHAIR;
                 const h = Math.max(CHAIR, rows * (CHAIR + gapY) - gapY);
-                return { slots, body: { x: 0, y: 0, w: ROW_LABEL, h }, w, h };
+                return {
+                    slots,
+                    body: {
+                        x: 0,
+                        y: 0,
+                        w: ROW_LABEL,
+                        h
+                    },
+                    w,
+                    h
+                };
             }
             const seats = clamp(parseInt(table.seats, 10) || 8, 2, 24);
             const sized = shape === "round" || shape === "square" || shape === "crescent";
@@ -644,12 +1700,23 @@
                 const slots = angles.map(a => {
                     const cx = orbitX + Math.cos(a) * orbitX;
                     const cy = orbitY + Math.sin(a) * orbitY;
-                    return { x: cx - CHAIR / 2, y: cy - CHAIR / 2, rot: (a * 180 / Math.PI) + 90, edge: "ring" };
+                    return {
+                        x: cx - CHAIR / 2,
+                        y: cy - CHAIR / 2,
+                        rot: (a * 180 / Math.PI) + 90,
+                        edge: "ring"
+                    };
                 });
                 return {
                     slots,
-                    body: { x: orbitX - rxBody, y: orbitY - ryBody, w: rxBody * 2, h: ryBody * 2 },
-                    w: orbitX * 2, h: orbitY * 2
+                    body: {
+                        x: orbitX - rxBody,
+                        y: orbitY - ryBody,
+                        w: rxBody * 2,
+                        h: ryBody * 2
+                    },
+                    w: orbitX * 2,
+                    h: orbitY * 2
                 };
             }
             if (shape === "crescent") {
@@ -660,12 +1727,23 @@
                     const a = Math.PI - (Math.PI * (i + 0.5) / seats);
                     const cx = orbit + Math.cos(a) * orbit;
                     const cy = CHAIR + Math.sin(a) * orbit;
-                    slots.push({ x: cx - CHAIR / 2, y: cy - CHAIR / 2, rot: (a * 180 / Math.PI) + 90, edge: "ring" });
+                    slots.push({
+                        x: cx - CHAIR / 2,
+                        y: cy - CHAIR / 2,
+                        rot: (a * 180 / Math.PI) + 90,
+                        edge: "ring"
+                    });
                 }
                 return {
                     slots,
-                    body: { x: orbit - radius, y: CHAIR, w: radius * 2, h: radius },
-                    w: orbit * 2, h: CHAIR + orbit + CHAIR / 2
+                    body: {
+                        x: orbit - radius,
+                        y: CHAIR,
+                        w: radius * 2,
+                        h: radius
+                    },
+                    w: orbit * 2,
+                    h: CHAIR + orbit + CHAIR / 2
                 };
             }
             const mode = table.distribute || "auto";
@@ -696,10 +1774,30 @@
                 }
                 const order = (edge === "bottom" || edge === "left") ? centers.slice().reverse() : centers;
                 order.forEach(at => {
-                    if (edge === "top") slots.push({ x: pad + at - CHAIR / 2, y: 0, rot: 0, edge });
-                    if (edge === "bottom") slots.push({ x: pad + at - CHAIR / 2, y: pad + useH + dist, rot: 180, edge });
-                    if (edge === "right") slots.push({ x: pad + useW + dist, y: pad + at - CHAIR / 2, rot: 90, edge });
-                    if (edge === "left") slots.push({ x: 0, y: pad + at - CHAIR / 2, rot: 270, edge });
+                    if (edge === "top") slots.push({
+                        x: pad + at - CHAIR / 2,
+                        y: 0,
+                        rot: 0,
+                        edge
+                    });
+                    if (edge === "bottom") slots.push({
+                        x: pad + at - CHAIR / 2,
+                        y: pad + useH + dist,
+                        rot: 180,
+                        edge
+                    });
+                    if (edge === "right") slots.push({
+                        x: pad + useW + dist,
+                        y: pad + at - CHAIR / 2,
+                        rot: 90,
+                        edge
+                    });
+                    if (edge === "left") slots.push({
+                        x: 0,
+                        y: pad + at - CHAIR / 2,
+                        rot: 270,
+                        edge
+                    });
                 });
             };
             edgeLine(sides.top, "top");
@@ -707,12 +1805,19 @@
             edgeLine(sides.bottom, "bottom");
             edgeLine(sides.left, "left");
             return {
-                slots, sides,
-                body: { x: pad, y: pad, w: useW, h: useH },
+                slots,
+                sides,
+                body: {
+                    x: pad,
+                    y: pad,
+                    w: useW,
+                    h: useH
+                },
                 w: pad + useW + dist + CHAIR,
                 h: pad + useH + dist + (sides.bottom ? CHAIR : 0)
             };
         }
+
         function applySpin(table) {
             const deg = table.spin || 0;
             if (!deg) {
@@ -723,7 +1828,8 @@
             const cy = table.y + (table.arrangeH || 0) / 2;
             const rad = deg * Math.PI / 180;
             const rot = (x, y) => {
-                const dx = x - cx, dy = y - cy;
+                const dx = x - cx,
+                    dy = y - cy;
                 return {
                     x: cx + dx * Math.cos(rad) - dy * Math.sin(rad),
                     y: cy + dx * Math.sin(rad) + dy * Math.cos(rad)
@@ -743,10 +1849,12 @@
                 chair.rotation = (chair.baseRot || 0) + deg;
             });
         }
+
         function isAssigned(chair) {
             const record = assignment(chair);
             return !!(record && (record.status || record.Status) === "Assigned");
         }
+
         function syncTable(table) {
             const plan = tableSlots(table);
             if ((table.distribute || "auto") === "custom" && plan.sides) table.sides = plan.sides;
@@ -804,6 +1912,7 @@
             table.arrangeH = plan.h;
             applySpin(table);
         }
+
         function growChairs() {
             const current = doc.activeLayoutId;
             doc.layouts.forEach(layout => {
@@ -825,6 +1934,7 @@
             });
             doc.activeLayoutId = current;
         }
+
         function viewCenter() {
             const rect = viewport().getBoundingClientRect();
             return {
@@ -833,6 +1943,7 @@
             };
         }
         let arrangePoint = null;
+
         function readArrange() {
             const type = document.getElementById("arrType").value || "rect";
             const rowsMax = type === "rows" ? 20 : 10;
@@ -853,6 +1964,7 @@
                 gapStyle: document.getElementById("arrGap").value || "even"
             };
         }
+
         function previewMarkup(cfg) {
             const probe = makeTable(cfg, 0, 0, "");
             probe.spin = 0;
@@ -861,7 +1973,11 @@
                 probe.rows = cfg.rows;
                 probe.perRow = cfg.cols;
                 probe.seats = cfg.rows * cfg.cols;
-                cells.push({ x: 0, y: 0, plan: tableSlots(probe) });
+                cells.push({
+                    x: 0,
+                    y: 0,
+                    plan: tableSlots(probe)
+                });
             } else {
                 const plan = tableSlots(probe);
                 const pitchX = plan.w + cfg.spaceX;
@@ -869,10 +1985,15 @@
                 const rows = Math.min(cfg.rows, 3);
                 const cols = Math.min(cfg.cols, 4);
                 for (let r = 0; r < rows; r++) {
-                    for (let c = 0; c < cols; c++) cells.push({ x: c * pitchX, y: r * pitchY, plan });
+                    for (let c = 0; c < cols; c++) cells.push({
+                        x: c * pitchX,
+                        y: r * pitchY,
+                        plan
+                    });
                 }
             }
-            let maxX = 1, maxY = 1;
+            let maxX = 1,
+                maxY = 1;
             cells.forEach(cell => {
                 maxX = Math.max(maxX, cell.x + cell.plan.w);
                 maxY = Math.max(maxY, cell.y + cell.plan.h);
@@ -883,14 +2004,17 @@
                 const crescent = cfg.type === "crescent";
                 const rx = round ? body.w / 2 : (crescent ? body.w / 2 : 8);
                 const ry = round ? body.h / 2 : rx;
-                const tableMark = cfg.type === "rows"
-                    ? Array.from({ length: cfg.rows }, (_, r) => `<rect x="${cell.x}" y="${cell.y + r * (CHAIR + cfg.spaceY)}" width="${ROW_LABEL}" height="${CHAIR}" rx="42" fill="#2f4c72"/>`).join("")
-                    : `<rect x="${cell.x + body.x}" y="${cell.y + body.y}" width="${Math.max(body.w, 1)}" height="${Math.max(body.h, 1)}" rx="${rx}" ry="${ry}" fill="#f3ecdf"/>`;
+                const tableMark = cfg.type === "rows" ?
+                    Array.from({
+                        length: cfg.rows
+                    }, (_, r) => `<rect x="${cell.x}" y="${cell.y + r * (CHAIR + cfg.spaceY)}" width="${ROW_LABEL}" height="${CHAIR}" rx="42" fill="#2f4c72"/>`).join("") :
+                    `<rect x="${cell.x + body.x}" y="${cell.y + body.y}" width="${Math.max(body.w, 1)}" height="${Math.max(body.h, 1)}" rx="${rx}" ry="${ry}" fill="#f3ecdf"/>`;
                 const chairs = cell.plan.slots.map(slot => `<rect x="${cell.x + slot.x}" y="${cell.y + slot.y}" width="${CHAIR}" height="${CHAIR}" rx="42" fill="#2f4c72"/>`).join("");
                 return tableMark + chairs;
             }).join("");
             return `<svg viewBox="-10 -10 ${maxX + 20} ${maxY + 20}" preserveAspectRatio="xMidYMid meet">${marks}</svg>`;
         }
+
         function syncArrangeFields() {
             const type = document.getElementById("arrType").value;
             const rows = type === "rows";
@@ -910,31 +2034,42 @@
             const chairs = rows ? cfg.rows * cfg.cols : tables * cfg.chairs;
             const tooMany = !rows && tables > 40;
             const clipped = !rows && (cfg.rows > 3 || cfg.cols > 4);
-            document.getElementById("arrSummary").textContent = tooMany
-                ? "Use 40 tables or fewer. Lower the rows or columns."
-                : ((rows
-                    ? `Creates 1 block · ${cfg.rows} rows · ${cfg.cols} chairs per row · ${chairs} chairs.`
-                    : `Creates ${tables} table${tables === 1 ? "" : "s"} · ${cfg.chairs} chairs each · ${chairs} chairs.`)
-                    + (clipped ? " Preview shows the first rows and columns." : ""));
+            document.getElementById("arrSummary").textContent = tooMany ?
+                "Use 40 tables or fewer. Lower the rows or columns." :
+                ((rows ?
+                        `Creates 1 block · ${cfg.rows} rows · ${cfg.cols} chairs per row · ${chairs} chairs.` :
+                        `Creates ${tables} table${tables === 1 ? "" : "s"} · ${cfg.chairs} chairs each · ${chairs} chairs.`) +
+                    (clipped ? " Preview shows the first rows and columns." : ""));
             const preview = document.getElementById("arrPreview");
             if (preview && !tooMany) preview.innerHTML = previewMarkup(cfg);
         }
+
         function openArrange(point, tool) {
             if (layerState("furniture").locked || layerState("chairs").locked) {
                 toast("Unlock the furniture and chair layers first.", "bad");
                 return;
             }
-            const typeOf = { round: "round", rect: "rect", banquet: "rect", rows: "rows" };
-            arrangePoint = { x: snap(point.x), y: snap(point.y) };
+            const typeOf = {
+                round: "round",
+                rect: "rect",
+                banquet: "rect",
+                rows: "rows"
+            };
+            arrangePoint = {
+                x: snap(point.x),
+                y: snap(point.y)
+            };
             document.getElementById("arrType").value = typeOf[tool] || document.getElementById("arrType").value || "rect";
             document.getElementById("arrWhere").textContent = `Placed at ${Math.round(arrangePoint.x)}, ${Math.round(arrangePoint.y)}.`;
             document.getElementById("arrangeModal").hidden = false;
             syncArrangeFields();
         }
+
         function closeArrange() {
             document.getElementById("arrangeModal").hidden = true;
             arrangePoint = null;
         }
+
         function nextTableNumber() {
             let max = 0;
             active().objects.forEach(obj => {
@@ -943,15 +2078,21 @@
             });
             return max;
         }
+
         function tableNumberValue(table) {
             const stored = parseInt(table.tableNo, 10);
             if (stored) return stored;
             const match = String(table.label || "").match(/(\d+)\s*$/);
             return match ? parseInt(match[1], 10) : 0;
         }
+
         function tableCenter(table) {
-            return { x: itemLeft(table) + (table.w || 0) / 2, y: itemTop(table) + (table.h || 0) / 2 };
+            return {
+                x: itemLeft(table) + (table.w || 0) / 2,
+                y: itemTop(table) + (table.h || 0) / 2
+            };
         }
+
         function bandTables(tables, axis) {
             const key = table => axis === "x" ? tableCenter(table).x : tableCenter(table).y;
             const other = table => axis === "x" ? tableCenter(table).y : tableCenter(table).x;
@@ -964,11 +2105,15 @@
                 if (band) {
                     band.items.push(table);
                     band.k = band.items.reduce((sum, item) => sum + key(item), 0) / band.items.length;
-                } else bands.push({ k, items: [table] });
+                } else bands.push({
+                    k,
+                    items: [table]
+                });
             });
             bands.forEach(band => band.items.sort((a, b) => other(a) - other(b)));
             return bands;
         }
+
         function orderTables(tables, direction) {
             const vertical = direction === "down";
             const bands = bandTables(tables, vertical ? "x" : "y");
@@ -980,9 +2125,11 @@
             });
             return ordered;
         }
+
         function selectedTables() {
             return selectedObjects().filter(obj => obj.type === "table" && obj.shape !== "rows");
         }
+
         function tableNumberPlan() {
             const tables = orderTables(selectedTables(), document.getElementById("numberDirection").value || "across");
             const start = Math.max(1, parseInt(document.getElementById("numberStart").value, 10) || 1);
@@ -999,8 +2146,13 @@
                 if (!used.has(n)) numbers.push(n);
                 n += 1;
             }
-            return { tables, numbers, skipped: numbers.length ? numbers[0] !== start || numbers[numbers.length - 1] - numbers[0] + 1 !== numbers.length : false };
+            return {
+                tables,
+                numbers,
+                skipped: numbers.length ? numbers[0] !== start || numbers[numbers.length - 1] - numbers[0] + 1 !== numbers.length : false
+            };
         }
+
         function refreshNumberPreview() {
             const note = document.getElementById("numberPreview");
             if (!note) return;
@@ -1011,10 +2163,15 @@
             }
             const labels = plan.numbers.map(n => "Table " + String(n).padStart(2, "0"));
             const sample = labels.slice(0, 4).join(", ");
-            const direction = { across: "Across each row", down: "Down each column", snake: "Snake, row by row" }[document.getElementById("numberDirection").value] || "Across each row";
-            note.textContent = plan.tables.length + " tables. " + direction + ": " + sample + (labels.length > 4 ? ", and the rest follow" : "") + "."
-                + (plan.skipped ? " Numbers already used by other tables are skipped." : "");
+            const direction = {
+                across: "Across each row",
+                down: "Down each column",
+                snake: "Snake, row by row"
+            } [document.getElementById("numberDirection").value] || "Across each row";
+            note.textContent = plan.tables.length + " tables. " + direction + ": " + sample + (labels.length > 4 ? ", and the rest follow" : "") + "." +
+                (plan.skipped ? " Numbers already used by other tables are skipped." : "");
         }
+
         function openNumberModal() {
             if (!selectedTables().length) {
                 toast("Select one or more tables first.", "bad");
@@ -1025,6 +2182,7 @@
             document.getElementById("numberModal").hidden = false;
             refreshNumberPreview();
         }
+
         function chairCodeForTable(chair, oldNo, newNo) {
             const code = String(chair.seatNumber || "");
             const oldPrefix = "T" + String(oldNo || 0).padStart(2, "0");
@@ -1048,7 +2206,12 @@
                     const record = claimed.has(fromKey) ? null : assignment(chair);
                     const guestId = record && (record.status || record.Status) === "Assigned" ? (record.uniqueId || record.UniqueId || "") : "";
                     if (guestId) claimed.add(fromKey);
-                    rewrites.push({ chair, from: chair.seatNumber, to: next, guestId });
+                    rewrites.push({
+                        chair,
+                        from: chair.seatNumber,
+                        to: next,
+                        guestId
+                    });
                 });
                 table.tableNo = newNo;
                 table.label = "Table " + String(newNo).padStart(2, "0");
@@ -1062,7 +2225,10 @@
             rewrites.forEach(item => {
                 if (item.guestId) {
                     retargetAssignment(item.temp, item.to);
-                    moves.push({ uniqueId: item.guestId, to: item.to });
+                    moves.push({
+                        uniqueId: item.guestId,
+                        to: item.to
+                    });
                 }
                 item.chair.seatNumber = item.to;
             });
@@ -1082,43 +2248,71 @@
             for (const move of moves) {
                 const assigned = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(move.to)}/assign`, {
                     method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ uniqueId: move.uniqueId })
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        uniqueId: move.uniqueId
+                    })
                 });
                 if (!assigned.ok) failed = true;
             }
             await loadSeats();
             renderAll();
-            toast(failed
-                ? "Tables numbered. Save again if a guest did not stay on the chair."
-                : "Tables numbered. Guests stayed on the same chairs.", failed ? "bad" : "ok");
+            toast(failed ?
+                "Tables numbered. Save again if a guest did not stay on the chair." :
+                "Tables numbered. Guests stayed on the same chairs.", failed ? "bad" : "ok");
         }
+
         function makeTable(config, x, y, label) {
             const shape = config.type;
             return {
-                id: "obj-" + uid(), type: "table", shape,
-                x, y, w: config.w, h: shape === "round" ? config.w : config.h,
-                rotation: 0, spin: config.rot || 0,
-                layer: "furniture", label, text: "",
-                seats: config.chairs, spacing: config.dist, chairDistance: config.dist,
+                id: "obj-" + uid(),
+                type: "table",
+                shape,
+                x,
+                y,
+                w: config.w,
+                h: shape === "round" ? config.w : config.h,
+                rotation: 0,
+                spin: config.rot || 0,
+                layer: "furniture",
+                label,
+                text: "",
+                seats: config.chairs,
+                spacing: config.dist,
+                chairDistance: config.dist,
                 gapStyle: config.gapStyle || "even",
                 tableW: config.w,
                 tableH: (shape === "round" || shape === "square" || shape === "crescent") ? config.w : config.h,
-                rows: config.rows, perRow: config.cols, rowGap: config.spaceY,
+                rows: config.rows,
+                perRow: config.cols,
+                rowGap: config.spaceY,
                 distribute: config.distribute || "auto",
                 numbering: config.numbering || "c",
-                sides: null, groupId: "grp-" + uid()
+                sides: null,
+                groupId: "grp-" + uid()
             };
         }
+
         function stampTable(table, config, number, row, col, arrangementId) {
             table.arrangementId = arrangementId;
             table.tableNo = number;
             table.gridRow = row;
             table.gridCol = col;
             table.plan = {
-                type: config.type, rows: config.rows, cols: config.cols, chairs: config.chairs,
-                dist: config.dist, w: config.w, h: config.h, spaceX: config.spaceX, spaceY: config.spaceY,
-                rot: config.rot, distribute: config.distribute, numbering: config.numbering,
+                type: config.type,
+                rows: config.rows,
+                cols: config.cols,
+                chairs: config.chairs,
+                dist: config.dist,
+                w: config.w,
+                h: config.h,
+                spaceX: config.spaceX,
+                spaceY: config.spaceY,
+                rot: config.rot,
+                distribute: config.distribute,
+                numbering: config.numbering,
                 gapStyle: config.gapStyle || "even"
             };
             table.gapStyle = config.gapStyle || table.gapStyle || "even";
@@ -1126,6 +2320,7 @@
             syncTable(table);
             table.relayout = false;
         }
+
         function createArrangement(config, origin) {
             if (config.type !== "rows" && config.rows * config.cols > 40) {
                 toast("Use 40 tables or fewer.", "bad");
@@ -1167,17 +2362,20 @@
             renderAll();
             scheduleSave();
             const chairCount = made.reduce((sum, table) => sum + chairsOf(table).length, 0);
-            toast(config.type === "rows"
-                ? `Created a row block with ${chairCount} chairs.`
-                : `Created ${made.length} table${made.length === 1 ? "" : "s"} · ${chairCount} chairs.`, "ok");
+            toast(config.type === "rows" ?
+                `Created a row block with ${chairCount} chairs.` :
+                `Created ${made.length} table${made.length === 1 ? "" : "s"} · ${chairCount} chairs.`, "ok");
         }
+
         function arrangementTables(id) {
             return active().objects.filter(o => o.type === "table" && o.arrangementId === id)
                 .sort((a, b) => (a.gridRow || 0) - (b.gridRow || 0) || (a.gridCol || 0) - (b.gridCol || 0));
         }
+
         function membersOf(id) {
             return active().objects.filter(o => o.arrangementId === id);
         }
+
         function selectionArrangement() {
             const items = selectedObjects();
             if (!items.length) return "";
@@ -1185,6 +2383,7 @@
             if (!id || !items.every(o => o.arrangementId === id) || !items.some(o => o.type === "table")) return "";
             return id;
         }
+
         function removeTableKeepAssigned(table) {
             const drop = new Set([table.id]);
             chairsOf(table).forEach(chair => {
@@ -1196,15 +2395,19 @@
             });
             active().objects = active().objects.filter(o => !drop.has(o.id));
         }
+
         function ungroupArrangement(id) {
             if (!id) return;
             pushHistory();
-            membersOf(id).forEach(obj => { obj.arrangementId = ""; });
+            membersOf(id).forEach(obj => {
+                obj.arrangementId = "";
+            });
             selection.clear();
             renderAll();
             scheduleSave();
             toast("Ungrouped. Each table still keeps its chairs.");
         }
+
         function arrangementForm(id) {
             const tables = arrangementTables(id);
             const first = tables[0];
@@ -1212,8 +2415,22 @@
             const type = first.shape || plan.type || "rect";
             const chairs = tables.reduce((sum, table) => sum + chairsOf(table).length, 0);
             const assigned = tables.reduce((sum, table) => sum + chairsOf(table).filter(isAssigned).length, 0);
-            const shapes = [["rect", "Rectangular"], ["square", "Square"], ["round", "Round"], ["oval", "Oval"], ["crescent", "Half-round"], ["ushape", "U-shape"], ["rows", "Row seating"]];
-            const modes = [["auto", "Automatic"], ["equal", "Equal"], ["long", "Long sides"], ["short", "Short sides"], ["all", "All sides"]];
+            const shapes = [
+                ["rect", "Rectangular"],
+                ["square", "Square"],
+                ["round", "Round"],
+                ["oval", "Oval"],
+                ["crescent", "Half-round"],
+                ["ushape", "U-shape"],
+                ["rows", "Row seating"]
+            ];
+            const modes = [
+                ["auto", "Automatic"],
+                ["equal", "Equal"],
+                ["long", "Long sides"],
+                ["short", "Short sides"],
+                ["all", "All sides"]
+            ];
             return `<h2>Table arrangement</h2>
                 <p class="hint">${tables.length} tables · ${chairs} chairs · ${assigned} assigned. Assigned guests stay on their seat numbers when you apply a change.</p>
                 <label class="field">Type<select id="editType">${shapes.map(([v, l]) => `<option value="${v}"${v === type ? " selected" : ""}>${l}</option>`).join("")}</select></label>
@@ -1236,6 +2453,7 @@
                     <button class="btn" type="button" id="delBtn2">Delete</button>
                 </div>`;
         }
+
         function applyArrangement() {
             const id = selectionArrangement();
             if (!id) return;
@@ -1244,22 +2462,30 @@
             const type = document.getElementById("editType").value || tables[0].shape;
             const rows = clamp(parseInt(document.getElementById("editRows").value, 10) || 1, 1, type === "rows" ? 20 : 10);
             const cols = clamp(parseInt(document.getElementById("editCols").value, 10) || 1, 1, type === "rows" ? 30 : 10);
-            if (type !== "rows" && rows * cols > 40) { toast("Use 40 tables or fewer.", "bad"); return; }
+            if (type !== "rows" && rows * cols > 40) {
+                toast("Use 40 tables or fewer.", "bad");
+                return;
+            }
             const cfg = {
-                type, rows, cols,
-                chairs: clamp(parseInt(document.getElementById("editChairs")?.value, 10) || tables[0].seats || 8, 2, 24),
+                type,
+                rows,
+                cols,
+                chairs: clamp(parseInt(document.getElementById("editChairs") ?.value, 10) || tables[0].seats || 8, 2, 24),
                 dist: clamp(parseInt(document.getElementById("editDist").value, 10) || 0, 0, 200),
                 w: clamp(parseInt(document.getElementById("editW").value, 10) || 240, 60, 800),
-                h: clamp(parseInt(document.getElementById("editH")?.value, 10) || tables[0].tableH || 120, 48, 800),
-                spaceX: clamp(parseInt(document.getElementById("editSpaceX")?.value, 10) || 0, 0, 400),
+                h: clamp(parseInt(document.getElementById("editH") ?.value, 10) || tables[0].tableH || 120, 48, 800),
+                spaceX: clamp(parseInt(document.getElementById("editSpaceX") ?.value, 10) || 0, 0, 400),
                 spaceY: clamp(parseInt(document.getElementById("editSpaceY").value, 10) || 0, 0, 400),
                 rot: tables[0].spin || 0,
-                distribute: document.getElementById("editMode")?.value || tables[0].distribute || "auto",
+                distribute: document.getElementById("editMode") ?.value || tables[0].distribute || "auto",
                 numbering: tables[0].numbering || "c",
-                gapStyle: document.getElementById("editGap")?.value || tables[0].gapStyle || "even"
+                gapStyle: document.getElementById("editGap") ?.value || tables[0].gapStyle || "even"
             };
             pushHistory();
-            const origin = { x: Math.min(...tables.map(t => t.x)), y: Math.min(...tables.map(t => t.y)) };
+            const origin = {
+                x: Math.min(...tables.map(t => t.x)),
+                y: Math.min(...tables.map(t => t.y))
+            };
             if (type === "rows") {
                 const keep = tables[0];
                 tables.slice(1).forEach(removeTableKeepAssigned);
@@ -1318,9 +2544,18 @@
         }
 
         function placeAt(type, x, y) {
-            if (SEATING_TOOLS.has(type)) { openArrange({ x, y }, type); return; }
+            if (SEATING_TOOLS.has(type)) {
+                openArrange({
+                    x,
+                    y
+                }, type);
+                return;
+            }
             const layer = LAYER_OF[type] || "furniture";
-            if (layerState(layer).locked) { toast("That layer is locked.", "bad"); return; }
+            if (layerState(layer).locked) {
+                toast("That layer is locked.", "bad");
+                return;
+            }
             pushHistory();
             const obj = createObject(type, x - (SIZES[type][0] / 2), y - (SIZES[type][1] / 2));
             active().objects.push(obj);
@@ -1329,8 +2564,14 @@
             renderAll();
             scheduleSave();
         }
-        function itemLeft(obj) { return obj.type === "table" ? obj.x + (obj.bx || 0) : obj.x; }
-        function itemTop(obj) { return obj.type === "table" ? obj.y + (obj.by || 0) : obj.y; }
+
+        function itemLeft(obj) {
+            return obj.type === "table" ? obj.x + (obj.bx || 0) : obj.x;
+        }
+
+        function itemTop(obj) {
+            return obj.type === "table" ? obj.y + (obj.by || 0) : obj.y;
+        }
 
         function localFromWorld(px, py, cx, cy, deg) {
             const t = deg * Math.PI / 180;
@@ -1338,21 +2579,35 @@
             const dy = py - cy;
             const c = Math.cos(t);
             const s = Math.sin(t);
-            return { x: dx * c + dy * s, y: -dx * s + dy * c };
+            return {
+                x: dx * c + dy * s,
+                y: -dx * s + dy * c
+            };
         }
+
         function worldFromLocal(lx, ly, cx, cy, deg) {
             const t = deg * Math.PI / 180;
             const c = Math.cos(t);
             const s = Math.sin(t);
-            return { x: cx + lx * c - ly * s, y: cy + lx * s + ly * c };
+            return {
+                x: cx + lx * c - ly * s,
+                y: cy + lx * s + ly * c
+            };
         }
+
         function groupBounds(items) {
             const left = Math.min(...items.map(itemLeft));
             const top = Math.min(...items.map(itemTop));
             const right = Math.max(...items.map(o => itemLeft(o) + o.w));
             const bottom = Math.max(...items.map(o => itemTop(o) + o.h));
-            return { left, top, w: Math.max(24, right - left), h: Math.max(24, bottom - top) };
+            return {
+                left,
+                top,
+                w: Math.max(24, right - left),
+                h: Math.max(24, bottom - top)
+            };
         }
+
         function renderXform() {
             const items = selectedObjects().filter(o => layerState(o.layer).visible);
             const old = document.getElementById("xform");
@@ -1360,9 +2615,18 @@
             if (!items.length) return;
             const single = items.length === 1;
             const obj = items[0];
-            const b = single
-                ? { left: itemLeft(obj), top: itemTop(obj), w: obj.w, h: obj.h, rot: obj.rotation || 0 }
-                : { ...groupBounds(items), rot: 0 };
+            const b = single ?
+                {
+                    left: itemLeft(obj),
+                    top: itemTop(obj),
+                    w: obj.w,
+                    h: obj.h,
+                    rot: obj.rotation || 0
+                } :
+                {
+                    ...groupBounds(items),
+                    rot: 0
+                };
             const names = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
             const box = document.createElement("div");
             box.className = "xform";
@@ -1373,10 +2637,11 @@
             box.style.height = b.h + "px";
             box.style.transform = `rotate(${b.rot}deg)`;
             box.style.setProperty("--z", String(zoom));
-            box.innerHTML = `<i class="rot-stem"></i><i class="handle rotate" data-handle="rotate"></i>`
-                + names.map(name => `<i class="handle ${name}" data-handle="${name}"></i>`).join("");
+            box.innerHTML = `<i class="rot-stem"></i><i class="handle rotate" data-handle="rotate"></i>` +
+                names.map(name => `<i class="handle ${name}" data-handle="${name}"></i>`).join("");
             world().appendChild(box);
         }
+
         function placeXform(left, top, w, h, rot) {
             const box = document.getElementById("xform");
             if (!box) return;
@@ -1386,6 +2651,7 @@
             box.style.height = h + "px";
             box.style.transform = `rotate(${rot || 0}deg)`;
         }
+
         function paintObject(obj) {
             const el = world().querySelector(`[data-id="${obj.id}"]`);
             if (!el) return;
@@ -1395,6 +2661,7 @@
             el.style.height = obj.h + "px";
             el.style.transform = `rotate(${obj.rotation || 0}deg)`;
         }
+
         function markTransformed(obj) {
             if (obj.type === "chair") {
                 obj.manual = true;
@@ -1410,7 +2677,10 @@
 
         function worldPoint(e) {
             const rect = viewport().getBoundingClientRect();
-            return { x: (e.clientX - rect.left - panX) / zoom, y: (e.clientY - rect.top - panY) / zoom };
+            return {
+                x: (e.clientX - rect.left - panX) / zoom,
+                y: (e.clientY - rect.top - panY) / zoom
+            };
         }
 
         function applyView() {
@@ -1427,6 +2697,7 @@
             if (box) box.style.setProperty("--z", String(zoom));
             positionFloat();
         }
+
         function zoomAt(clientX, clientY, factor) {
             const rect = viewport().getBoundingClientRect();
             const mx = clientX - rect.left;
@@ -1438,9 +2709,13 @@
             zoom = next;
             applyView();
         }
+
         function contentBounds() {
             const layout = active();
-            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            let minX = Infinity,
+                minY = Infinity,
+                maxX = -Infinity,
+                maxY = -Infinity;
             let any = false;
             (layout.objects || []).forEach(obj => {
                 any = true;
@@ -1459,8 +2734,14 @@
                 maxX = Math.max(maxX, asset.x + asset.w);
                 maxY = Math.max(maxY, asset.y + asset.h);
             });
-            return any ? { minX, minY, maxX, maxY } : null;
+            return any ? {
+                minX,
+                minY,
+                maxX,
+                maxY
+            } : null;
         }
+
         function fit() {
             const rect = viewport().getBoundingClientRect();
             const bounds = contentBounds();
@@ -1505,6 +2786,7 @@
             document.getElementById("selectTool").classList.toggle("on", tool === "select");
             document.getElementById("handTool").classList.toggle("on", tool === "hand");
         }
+
         function renderLayouts() {
             document.getElementById("layoutList").innerHTML = doc.layouts.map(layout =>
                 `<div class="layout-row${layout.id === doc.activeLayoutId ? " on" : ""}">
@@ -1514,6 +2796,7 @@
                 </div>`
             ).join("");
         }
+
         function renderAssets() {
             const assets = active().assets || [];
             document.getElementById("assetList").innerHTML = assets.map(asset =>
@@ -1525,8 +2808,15 @@
                 </div>`
             ).join("") || `<p class="hint">No floor plan uploaded.</p>`;
         }
+
         function renderLayers() {
-            const names = [["chairs", "Chairs"], ["furniture", "Furniture"], ["structure", "Walls & doors"], ["labels", "Labels"], ["background", "Background"]];
+            const names = [
+                ["chairs", "Chairs"],
+                ["furniture", "Furniture"],
+                ["structure", "Walls & doors"],
+                ["labels", "Labels"],
+                ["background", "Background"]
+            ];
             document.getElementById("layerList").innerHTML = names.map(([key, label]) => {
                 const layer = layerState(key);
                 return `<div class="asset-row"><span>${label}</span>
@@ -1543,6 +2833,7 @@
             for (let r = 0; r < rows; r++) html += `<span class="row-pill" style="top:${r * step}px;height:${CHAIR}px">Row ${r + 1}</span>`;
             return html;
         }
+
         function renderWorld() {
             const root = world();
             const layout = active();
@@ -1556,20 +2847,20 @@
                 const assigned = record && (record.status || record.Status) === "Assigned";
                 const declined = assigned && assignmentDeclined(record);
                 const name = guestName(record);
-                const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map(p => p[0]).join("").toUpperCase();
                 const parent = obj.tableId ? layout.objects.find(o => o.id === obj.tableId) : null;
                 const perRow = parent && parent.shape === "rows" ? (parent.perRow || 10) : 0;
                 const index = obj.tableId ? String(perRow ? ((obj.slot || 0) % perRow) + 1 : (obj.slot || 0) + 1) : "";
                 const upright = `transform:rotate(${-(obj.rotation || 0)}deg)`;
-                const faceHtml = assigned && name
-                    ? `<span class="who is-name" style="${upright}">${esc(name)}</span>`
-                    : `<span class="who" style="${upright}">${esc(assigned ? (initials || "•") : index)}</span>`;
+                const label = obj.type === "chair" ? chairDisplayLabel(obj) : "";
+                const faceHtml = assigned && name ?
+                    `<span class="who is-name" style="${upright}">${esc(name)}</span>` :
+                    `<span class="who is-code" style="${upright}">${esc(label || index)}</span>`;
                 const pills = obj.shape === "rows" ? rowPills(obj) : "";
-                const chairTitle = obj.type === "chair"
-                    ? (obj.seatNumber || "") + (declined ? " · Declined" : "")
-                    : (obj.label || "");
+                const chairTitle = obj.type === "chair" ?
+                    label + (declined ? " · Declined" : "") :
+                    (obj.label || "");
                 return `<div class="item ${esc(obj.type)}${obj.type === "table" ? " shape-" + esc(obj.shape || "round") : ""}${assigned ? " is-assigned" : ""}${declined ? " is-declined" : ""}${selected ? " is-selected" : ""}" data-id="${esc(obj.id)}" title="${esc(chairTitle)}" style="left:${itemLeft(obj)}px;top:${itemTop(obj)}px;width:${obj.w}px;height:${obj.h}px;transform:rotate(${obj.rotation || 0}deg)">
-                    ${obj.type === "chair" ? `${faceHtml}${obj.tableId ? "" : `<span class="seat-no" style="${upright}">${esc(obj.seatNumber || "")}</span>`}` : (pills || `<span class="obj-label" style="${obj.type === "text" ? `font-size:${clamp(obj.fontSize || 28, 8, 240)}px` : upright}">${esc(obj.type === "text" ? (obj.text || "Label") : obj.label)}</span>`)}
+                    ${obj.type === "chair" ? faceHtml : (pills || `<span class="obj-label" style="${obj.type === "text" ? `font-size:${clamp(obj.fontSize || 28, 8, 240)}px` : upright}">${esc(obj.type === "text" ? (obj.text || "Label") : obj.label)}</span>`)}
                 </div>`;
             }).join("");
             root.innerHTML = assets + items + `<div class="marquee" id="marquee" hidden></div>`;
@@ -1577,15 +2868,28 @@
             layout.assets.forEach(asset => {
                 const el = root.querySelector(`[data-asset="${asset.id}"]`);
                 if (!el || !asset.markup) return;
-                const shadow = el.shadowRoot || el.attachShadow({ mode: "open" });
+                const shadow = el.shadowRoot || el.attachShadow({
+                    mode: "open"
+                });
                 shadow.innerHTML = `<style>:host{display:block;width:100%;height:100%} svg{width:100%;height:100%;display:block}</style>${asset.markup}`;
             });
         }
 
         function tableForm(obj) {
             const shape = obj.shape || "round";
-            const sides = obj.sides || { top: 0, right: 0, bottom: 0, left: 0 };
-            const shapes = [["round", "Round"], ["rect", "Rectangular"], ["oval", "Oval"], ["ushape", "U-shape"], ["rows", "Chair rows"]];
+            const sides = obj.sides || {
+                top: 0,
+                right: 0,
+                bottom: 0,
+                left: 0
+            };
+            const shapes = [
+                ["round", "Round"],
+                ["rect", "Rectangular"],
+                ["oval", "Oval"],
+                ["ushape", "U-shape"],
+                ["rows", "Chair rows"]
+            ];
             const sideFields = (shape === "rect" || shape === "ushape") ? `<p class="hint">Seats by side. Change the chair total to split them again.</p><div class="side-grid">
                 <label class="field">Top<input id="tblTop" type="number" min="0" max="20" value="${sides.top || 0}" /></label>
                 <label class="field">Right<input id="tblRight" type="number" min="0" max="20" value="${sides.right || 0}" /></label>
@@ -1613,6 +2917,7 @@
                     <button class="btn" type="button" id="delBtn2">Delete</button>
                 </div>`;
         }
+
         function renderProps() {
             const box = document.getElementById("props");
             const asset = (active().assets || []).find(a => a.id === selectedAssetId);
@@ -1632,7 +2937,10 @@
             }
             const items = selectedObjects();
             const arrangementId = selectionArrangement();
-            if (arrangementId) { box.innerHTML = arrangementForm(arrangementId); return; }
+            if (arrangementId) {
+                box.innerHTML = arrangementForm(arrangementId);
+                return;
+            }
             if (!items.length) {
                 box.innerHTML = `<h2>Properties</h2><p class="hint">Select a chair to assign a guest, or click the grid to place the current tool. Guest status is listed below.</p>`;
                 return;
@@ -1655,12 +2963,21 @@
                 return;
             }
             const obj = items[0];
-            if (obj.type === "table") { box.innerHTML = tableForm(obj); return; }
+            if (obj.type === "table") {
+                box.innerHTML = tableForm(obj);
+                return;
+            }
             const record = obj.type === "chair" ? assignment(obj) : null;
             const assignedName = guestName(record);
             const parentTable = obj.tableId ? active().objects.find(o => o.id === obj.tableId) : null;
-            const edgeName = { top: "Top side", right: "Right side", bottom: "Bottom side", left: "Left side", ring: "Around the table" };
-            box.innerHTML = `<h2>${esc(obj.type === "chair" ? (obj.seatNumber || "Chair") : (obj.label || obj.type))}</h2>
+            const edgeName = {
+                top: "Top side",
+                right: "Right side",
+                bottom: "Bottom side",
+                left: "Left side",
+                ring: "Around the table"
+            };
+            box.innerHTML = `<h2 class="${obj.type === "chair" ? "seat-banner" : ""}">${esc(obj.type === "chair" ? chairDisplayLabel(obj) : (obj.label || obj.type))}</h2>
                 ${parentTable ? `<p class="hint">Parent table: ${esc(parentTable.label || "Table")}${obj.edge ? " · " + edgeName[obj.edge] : ""}${obj.manual ? " · Moved by hand" : ""}</p>` : ""}
                 <label class="field">Name<input id="propLabel" value="${esc(obj.type === "text" ? obj.text : obj.label)}" /></label>
                 ${obj.type === "text" ? `<label class="field">Font size<input id="propFont" type="number" min="8" max="240" value="${clamp(obj.fontSize || 28, 8, 240)}" /></label>` : ""}
@@ -1678,45 +2995,74 @@
                 </div>
                 ${obj.type === "chair" ? `<p class="hint">Choose a guest in the list to assign this chair.</p>` : ""}`;
         }
+
         function renderGuestList() {
             renderRoster();
         }
+
         function renderRoster() {
             const list = document.getElementById("roster");
             const counts = document.getElementById("rosterCounts");
             if (!list || !counts) return;
-            const visible = users.filter(user => guestStatus(user.status) !== "declined");
-            const accepted = visible.filter(user => guestStatus(user.status) === "accepted").length;
-            counts.textContent = visible.length
-                ? `${accepted} accepted · ${visible.length - accepted} pending`
-                : "Guest list loads from the server.";
-            const q = (document.getElementById("rosterSearch")?.value || "").trim().toLowerCase();
+            const assignedCount = users.filter(user => user.seatCode).length;
+            const openCount = users.filter(user => !user.seatCode).length;
+            const accepted = users.filter(user => guestStatus(user.status) === "accepted").length;
+            const declined = users.filter(user => guestStatus(user.status) === "declined").length;
+            counts.textContent = `${assignedCount} assigned · ${openCount} not assigned · ${accepted} accepted · ${declined} declined`;
+            const filter = document.getElementById("rosterFilter") ?.value || "all";
+            const q = (document.getElementById("rosterSearch") ?.value || "").trim().toLowerCase();
             const chairSelected = selectedObjects().some(obj => obj.type === "chair");
-            const rows = visible.filter(user => !q || [user.name, user.email, user.company, user.seatCode, statusLabel(user.status)].join(" ").toLowerCase().includes(q))
+            const rows = users.filter(user => {
+                    if (filter === "assigned") return !!user.seatCode;
+                    if (filter === "open") return !user.seatCode;
+                    if (filter === "accepted") return guestStatus(user.status) === "accepted";
+                    if (filter === "declined") return guestStatus(user.status) === "declined";
+                    return true;
+                }).filter(user => !q || [user.name, user.email, user.company, user.seatCode, displayForSeatCode(user.seatCode), statusLabel(user.status)].join(" ").toLowerCase().includes(q))
                 .sort((a, b) => Number(!!a.seatCode) - Number(!!b.seatCode) || a.name.localeCompare(b.name));
             list.innerHTML = rows.map(user => {
-                const seat = user.seatCode ? `Seat ${user.seatCode}` : "No seat";
+                const seat = user.seatCode ? displayForSeatCode(user.seatCode) : "No seat";
                 return `<button type="button" class="guest-row" data-user="${esc(user.id)}" data-jump="${esc(user.seatCode || "")}">
                     <span class="guest-top"><strong>${esc(user.name || user.email)}</strong><span class="guest-status ${guestStatus(user.status)}">${statusLabel(user.status)}</span></span>
-                    <small>${esc(seat)}${user.company ? " · " + esc(user.company) : ""}</small>
+                    <small class="${user.seatCode ? "seat-assigned" : ""}">${esc(seat)}</small>
+                    ${user.company ? `<small>${esc(user.company)}</small>` : ""}
                 </button>`;
-            }).join("") || `<p class="hint">${chairSelected ? "No guests to assign." : "No guests match."}</p>`;
+            }).join("") || `<p class="hint">${chairSelected ? "No guests in this filter." : "No guests match."}</p>`;
         }
+
         function renderFloat() {
             const menu = document.getElementById("floatMenu");
             const items = selectedObjects();
             const arrangementId = selectionArrangement();
-            if (!items.length) { menu.hidden = true; return; }
+            if (!items.length) {
+                menu.hidden = true;
+                return;
+            }
             if (arrangementId) {
-                menu.innerHTML = [["edit", "Edit"], ["number", "Number"], ["nudge", "Move"], ["duplicate", "Duplicate"], ["ungroup", "Ungroup"], ["rotate15", "Rotate"], ["delete", "Delete"]]
+                menu.innerHTML = [
+                        ["edit", "Edit"],
+                        ["number", "Number"],
+                        ["nudge", "Move"],
+                        ["duplicate", "Duplicate"],
+                        ["ungroup", "Ungroup"],
+                        ["rotate15", "Rotate"],
+                        ["delete", "Delete"]
+                    ]
                     .map(([id, label]) => `<button class="icon-btn" type="button" data-float="${id}">${label}</button>`).join("");
                 menu.hidden = false;
                 positionFloat();
                 return;
             }
             if (items.length !== 1) {
-                if (!selectedTables().length) { menu.hidden = true; return; }
-                menu.innerHTML = [["number", "Number"], ["duplicate", "Duplicate"], ["delete", "Delete"]]
+                if (!selectedTables().length) {
+                    menu.hidden = true;
+                    return;
+                }
+                menu.innerHTML = [
+                        ["number", "Number"],
+                        ["duplicate", "Duplicate"],
+                        ["delete", "Delete"]
+                    ]
                     .map(([id, label]) => `<button class="icon-btn" type="button" data-float="${id}">${label}</button>`).join("");
                 menu.hidden = false;
                 positionFloat();
@@ -1733,12 +3079,16 @@
             menu.hidden = false;
             positionFloat();
         }
+
         function positionFloat() {
             const menu = document.getElementById("floatMenu");
             if (menu.hidden) return;
             const obj = selectedObjects().find(o => o.type === "table") || selectedObjects()[0];
             const el = obj && world().querySelector(`[data-id="${obj.id}"]`);
-            if (!el) { menu.hidden = true; return; }
+            if (!el) {
+                menu.hidden = true;
+                return;
+            }
             const rect = el.getBoundingClientRect();
             let left = rect.left;
             let top = rect.top - menu.offsetHeight - 8;
@@ -1746,6 +3096,7 @@
             menu.style.left = Math.max(8, Math.min(left, window.innerWidth - menu.offsetWidth - 8)) + "px";
             menu.style.top = Math.max(60, top) + "px";
         }
+
         function renderStats() {
             const chairs = active().objects.filter(o => o.type === "chair");
             const assigned = chairs.filter(c => assignment(c) && (assignment(c).status || assignment(c).Status) === "Assigned").length;
@@ -1759,6 +3110,7 @@
             viewport().classList.toggle("place", tool !== "select" && tool !== "hand");
             viewport().classList.toggle("hand", tool === "hand");
         }
+
         function selectOnly(id) {
             const obj = findObj(id);
             selection.clear();
@@ -1771,6 +3123,7 @@
             renderFloat();
             renderGuestList();
         }
+
         function clearSelection() {
             selection.clear();
             selectedAssetId = "";
@@ -1813,6 +3166,7 @@
             });
             return copies;
         }
+
         function duplicateSelection() {
             const items = selectedObjects();
             if (!items.length) return;
@@ -1825,32 +3179,50 @@
             renderAll();
             scheduleSave();
         }
+
         function seatParts(code) {
             const text = String(code || "").toUpperCase();
             const match = text.match(/^(.*?)(\d+)$/);
-            if (!match) return { prefix: "C-", n: 0, width: 3 };
-            return { prefix: match[1] || "C-", n: parseInt(match[2], 10) || 0, width: match[2].length };
+            if (!match) return {
+                prefix: "C-",
+                n: 0,
+                width: 3
+            };
+            return {
+                prefix: match[1] || "C-",
+                n: parseInt(match[2], 10) || 0,
+                width: match[2].length
+            };
         }
+
         function formatSeat(prefix, n, width) {
             return prefix + String(n).padStart(Math.max(1, width), "0");
         }
+
         function seatGroups(chairs) {
             const groups = new Map();
             chairs.forEach(chair => {
                 const part = seatParts(chair.seatNumber);
                 if (!groups.has(part.prefix)) groups.set(part.prefix, []);
-                groups.get(part.prefix).push({ chair, ...part });
+                groups.get(part.prefix).push({
+                    chair,
+                    ...part
+                });
             });
             return groups;
         }
+
         function seatsHaveGap(chairs) {
             let gap = false;
             seatGroups(chairs).forEach(list => {
                 const nums = list.map(item => item.n).sort((a, b) => a - b);
-                nums.forEach((n, i) => { if (n !== i + 1) gap = true; });
+                nums.forEach((n, i) => {
+                    if (n !== i + 1) gap = true;
+                });
             });
             return gap;
         }
+
         function renumberPreview(chairs) {
             const lines = [];
             seatGroups(chairs).forEach(list => {
@@ -1862,10 +3234,11 @@
                 const to = sample.map((item, i) => sorted.indexOf(item) + 1).join(", ");
                 lines.push(from + " become " + to + (changed.length > sample.length ? ", and the rest follow" : ""));
             });
-            return lines.length
-                ? "The numbers now skip. " + lines.join(". ") + ". Guests stay on the same chair."
-                : "The numbers now skip. Renumber them in the same order so there is no gap. Guests stay on the same chair.";
+            return lines.length ?
+                "The numbers now skip. " + lines.join(". ") + ". Guests stay on the same chair." :
+                "The numbers now skip. Renumber them in the same order so there is no gap. Guests stay on the same chair.";
         }
+
         function retargetAssignment(oldCode, newCode) {
             const from = String(oldCode || "").toUpperCase();
             const seat = seatByCode.get(from);
@@ -1880,14 +3253,20 @@
         }
         async function moveGuestSeats(moves) {
             for (const move of moves) {
-                const released = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(move.from)}/release`, { method: "PUT" });
+                const released = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(move.from)}/release`, {
+                    method: "PUT"
+                });
                 if (!released.ok) return false;
             }
             for (const move of moves) {
                 const assigned = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(move.to)}/assign`, {
                     method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ uniqueId: move.uniqueId })
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        uniqueId: move.uniqueId
+                    })
                 });
                 if (!assigned.ok) return false;
             }
@@ -1906,7 +3285,11 @@
                     const record = assignment(item.chair);
                     const guestId = record && (record.uniqueId || record.UniqueId);
                     if (guestId && (record.status || record.Status) === "Assigned") {
-                        moves.push({ uniqueId: guestId, from: item.chair.seatNumber, to: next });
+                        moves.push({
+                            uniqueId: guestId,
+                            from: item.chair.seatNumber,
+                            to: next
+                        });
                     }
                     retargetAssignment(item.chair.seatNumber, next);
                     item.chair.seatNumber = next;
@@ -1914,7 +3297,10 @@
             });
             renderAll();
             scheduleSave();
-            if (!moves.length) { toast("Chairs renumbered.", "ok"); return; }
+            if (!moves.length) {
+                toast("Chairs renumbered.", "ok");
+                return;
+            }
             const moved = await moveGuestSeats(moves);
             if (moved) {
                 await loadSeats();
@@ -1924,6 +3310,7 @@
                 toast("Numbers updated on this plan. Save the layout so guests stay on these chairs.");
             }
         }
+
         function deleteSelection() {
             const items = selectedObjects();
             if (!items.length && !selectedAssetId) return;
@@ -1942,7 +3329,9 @@
                     active().objects = active().objects.filter(o => o.id !== table.id);
                     return;
                 }
-                left.forEach((chair, index) => { chair.slot = index; });
+                left.forEach((chair, index) => {
+                    chair.slot = index;
+                });
                 if (table.shape === "rows") {
                     table.rows = 1;
                     table.perRow = left.length;
@@ -1962,6 +3351,7 @@
                 document.getElementById("renumberModal").hidden = false;
             }
         }
+
         function rotateSelection() {
             const items = selectedObjects();
             if (!items.length) return;
@@ -1980,10 +3370,13 @@
                 table.relayout = true;
                 syncTable(table);
                 table.relayout = false;
-            } else items.forEach(o => { o.rotation = ((o.rotation || 0) + 15) % 360; });
+            } else items.forEach(o => {
+                o.rotation = ((o.rotation || 0) + 15) % 360;
+            });
             renderAll();
             scheduleSave();
         }
+
         function alignSelection(mode) {
             const items = selectedObjects();
             if (items.length < 2) return;
@@ -2026,12 +3419,14 @@
             renderAll();
             scheduleSave();
         }
+
         function openLayout(id) {
             if (!doc.layouts.some(l => l.id === id)) return;
             doc.activeLayoutId = id;
             clearSelection();
             renderAll();
         }
+
         function duplicateLayout(id) {
             const source = doc.layouts.find(l => l.id === id);
             if (!source) return;
@@ -2066,8 +3461,12 @@
             renderAll();
             scheduleSave();
         }
+
         function deleteLayout(id) {
-            if (doc.layouts.length === 1) { toast("Keep at least one layout.", "bad"); return; }
+            if (doc.layouts.length === 1) {
+                toast("Keep at least one layout.", "bad");
+                return;
+            }
             const layout = doc.layouts.find(l => l.id === id);
             if (!layout) return;
             if (!confirm("Are you sure you want to delete this layout? This action cannot be undone.")) return;
@@ -2082,8 +3481,18 @@
         function addAsset(fileName, markup, kind) {
             pushHistory();
             const asset = {
-                id: "asset-" + uid(), fileName, kind: kind || "svg", markup,
-                visible: true, locked: true, x: 80, y: 80, w: 1200, h: 800, scale: 1, rotation: 0,
+                id: "asset-" + uid(),
+                fileName,
+                kind: kind || "svg",
+                markup,
+                visible: true,
+                locked: true,
+                x: 80,
+                y: 80,
+                w: 1200,
+                h: 800,
+                scale: 1,
+                rotation: 0,
                 uploadedOn: new Date().toLocaleString()
             };
             active().assets.push(asset);
@@ -2092,6 +3501,7 @@
             renderAll();
             scheduleSave();
         }
+
         function deleteAsset(id) {
             if (!confirm("Delete this uploaded floor-plan file?")) return;
             pushHistory();
@@ -2112,13 +3522,21 @@
             toast("Converting CAD floor plan…");
             const body = new FormData();
             body.append("file", file);
-            const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/map`, { method: "POST", body });
+            const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/map`, {
+                method: "POST",
+                body
+            });
             const payload = await res.json().catch(() => ({}));
-            if (!res.ok) { toast(payload.message || payload.Message || "Could not read that CAD file.", "bad"); return; }
-            const svgRes = await fetch(`${baseURL}/api/AramcoFarewell/seats/map`, { cache: "no-store" });
+            if (!res.ok) {
+                toast(payload.message || payload.Message || "Could not read that CAD file.", "bad");
+                return;
+            }
+            const svgRes = await fetch(`${baseURL}/api/AramcoFarewell/seats/map`, {
+                cache: "no-store"
+            });
             const svgText = await svgRes.text();
             const parsed = readDesigner(svgText);
-            const markup = parsed ? (parsed.layouts?.[0]?.assets?.[0]?.markup || "") : svgText;
+            const markup = parsed ? (parsed.layouts ?. [0] ?.assets ?. [0] ?.markup || "") : svgText;
             addAsset(file.name, markup || svgText, ext);
             toast("Floor plan added under the grid.", "ok");
         }
@@ -2131,8 +3549,11 @@
             try {
                 const data = JSON.parse(meta.textContent);
                 return data && data.version === 2 ? data : null;
-            } catch (err) { return null; }
+            } catch (err) {
+                return null;
+            }
         }
+
         function buildSvg() {
             const chairs = allChairs().map(chair =>
                 `<g data-seat-code="${esc(chair.seatNumber)}" data-zone="General"><rect class="seat-shape" width="36" height="36" fill="#cfc6bb"/></g>`
@@ -2145,6 +3566,7 @@
             const h = bounds ? Math.max(100, Math.ceil(bounds.maxY - bounds.minY + 80)) : 1000;
             return `<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" viewBox="${x} ${y} ${w} ${h}">\n<metadata id="aramco-seat-layout"><![CDATA[${meta}]]></metadata>\n${chairs}\n</svg>`;
         }
+
         function scheduleSave() {
             localStorage.setItem(DRAFT_KEY, JSON.stringify(doc));
             setSaveState("Unsaved changes");
@@ -2161,10 +3583,15 @@
             setSaveState("Saving to the server…");
             toast("Saving to the server…");
             try {
-                const file = new File([buildSvg()], "seat-plan.svg", { type: "image/svg+xml" });
+                const file = new File([buildSvg()], "seat-plan.svg", {
+                    type: "image/svg+xml"
+                });
                 const body = new FormData();
                 body.append("file", file);
-                const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/map`, { method: "POST", body });
+                const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/map`, {
+                    method: "POST",
+                    body
+                });
                 const payload = await res.json().catch(() => ({}));
                 if (!res.ok) {
                     setSaveState("Only on this browser");
@@ -2188,7 +3615,9 @@
         }
 
         async function loadGuests() {
-            const res = await fetch(`${baseURL}/api/AramcoFarewell/users`, { cache: "no-store" });
+            const res = await fetch(`${baseURL}/api/AramcoFarewell/users`, {
+                cache: "no-store"
+            });
             if (!res.ok) return;
             const data = await res.json();
             users = (data || []).map(u => ({
@@ -2201,7 +3630,9 @@
             }));
         }
         async function loadSeats() {
-            const res = await fetch(`${baseURL}/api/AramcoFarewell/seats`, { cache: "no-store" });
+            const res = await fetch(`${baseURL}/api/AramcoFarewell/seats`, {
+                cache: "no-store"
+            });
             if (!res.ok) return;
             const data = await res.json();
             seatByCode = new Map();
@@ -2215,14 +3646,18 @@
             });
             users.forEach(u => {
                 u.seatCode = "";
-                assigned.forEach((id, code) => { if (id === u.id) u.seatCode = code; });
+                assigned.forEach((id, code) => {
+                    if (id === u.id) u.seatCode = code;
+                });
             });
         }
         async function boot() {
             doc = blankDoc();
             try {
                 const [svgRes] = await Promise.all([
-                    fetch(`${baseURL}/api/AramcoFarewell/seats/map`, { cache: "no-store" }),
+                    fetch(`${baseURL}/api/AramcoFarewell/seats/map`, {
+                        cache: "no-store"
+                    }),
                     loadGuests(),
                     loadSeats()
                 ]);
@@ -2234,15 +3669,29 @@
                 } else {
                     const draft = localStorage.getItem(DRAFT_KEY);
                     if (draft) {
-                        try { const data = JSON.parse(draft); if (data.version === 2) doc = data; } catch (err) { /* keep blank */ }
+                        try {
+                            const data = JSON.parse(draft);
+                            if (data.version === 2) doc = data;
+                        } catch (err) {
+                            /* keep blank */ }
                     }
                     setSaveState("Only on this browser");
                     if (svgText && svgText.includes("<svg") && !parsed) {
                         const layout = active();
                         if (!layout.assets.length) {
                             layout.assets.push({
-                                id: "asset-" + uid(), fileName: "Uploaded floor plan.svg", kind: "svg", markup: svgText,
-                                visible: true, locked: true, x: 40, y: 40, w: 1600, h: 1000, scale: 1, rotation: 0,
+                                id: "asset-" + uid(),
+                                fileName: "Uploaded floor plan.svg",
+                                kind: "svg",
+                                markup: svgText,
+                                visible: true,
+                                locked: true,
+                                x: 40,
+                                y: 40,
+                                w: 1600,
+                                h: 1000,
+                                scale: 1,
+                                rotation: 0,
                                 uploadedOn: ""
                             });
                         }
@@ -2251,7 +3700,11 @@
             } catch (err) {
                 const draft = localStorage.getItem(DRAFT_KEY);
                 if (draft) {
-                    try { const data = JSON.parse(draft); if (data.version === 2) doc = data; } catch (parseErr) { /* keep blank */ }
+                    try {
+                        const data = JSON.parse(draft);
+                        if (data.version === 2) doc = data;
+                    } catch (parseErr) {
+                        /* keep blank */ }
                 }
                 setSaveState("Only on this browser");
                 toast("Opened a layout from this browser. The server could not be reached.", "bad");
@@ -2282,17 +3735,29 @@
         async function assignGuest(userId) {
             const chair = selectedObjects().find(o => o.type === "chair");
             const user = users.find(u => u.id === userId);
-            if (!chair || !user) { toast("Select a chair first.", "bad"); return; }
+            if (!chair || !user) {
+                toast("Select a chair first.", "bad");
+                return;
+            }
             if (user.seatCode && user.seatCode !== chair.seatNumber) {
                 toast(`${user.name} — Assigned to ${user.seatCode}`, "bad");
                 return;
             }
             toast("Assigning…");
             const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(chair.seatNumber)}/assign`, {
-                method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ uniqueId: user.id })
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    uniqueId: user.id
+                })
             });
             const payload = await res.json().catch(() => ({}));
-            if (!res.ok) { toast(payload.message || payload.Message || "Could not assign that guest.", "bad"); return; }
+            if (!res.ok) {
+                toast(payload.message || payload.Message || "Could not assign that guest.", "bad");
+                return;
+            }
             await loadGuests();
             await loadSeats();
             renderWorld();
@@ -2304,9 +3769,14 @@
         async function unassign() {
             const chair = selectedObjects().find(o => o.type === "chair");
             if (!chair) return;
-            const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(chair.seatNumber)}/release`, { method: "PUT" });
+            const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(chair.seatNumber)}/release`, {
+                method: "PUT"
+            });
             const payload = await res.json().catch(() => ({}));
-            if (!res.ok) { toast(payload.message || payload.Message || "Could not remove the guest.", "bad"); return; }
+            if (!res.ok) {
+                toast(payload.message || payload.Message || "Could not remove the guest.", "bad");
+                return;
+            }
             await loadGuests();
             await loadSeats();
             renderWorld();
@@ -2340,6 +3810,7 @@
             renderAll();
             scheduleSave();
         }
+
         function applyTable() {
             const table = selectedObjects()[0];
             if (!table || table.type !== "table") return;
@@ -2351,13 +3822,13 @@
             table.shape = document.getElementById("tblShape").value || table.shape;
             table.chairDistance = clamp(parseFloat(document.getElementById("tblSpace").value) || 0, 0, 200);
             table.spacing = table.chairDistance;
-            table.gapStyle = document.getElementById("tblGap")?.value || table.gapStyle || "even";
+            table.gapStyle = document.getElementById("tblGap") ?.value || table.gapStyle || "even";
             if (document.getElementById("tblW")) table.tableW = clamp(parseFloat(document.getElementById("tblW").value) || table.tableW || 240, 60, 800);
             if (document.getElementById("tblH")) table.tableH = clamp(parseFloat(document.getElementById("tblH").value) || table.tableH || 120, 48, 800);
             if (table.shape === "round") table.tableH = table.tableW;
             if (table.shape === "rows") {
-                table.rows = clamp(parseInt(document.getElementById("tblRows")?.value, 10) || table.rows || 1, 1, 20);
-                table.perRow = clamp(parseInt(document.getElementById("tblPer")?.value, 10) || table.perRow || 10, 1, 30);
+                table.rows = clamp(parseInt(document.getElementById("tblRows") ?.value, 10) || table.rows || 1, 1, 20);
+                table.perRow = clamp(parseInt(document.getElementById("tblPer") ?.value, 10) || table.perRow || 10, 1, 30);
                 table.sides = null;
                 table.rowGap = clamp(parseFloat(document.getElementById("tblSpace").value) || table.rowGap || 40, 0, 240);
             } else if (table.shape === "rect" || table.shape === "ushape") {
@@ -2367,11 +3838,11 @@
                     const sides = {
                         top: clamp(parseInt(topEl.value, 10) || 0, 0, 20),
                         right: clamp(parseInt(document.getElementById("tblRight").value, 10) || 0, 0, 20),
-                        bottom: table.shape === "ushape" ? 0 : clamp(parseInt(document.getElementById("tblBottom")?.value, 10) || 0, 0, 20),
+                        bottom: table.shape === "ushape" ? 0 : clamp(parseInt(document.getElementById("tblBottom") ?.value, 10) || 0, 0, 20),
                         left: clamp(parseInt(document.getElementById("tblLeft").value, 10) || 0, 0, 20)
                     };
                     const sum = sides.top + sides.right + sides.bottom + sides.left;
-                    const seats = clamp(parseInt(seatsEl?.value, 10) || sum || 4, 2, 40);
+                    const seats = clamp(parseInt(seatsEl ?.value, 10) || sum || 4, 2, 40);
                     if (seats !== (table.seats || sum)) {
                         table.seats = seats;
                         table.sides = null;
@@ -2380,11 +3851,11 @@
                         table.seats = sum;
                     }
                 } else {
-                    table.seats = clamp(parseInt(seatsEl?.value, 10) || table.seats || 8, 2, 40);
+                    table.seats = clamp(parseInt(seatsEl ?.value, 10) || table.seats || 8, 2, 40);
                     table.sides = null;
                 }
             } else {
-                table.seats = clamp(parseInt(document.getElementById("tblSeats")?.value, 10) || table.seats || 8, 2, 40);
+                table.seats = clamp(parseInt(document.getElementById("tblSeats") ?.value, 10) || table.seats || 8, 2, 40);
                 table.sides = null;
             }
             const nx = snap(parseFloat(document.getElementById("propX").value));
@@ -2503,6 +3974,7 @@
             });
             finish(changed, 0);
         }
+
         function beginPinch() {
             const pts = [...activePointers.values()].slice(0, 2);
             if (pts.length < 2) return;
@@ -2529,6 +4001,7 @@
             };
             viewport().classList.add("panning");
         }
+
         function onPointerDown(e) {
             if (e.button === 2) return;
             if (e.target.closest(".canvas-nav") || e.target.closest(".side-reopen")) return;
@@ -2536,9 +4009,15 @@
             if (!document.getElementById("leaveModal").hidden) return;
             if (!document.getElementById("renumberModal").hidden) return;
             if (!document.getElementById("numberModal").hidden) return;
-            activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            activePointers.set(e.pointerId, {
+                x: e.clientX,
+                y: e.clientY
+            });
             if (e.pointerType !== "mouse") {
-                try { viewport().setPointerCapture(e.pointerId); } catch (err) { /* already captured */ }
+                try {
+                    viewport().setPointerCapture(e.pointerId);
+                } catch (err) {
+                    /* already captured */ }
             }
             if (activePointers.size >= 2) {
                 beginPinch();
@@ -2551,23 +4030,41 @@
                 pushHistory();
                 const single = items.length === 1;
                 const obj = items[0];
-                const bounds = single
-                    ? { left: itemLeft(obj), top: itemTop(obj), w: obj.w, h: obj.h }
-                    : groupBounds(items);
+                const bounds = single ?
+                    {
+                        left: itemLeft(obj),
+                        top: itemTop(obj),
+                        w: obj.w,
+                        h: obj.h
+                    } :
+                    groupBounds(items);
                 const cx = bounds.left + bounds.w / 2;
                 const cy = bounds.top + bounds.h / 2;
                 const p = worldPoint(e);
                 drag = {
                     kind: handle.dataset.handle === "rotate" ? "rotate" : "scale",
                     handle: handle.dataset.handle,
-                    sx: e.clientX, sy: e.clientY, moved: false, single,
+                    sx: e.clientX,
+                    sy: e.clientY,
+                    moved: false,
+                    single,
                     rot: single ? (obj.rotation || 0) : 0,
-                    cx, cy, bounds,
+                    cx,
+                    cy,
+                    bounds,
                     angle: Math.atan2(p.y - cy, p.x - cx),
                     origins: items.map(o => ({
-                        id: o.id, x: o.x, y: o.y, w: o.w, h: o.h,
-                        rotation: o.rotation || 0, bx: o.bx || 0, by: o.by || 0,
-                        visLeft: itemLeft(o), visTop: itemTop(o), type: o.type
+                        id: o.id,
+                        x: o.x,
+                        y: o.y,
+                        w: o.w,
+                        h: o.h,
+                        rotation: o.rotation || 0,
+                        bx: o.bx || 0,
+                        by: o.by || 0,
+                        visLeft: itemLeft(o),
+                        visTop: itemTop(o),
+                        type: o.type
                     }))
                 };
                 return;
@@ -2575,7 +4072,13 @@
             const point = worldPoint(e);
             const touchPan = e.pointerType === "touch" || e.pointerType === "pen";
             if (e.button === 1 || tool === "hand" || spaceDown) {
-                drag = { kind: "pan", sx: e.clientX, sy: e.clientY, px: panX, py: panY };
+                drag = {
+                    kind: "pan",
+                    sx: e.clientX,
+                    sy: e.clientY,
+                    px: panX,
+                    py: panY
+                };
                 viewport().classList.add("panning");
                 return;
             }
@@ -2586,31 +4089,58 @@
                 const obj = findObj(item.dataset.id);
                 if (!obj) return;
                 pushHistory();
-                drag = { kind: "resize", id: obj.id, sx: e.clientX, sy: e.clientY, w: obj.w, h: obj.h, moved: false };
+                drag = {
+                    kind: "resize",
+                    id: obj.id,
+                    sx: e.clientX,
+                    sy: e.clientY,
+                    w: obj.w,
+                    h: obj.h,
+                    moved: false
+                };
                 return;
             }
             if (item && touchPan) {
                 const obj = findObj(item.dataset.id);
                 if (!obj || layerState(obj.layer).locked) return;
-                drag = { kind: "touch-item", id: obj.id, sx: e.clientX, sy: e.clientY, px: panX, py: panY, moved: false };
+                drag = {
+                    kind: "touch-item",
+                    id: obj.id,
+                    sx: e.clientX,
+                    sy: e.clientY,
+                    px: panX,
+                    py: panY,
+                    moved: false
+                };
                 return;
             }
             if (item) {
                 const obj = findObj(item.dataset.id);
                 if (!obj || layerState(obj.layer).locked) return;
                 if (e.ctrlKey || e.metaKey) {
-                    if (selection.has(obj.id)) selection.delete(obj.id); else selection.add(obj.id);
-                    renderWorld(); renderProps(); renderFloat(); renderGuestList();
+                    if (selection.has(obj.id)) selection.delete(obj.id);
+                    else selection.add(obj.id);
+                    renderWorld();
+                    renderProps();
+                    renderFloat();
+                    renderGuestList();
                     return;
                 }
                 if (!selection.has(obj.id)) selectOnly(obj.id);
                 pushHistory();
-                const moving = obj.type === "chair"
-                    ? [obj]
-                    : (obj.arrangementId ? membersOf(obj.arrangementId) : (obj.type === "table" ? [obj, ...chairsOf(obj)] : selectedObjects()));
+                const moving = obj.type === "chair" ?
+                    [obj] :
+                    (obj.arrangementId ? membersOf(obj.arrangementId) : (obj.type === "table" ? [obj, ...chairsOf(obj)] : selectedObjects()));
                 drag = {
-                    kind: "move", sx: e.clientX, sy: e.clientY, moved: false,
-                    origins: moving.map(o => ({ id: o.id, x: o.x, y: o.y }))
+                    kind: "move",
+                    sx: e.clientX,
+                    sy: e.clientY,
+                    moved: false,
+                    origins: moving.map(o => ({
+                        id: o.id,
+                        x: o.x,
+                        y: o.y
+                    }))
                 };
                 return;
             }
@@ -2620,8 +4150,17 @@
                     selectedAssetId = asset.id;
                     selection.clear();
                     pushHistory();
-                    drag = { kind: "asset", id: asset.id, sx: e.clientX, sy: e.clientY, x: asset.x, y: asset.y, moved: false };
-                    renderWorld(); renderProps();
+                    drag = {
+                        kind: "asset",
+                        id: asset.id,
+                        sx: e.clientX,
+                        sy: e.clientY,
+                        x: asset.x,
+                        y: asset.y,
+                        moved: false
+                    };
+                    renderWorld();
+                    renderProps();
                     return;
                 }
             }
@@ -2630,22 +4169,47 @@
                     placeAt(tool, point.x, point.y);
                     return;
                 }
-                drag = { kind: "arm", sx: e.clientX, sy: e.clientY, px: panX, py: panY, wx: point.x, wy: point.y, moved: false };
+                drag = {
+                    kind: "arm",
+                    sx: e.clientX,
+                    sy: e.clientY,
+                    px: panX,
+                    py: panY,
+                    wx: point.x,
+                    wy: point.y,
+                    moved: false
+                };
                 return;
             }
             if (touchPan || tool === "hand") {
-                drag = { kind: "pan", sx: e.clientX, sy: e.clientY, px: panX, py: panY };
+                drag = {
+                    kind: "pan",
+                    sx: e.clientX,
+                    sy: e.clientY,
+                    px: panX,
+                    py: panY
+                };
                 viewport().classList.add("panning");
                 return;
             }
             if (!e.ctrlKey && !e.metaKey) selection.clear();
             selectedAssetId = "";
-            drag = { kind: "marquee", sx: point.x, sy: point.y, x: point.x, y: point.y };
+            drag = {
+                kind: "marquee",
+                sx: point.x,
+                sy: point.y,
+                x: point.x,
+                y: point.y
+            };
             renderProps();
             renderFloat();
         }
+
         function onPointerMove(e) {
-            if (activePointers.has(e.pointerId)) activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+            if (activePointers.has(e.pointerId)) activePointers.set(e.pointerId, {
+                x: e.clientX,
+                y: e.clientY
+            });
             if (activePointers.size >= 2 && drag && drag.kind === "pinch") {
                 const pts = [...activePointers.values()].slice(0, 2);
                 const dist = Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y) || 1;
@@ -2694,7 +4258,10 @@
                     obj.x = origin.x + sdx;
                     obj.y = origin.y + sdy;
                     const el = world().querySelector(`[data-id="${obj.id}"]`);
-                    if (el) { el.style.left = itemLeft(obj) + "px"; el.style.top = itemTop(obj) + "px"; }
+                    if (el) {
+                        el.style.left = itemLeft(obj) + "px";
+                        el.style.top = itemTop(obj) + "px";
+                    }
                 });
                 positionFloat();
             } else if (drag.kind === "scale" || drag.kind === "rotate") {
@@ -2706,14 +4273,20 @@
                 obj.w = Math.max(doc.gridSize, snap(drag.w + dx));
                 obj.h = Math.max(doc.gridSize, snap(drag.h + dy));
                 const el = world().querySelector(`[data-id="${obj.id}"]`);
-                if (el) { el.style.width = obj.w + "px"; el.style.height = obj.h + "px"; }
+                if (el) {
+                    el.style.width = obj.w + "px";
+                    el.style.height = obj.h + "px";
+                }
             } else if (drag.kind === "asset") {
                 const asset = active().assets.find(a => a.id === drag.id);
                 if (!asset) return;
                 asset.x = snap(drag.x + dx);
                 asset.y = snap(drag.y + dy);
                 const el = world().querySelector(`[data-asset="${asset.id}"]`);
-                if (el) { el.style.left = asset.x + "px"; el.style.top = asset.y + "px"; }
+                if (el) {
+                    el.style.left = asset.x + "px";
+                    el.style.top = asset.y + "px";
+                }
             } else if (drag.kind === "marquee") {
                 const point = worldPoint(e);
                 const box = document.getElementById("marquee");
@@ -2726,9 +4299,13 @@
                 box.style.top = y + "px";
                 box.style.width = w + "px";
                 box.style.height = h + "px";
-                drag.x = x; drag.y = y; drag.w = w; drag.h = h;
+                drag.x = x;
+                drag.y = y;
+                drag.w = w;
+                drag.h = h;
             }
         }
+
         function onPointerUp(e) {
             if (e && e.pointerId != null) activePointers.delete(e.pointerId);
             if (drag && drag.kind === "pinch") {
@@ -2775,6 +4352,7 @@
                 showApp();
             } else document.getElementById("gateError").textContent = "Incorrect password.";
         });
+
         function showApp() {
             document.getElementById("gate").style.display = "none";
             document.getElementById("app").classList.add("open");
@@ -2786,12 +4364,18 @@
         window.addEventListener("pointermove", onPointerMove);
         window.addEventListener("pointerup", onPointerUp);
         window.addEventListener("pointercancel", onPointerUp);
-        document.getElementById("viewport").addEventListener("touchmove", (e) => { e.preventDefault(); }, { passive: false });
+        document.getElementById("viewport").addEventListener("touchmove", (e) => {
+            e.preventDefault();
+        }, {
+            passive: false
+        });
         document.addEventListener("gesturestart", (e) => e.preventDefault());
         document.getElementById("viewport").addEventListener("wheel", (e) => {
             e.preventDefault();
             zoomAt(e.clientX, e.clientY, e.deltaY < 0 ? 1.1 : 1 / 1.1);
-        }, { passive: false });
+        }, {
+            passive: false
+        });
         document.getElementById("viewport").addEventListener("dragover", (e) => e.preventDefault());
         document.getElementById("viewport").addEventListener("drop", (e) => {
             e.preventDefault();
@@ -2813,25 +4397,51 @@
                 return;
             }
             const editTable = e.target.closest("[data-edit-table]");
-            if (editTable) { selectOnly(editTable.dataset.editTable); return; }
+            if (editTable) {
+                selectOnly(editTable.dataset.editTable);
+                return;
+            }
             const toolBtn = e.target.closest("[data-tool]");
-            if (toolBtn) { setTool(toolBtn.dataset.tool); return; }
+            if (toolBtn) {
+                setTool(toolBtn.dataset.tool);
+                return;
+            }
             const open = e.target.closest("[data-open-layout]");
-            if (open) { openLayout(open.dataset.openLayout); return; }
+            if (open) {
+                openLayout(open.dataset.openLayout);
+                return;
+            }
             const dupL = e.target.closest("[data-dup-layout]");
-            if (dupL) { duplicateLayout(dupL.dataset.dupLayout); return; }
+            if (dupL) {
+                duplicateLayout(dupL.dataset.dupLayout);
+                return;
+            }
             const delL = e.target.closest("[data-del-layout]");
-            if (delL) { deleteLayout(delL.dataset.delLayout); return; }
+            if (delL) {
+                deleteLayout(delL.dataset.delLayout);
+                return;
+            }
             const vis = e.target.closest("[data-asset-vis]");
             if (vis) {
                 const asset = active().assets.find(a => a.id === vis.dataset.assetVis);
-                if (asset) { pushHistory(); asset.visible = !asset.visible; renderAll(); scheduleSave(); }
+                if (asset) {
+                    pushHistory();
+                    asset.visible = !asset.visible;
+                    renderAll();
+                    scheduleSave();
+                }
                 return;
             }
             const lock = e.target.closest("[data-asset-lock]");
             if (lock) {
                 const asset = active().assets.find(a => a.id === lock.dataset.assetLock);
-                if (asset) { pushHistory(); asset.locked = !asset.locked; layerState("background").locked = asset.locked; renderAll(); scheduleSave(); }
+                if (asset) {
+                    pushHistory();
+                    asset.locked = !asset.locked;
+                    layerState("background").locked = asset.locked;
+                    renderAll();
+                    scheduleSave();
+                }
                 return;
             }
             const openAsset = e.target.closest("[data-open-asset]");
@@ -2844,21 +4454,54 @@
                 return;
             }
             const delA = e.target.closest("[data-asset-del]");
-            if (delA) { deleteAsset(delA.dataset.assetDel); return; }
+            if (delA) {
+                deleteAsset(delA.dataset.assetDel);
+                return;
+            }
             const lv = e.target.closest("[data-layer-vis]");
-            if (lv) { pushHistory(); layerState(lv.dataset.layerVis).visible = !layerState(lv.dataset.layerVis).visible; renderAll(); scheduleSave(); return; }
+            if (lv) {
+                pushHistory();
+                layerState(lv.dataset.layerVis).visible = !layerState(lv.dataset.layerVis).visible;
+                renderAll();
+                scheduleSave();
+                return;
+            }
             const ll = e.target.closest("[data-layer-lock]");
-            if (ll) { pushHistory(); layerState(ll.dataset.layerLock).locked = !layerState(ll.dataset.layerLock).locked; renderAll(); scheduleSave(); return; }
+            if (ll) {
+                pushHistory();
+                layerState(ll.dataset.layerLock).locked = !layerState(ll.dataset.layerLock).locked;
+                renderAll();
+                scheduleSave();
+                return;
+            }
             const align = e.target.closest("[data-align]");
-            if (align) { alignSelection(align.dataset.align); return; }
+            if (align) {
+                alignSelection(align.dataset.align);
+                return;
+            }
             const assign = e.target.closest("[data-user]");
             if (assign) {
+                const guest = users.find(user => user.id === assign.dataset.user);
                 const chair = selectedObjects().find(obj => obj.type === "chair");
-                if (chair) { assignGuest(assign.dataset.user); return; }
                 const code = assign.dataset.jump;
-                if (!code) { toast("This guest has no seat yet."); return; }
+                if (guest && guestStatus(guest.status) === "declined") {
+                    if (!code) {
+                        toast("This guest declined.");
+                        return;
+                    }
+                } else if (chair) {
+                    assignGuest(assign.dataset.user);
+                    return;
+                }
+                if (!code) {
+                    toast("This guest has no seat yet.");
+                    return;
+                }
                 const seated = active().objects.find(obj => obj.type === "chair" && String(obj.seatNumber || "").toUpperCase() === code.toUpperCase());
-                if (!seated) { toast("That seat is not on this layout."); return; }
+                if (!seated) {
+                    toast("That seat is not on this layout.");
+                    return;
+                }
                 selection = new Set([seated.id]);
                 selectedAssetId = "";
                 renderAll();
@@ -2881,7 +4524,7 @@
                     duplicate: "#propLabel, #editType, #props",
                     ungroup: "#props",
                     delete: "#rosterSearch"
-                }[id];
+                } [id];
                 if (focus) revealSide(id === "assign" || id === "delete" ? "guests" : "details", focus);
             }
         });
@@ -2891,13 +4534,16 @@
             e.dataTransfer.setData("text/tool", btn.dataset.tool);
         });
         document.body.addEventListener("input", (e) => {
-            if (e.target.id === "rosterSearch") renderRoster();
+            if (e.target.id === "rosterSearch" || e.target.id === "rosterFilter") renderRoster();
             if (e.target.id === "propFont") {
                 const obj = selectedObjects()[0];
                 if (obj && obj.type === "text") {
                     const next = clamp(parseFloat(e.target.value) || 28, 8, 240);
                     if (next !== (obj.fontSize || 28)) {
-                        if (!e.target.dataset.pushed) { pushHistory(); e.target.dataset.pushed = "1"; }
+                        if (!e.target.dataset.pushed) {
+                            pushHistory();
+                            e.target.dataset.pushed = "1";
+                        }
                         obj.fontSize = next;
                         const label = world().querySelector(`[data-id="${obj.id}"] .obj-label`);
                         if (label) label.style.fontSize = next + "px";
@@ -2911,29 +4557,40 @@
                 scheduleSave();
             }
         });
+        document.getElementById("rosterFilter").addEventListener("change", renderRoster);
 
         document.getElementById("undoBtn").onclick = undo;
         document.getElementById("redoBtn").onclick = redo;
         document.getElementById("saveBtn").onclick = saveNow;
-        document.getElementById("dashBtn").onclick = () => { document.getElementById("leaveModal").hidden = false; };
+        document.getElementById("dashBtn").onclick = () => {
+            document.getElementById("leaveModal").hidden = false;
+        };
+
         function revealSide(section, selector) {
             document.body.classList.remove("hide-right");
             syncSides();
             const panel = document.querySelector(".props");
             const target = selector.split(",").map(part => document.querySelector(part.trim())).find(Boolean);
             requestAnimationFrame(() => {
-                if (panel) panel.scrollIntoView({ block: "nearest" });
+                if (panel) panel.scrollIntoView({
+                    block: "nearest"
+                });
                 if (!target) return;
                 if (section === "guests") {
                     const roster = document.querySelector(".roster");
                     if (roster && panel) panel.scrollTop = roster.offsetTop;
                 } else if (panel) {
                     panel.scrollTop = 0;
-                    target.scrollIntoView({ block: "nearest" });
+                    target.scrollIntoView({
+                        block: "nearest"
+                    });
                 }
-                if (typeof target.focus === "function" && target.matches("input, select, textarea, button")) target.focus({ preventScroll: true });
+                if (typeof target.focus === "function" && target.matches("input, select, textarea, button")) target.focus({
+                    preventScroll: true
+                });
             });
         }
+
         function syncSides() {
             const left = document.body.classList.contains("hide-left");
             const right = document.body.classList.contains("hide-right");
@@ -2942,23 +4599,41 @@
             document.getElementById("openLeftBtn").hidden = !left;
             document.getElementById("openRightBtn").hidden = !right;
         }
-        document.getElementById("closeLeftBtn").onclick = () => { document.body.classList.add("hide-left"); syncSides(); };
-        document.getElementById("closeRightBtn").onclick = () => { document.body.classList.add("hide-right"); syncSides(); };
-        document.getElementById("openLeftBtn").onclick = () => { document.body.classList.remove("hide-left"); syncSides(); };
-        document.getElementById("openRightBtn").onclick = () => { document.body.classList.remove("hide-right"); syncSides(); };
+        document.getElementById("closeLeftBtn").onclick = () => {
+            document.body.classList.add("hide-left");
+            syncSides();
+        };
+        document.getElementById("closeRightBtn").onclick = () => {
+            document.body.classList.add("hide-right");
+            syncSides();
+        };
+        document.getElementById("openLeftBtn").onclick = () => {
+            document.body.classList.remove("hide-left");
+            syncSides();
+        };
+        document.getElementById("openRightBtn").onclick = () => {
+            document.body.classList.remove("hide-right");
+            syncSides();
+        };
         document.getElementById("sidesBtn").onclick = () => {
             const bothHidden = document.body.classList.contains("hide-left") && document.body.classList.contains("hide-right");
             document.body.classList.toggle("hide-left", !bothHidden);
             document.body.classList.toggle("hide-right", !bothHidden);
             syncSides();
         };
-        document.getElementById("leaveStay").onclick = () => { document.getElementById("leaveModal").hidden = true; };
-        document.getElementById("renumberKeep").onclick = () => { document.getElementById("renumberModal").hidden = true; };
+        document.getElementById("leaveStay").onclick = () => {
+            document.getElementById("leaveModal").hidden = true;
+        };
+        document.getElementById("renumberKeep").onclick = () => {
+            document.getElementById("renumberModal").hidden = true;
+        };
         document.getElementById("renumberApply").onclick = () => {
             document.getElementById("renumberModal").hidden = true;
             applyRenumber();
         };
-        document.getElementById("numberCancel").onclick = () => { document.getElementById("numberModal").hidden = true; };
+        document.getElementById("numberCancel").onclick = () => {
+            document.getElementById("numberModal").hidden = true;
+        };
         document.getElementById("numberStart").addEventListener("input", refreshNumberPreview);
         document.getElementById("numberDirection").addEventListener("change", refreshNumberPreview);
         document.getElementById("numberForm").addEventListener("submit", (e) => {
@@ -2966,25 +4641,44 @@
             document.getElementById("numberModal").hidden = true;
             applyTableNumbers();
         });
-        document.getElementById("leaveSkip").onclick = () => { location.href = "dashboard.html"; };
+        document.getElementById("leaveSkip").onclick = () => {
+            location.href = "dashboard.html";
+        };
         document.getElementById("leaveForm").addEventListener("submit", async (e) => {
             e.preventDefault();
             const saved = await saveNow();
             if (saved) location.href = "dashboard.html";
         });
-        document.getElementById("previewBtn").onclick = () => { document.body.classList.toggle("is-preview"); document.getElementById("previewBtn").textContent = document.body.classList.contains("is-preview") ? "Edit" : "Preview"; fit(); };
+        document.getElementById("previewBtn").onclick = () => {
+            document.body.classList.toggle("is-preview");
+            document.getElementById("previewBtn").textContent = document.body.classList.contains("is-preview") ? "Edit" : "Preview";
+            fit();
+        };
         document.getElementById("clearSelBtn").onclick = clearSelection;
         document.getElementById("dupBtn").onclick = duplicateSelection;
         document.getElementById("delBtn").onclick = deleteSelection;
         document.getElementById("newLayoutBtn").onclick = newLayout;
         document.getElementById("uploadBtn").onclick = () => document.getElementById("fileInput").click();
-        document.getElementById("fileInput").onchange = (e) => { const file = e.target.files && e.target.files[0]; e.target.value = ""; if (file) onUpload(file); };
+        document.getElementById("fileInput").onchange = (e) => {
+            const file = e.target.files && e.target.files[0];
+            e.target.value = "";
+            if (file) onUpload(file);
+        };
         document.getElementById("zoomOutBtn").onclick = () => zoomAt(viewport().clientWidth / 2 + viewport().getBoundingClientRect().left, viewport().clientHeight / 2 + viewport().getBoundingClientRect().top, 1 / 1.15);
         document.getElementById("zoomInBtn").onclick = () => zoomAt(viewport().clientWidth / 2 + viewport().getBoundingClientRect().left, viewport().clientHeight / 2 + viewport().getBoundingClientRect().top, 1.15);
         document.getElementById("fitBtn").onclick = fit;
-        document.getElementById("zoom100Btn").onclick = () => { zoom = 1; applyView(); };
-        document.getElementById("snapBtn").onclick = () => { snapOn = !snapOn; renderAll(); };
-        document.getElementById("lockBtn").onclick = () => { sessionStorage.removeItem(AUTH_KEY); location.reload(); };
+        document.getElementById("zoom100Btn").onclick = () => {
+            zoom = 1;
+            applyView();
+        };
+        document.getElementById("snapBtn").onclick = () => {
+            snapOn = !snapOn;
+            renderAll();
+        };
+        document.getElementById("lockBtn").onclick = () => {
+            sessionStorage.removeItem(AUTH_KEY);
+            location.reload();
+        };
         document.addEventListener("visibilitychange", () => {
             if (document.visibilityState === "hidden" && booted && saveTimer) {
                 clearTimeout(saveTimer);
@@ -3014,13 +4708,17 @@
             if (e.target.id === "groupBtn") {
                 pushHistory();
                 const gid = "grp-" + uid();
-                selectedObjects().forEach(o => { o.groupId = gid; });
+                selectedObjects().forEach(o => {
+                    o.groupId = gid;
+                });
                 scheduleSave();
                 toast("Grouped. Clicking one selects the group.");
             }
             if (e.target.id === "ungroupBtn") {
                 pushHistory();
-                selectedObjects().forEach(o => { o.groupId = ""; });
+                selectedObjects().forEach(o => {
+                    o.groupId = "";
+                });
                 scheduleSave();
             }
             if (e.target.id === "assetApply") {
@@ -3042,23 +4740,56 @@
             const typing = ["INPUT", "TEXTAREA", "SELECT"].includes(e.target.tagName);
             if (e.code === "Space") spaceDown = true;
             if (e.key === "Escape") {
-                if (!document.getElementById("numberModal").hidden) { document.getElementById("numberModal").hidden = true; return; }
-                if (!document.getElementById("renumberModal").hidden) { document.getElementById("renumberModal").hidden = true; return; }
-                if (!document.getElementById("leaveModal").hidden) { document.getElementById("leaveModal").hidden = true; return; }
-                if (!document.getElementById("arrangeModal").hidden) { closeArrange(); return; }
-                if (!typing) { setTool("select"); clearSelection(); }
+                if (!document.getElementById("numberModal").hidden) {
+                    document.getElementById("numberModal").hidden = true;
+                    return;
+                }
+                if (!document.getElementById("renumberModal").hidden) {
+                    document.getElementById("renumberModal").hidden = true;
+                    return;
+                }
+                if (!document.getElementById("leaveModal").hidden) {
+                    document.getElementById("leaveModal").hidden = true;
+                    return;
+                }
+                if (!document.getElementById("arrangeModal").hidden) {
+                    closeArrange();
+                    return;
+                }
+                if (!typing) {
+                    setTool("select");
+                    clearSelection();
+                }
                 return;
             }
             if (typing) return;
             if (!document.getElementById("renumberModal").hidden) return;
             if (!document.getElementById("numberModal").hidden) return;
             const meta = e.ctrlKey || e.metaKey;
-            if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); deleteSelection(); }
-            if (meta && e.key.toLowerCase() === "z" && e.shiftKey) { e.preventDefault(); redo(); }
-            else if (meta && e.key.toLowerCase() === "z") { e.preventDefault(); undo(); }
-            if (meta && e.key.toLowerCase() === "y") { e.preventDefault(); redo(); }
-            if (meta && e.key.toLowerCase() === "d") { e.preventDefault(); duplicateSelection(); }
-            if (meta && e.key.toLowerCase() === "a") { e.preventDefault(); active().objects.forEach(o => selection.add(o.id)); renderAll(); }
+            if (e.key === "Delete" || e.key === "Backspace") {
+                e.preventDefault();
+                deleteSelection();
+            }
+            if (meta && e.key.toLowerCase() === "z" && e.shiftKey) {
+                e.preventDefault();
+                redo();
+            } else if (meta && e.key.toLowerCase() === "z") {
+                e.preventDefault();
+                undo();
+            }
+            if (meta && e.key.toLowerCase() === "y") {
+                e.preventDefault();
+                redo();
+            }
+            if (meta && e.key.toLowerCase() === "d") {
+                e.preventDefault();
+                duplicateSelection();
+            }
+            if (meta && e.key.toLowerCase() === "a") {
+                e.preventDefault();
+                active().objects.forEach(o => selection.add(o.id));
+                renderAll();
+            }
             if (meta && e.key.toLowerCase() === "c") {
                 const items = selectedObjects();
                 const table = items.find(o => o.type === "table");
@@ -3077,8 +4808,13 @@
             if (e.key.toLowerCase() === "v" && !meta) setTool("select");
             if (e.key.toLowerCase() === "h" && !meta) setTool("hand");
         });
-        window.addEventListener("keyup", (e) => { if (e.code === "Space") spaceDown = false; });
-        window.addEventListener("resize", () => { if (booted) positionFloat(); });
+        window.addEventListener("keyup", (e) => {
+            if (e.code === "Space") spaceDown = false;
+        });
+        window.addEventListener("resize", () => {
+            if (booted) positionFloat();
+        });
     </script>
 </body>
+
 </html>

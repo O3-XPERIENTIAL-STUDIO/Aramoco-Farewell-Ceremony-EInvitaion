@@ -1731,12 +1731,13 @@
                 <span class="panel-title">Bulk Download</span>
             </div>
             <div class="bulk-download-hint">
-                Paste guest email IDs (one per line, or separated by commas). Download invite PDFs or E-Badges as a ZIP.
+                Paste guest email IDs (one per line, or separated by commas). Download invite PDFs, E-Badge images, or E-Badge PDFs as a ZIP.
             </div>
             <textarea id="bulkDownloadEmails" class="bulk-download-textarea" rows="6" placeholder="guest1@example.com&#10;guest2@example.com&#10;guest3@example.com"></textarea>
             <div class="bulk-download-actions">
                 <button type="button" class="btn btn-primary" id="btnBulkPdfZip" onclick="downloadBulkPdfZip()">⬇ Download PDFs (ZIP)</button>
                 <button type="button" class="btn btn-success" id="btnBulkQrZip" onclick="downloadBulkQrZip()">⬇ Download E-Badges (ZIP)</button>
+                <button type="button" class="btn btn-success" id="btnBulkQrPdfZip" onclick="downloadBulkQrPdfZip()">⬇ Download E-Badge PDFs (ZIP)</button>
             </div>
             <div id="bulkDownloadStatus" class="bulk-download-status"></div>
         </div>
@@ -3376,6 +3377,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                     <button class="btn btn-primary" type="button" onclick="focusAddForGroup(${Number(group.id)})">＋ Add guest</button>
                     <button class="btn btn-primary" type="button" onclick="downloadGroupZip(${Number(group.id)}, 'pdf')">⬇ PDFs</button>
                     <button class="btn btn-success" type="button" onclick="downloadGroupZip(${Number(group.id)}, 'qr')">⬇ E-Badges</button>
+                    <button class="btn btn-success" type="button" onclick="downloadGroupZip(${Number(group.id)}, 'qr-pdf')">⬇ E-Badge PDFs</button>
                     <button class="btn btn-ghost" type="button" onclick="exportGroupRsvp(${Number(group.id)})">⬇ RSVP report</button>
                     <button class="btn btn-ghost" type="button" onclick="sendGroupInvites(${Number(group.id)})">✉ Send unsent</button>
                     <button class="btn btn-ghost" type="button" onclick="deleteGroup(${Number(group.id)})">Delete group</button>
@@ -3521,7 +3523,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                 const safeUid = String(u.uniqueId || '').replace(/'/g, "\\'");
                 const safeName = String(u.userName || '').replace(/'/g, "\\'");
                 const pdfBtn = safeUid ?
-                    `<button class="btn-download" onclick="downloadInvitePdf('${safeUid}','${safeName}')">⬇ Download PDF</button>` :
+                    `<button class="btn-download" onclick="downloadInvitePdf('${safeUid}','${safeName}')">⬇ Download invite-card</button>` :
                     '';
                 const qrSrc = u.qrCode ?
                     `data:image/png;base64,${u.qrCode}` :
@@ -3535,7 +3537,8 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                     qrHTML = `<div class="qr-frame">${imgTag}</div>
                   <div class="qr-caption"></div>`;
                     const safeCard = String(qrCardSrc).replace(/'/g, "\\'");
-                    dlBtn = `<button class="btn-download" onclick="downloadQR('${safeCard}','${safeName}')">⬇ Download E-Badge</button>`;
+                    dlBtn = `<button class="btn-download" onclick="downloadQR('${safeCard}','${safeName}')">⬇ E-Badge image</button>` +
+                        `<button class="btn-download" onclick="downloadQrPdf('${safeCard}','${safeName}')">⬇ E-Badge PDF</button>`;
                 }
                 dlBtn = `${pdfBtn}${dlBtn}`;
 
@@ -3918,16 +3921,17 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             }
 
             const isPdf = kind === 'pdf';
+            const isQrPdf = kind === 'qr-pdf';
             const endpoint = isPdf ?
                 `${baseURL}/api/AramcoFarewell/bulk-download-pdf` :
                 `${baseURL}/api/AramcoFarewell/bulk-download-qr`;
-            const btn = byGroup ? null : document.getElementById(isPdf ? 'btnBulkPdfZip' : 'btnBulkQrZip');
+            const btn = byGroup ? null : document.getElementById(isPdf ? 'btnBulkPdfZip' : (isQrPdf ? 'btnBulkQrPdfZip' : 'btnBulkQrZip'));
             const label = btn ? btn.textContent : '';
             if (btn) {
                 btn.disabled = true;
                 btn.textContent = 'Preparing ZIP…';
             }
-            setBulkDownloadStatus(isPdf ? 'Generating PDFs… this can take a minute.' : 'Generating E-Badges…', '');
+            setBulkDownloadStatus(isPdf ? 'Generating PDFs… this can take a minute.' : (isQrPdf ? 'Building E-Badge PDFs…' : 'Generating E-Badges…'), '');
 
             try {
                 const res = await fetch(endpoint, {
@@ -3960,16 +3964,24 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                 }
 
                 const blob = await res.blob();
-                const disposition = res.headers.get('Content-Disposition') || '';
                 let filename = isPdf ?
                     `aramco-farewell-invite-pdfs_${new Date().toISOString().slice(0, 10)}.zip` :
-                    `aramco-farewell-qr-cards_${new Date().toISOString().slice(0, 10)}.zip`;
-                const match = /filename\*?=(?:UTF-8''|")?([^\";]+)/i.exec(disposition);
-                if (match && match[1]) {
-                    filename = decodeURIComponent(match[1].replace(/"/g, '').trim());
+                    (isQrPdf ?
+                        `aramco-farewell-ebadge-pdfs_${new Date().toISOString().slice(0, 10)}.zip` :
+                        `aramco-farewell-qr-cards_${new Date().toISOString().slice(0, 10)}.zip`);
+                let outBlob = blob;
+                if (isQrPdf) {
+                    setBulkDownloadStatus('Building E-Badge PDFs…', '');
+                    outBlob = await imageZipToPdfZip(blob);
+                } else {
+                    const disposition = res.headers.get('Content-Disposition') || '';
+                    const match = /filename\*?=(?:UTF-8''|")?([^\";]+)/i.exec(disposition);
+                    if (match && match[1]) {
+                        filename = decodeURIComponent(match[1].replace(/"/g, '').trim());
+                    }
                 }
 
-                const objectUrl = URL.createObjectURL(blob);
+                const objectUrl = URL.createObjectURL(outBlob);
                 const a = document.createElement('a');
                 a.href = objectUrl;
                 a.download = filename;
@@ -3996,6 +4008,248 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
 
         function downloadBulkQrZip() {
             return downloadBulkZip('qr');
+        }
+
+        function downloadBulkQrPdfZip() {
+            return downloadBulkZip('qr-pdf');
+        }
+
+        function crc32(bytes) {
+            if (!crc32.table) {
+                const table = new Uint32Array(256);
+                for (let n = 0; n < 256; n++) {
+                    let c = n;
+                    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xedb88320 ^ (c >>> 1)) : (c >>> 1);
+                    table[n] = c >>> 0;
+                }
+                crc32.table = table;
+            }
+            let crc = 0xffffffff;
+            for (let i = 0; i < bytes.length; i++) crc = crc32.table[(crc ^ bytes[i]) & 0xff] ^ (crc >>> 8);
+            return (crc ^ 0xffffffff) >>> 0;
+        }
+
+        function zipStored(files) {
+            const enc = new TextEncoder();
+            const parts = [];
+            const central = [];
+            let offset = 0;
+            const push = (bytes) => {
+                parts.push(bytes);
+                offset += bytes.length;
+            };
+            const u16 = (n) => {
+                const bytes = new Uint8Array(2);
+                new DataView(bytes.buffer).setUint16(0, n, true);
+                return bytes;
+            };
+            const u32 = (n) => {
+                const bytes = new Uint8Array(4);
+                new DataView(bytes.buffer).setUint32(0, n, true);
+                return bytes;
+            };
+            files.forEach(file => {
+                const nameBytes = enc.encode(file.name);
+                const crc = crc32(file.data);
+                const localStart = offset;
+                push(new Uint8Array([0x50, 0x4b, 0x03, 0x04]));
+                push(u16(20));
+                push(u16(0));
+                push(u16(0));
+                push(u16(0));
+                push(u16(0));
+                push(u32(crc));
+                push(u32(file.data.length));
+                push(u32(file.data.length));
+                push(u16(nameBytes.length));
+                push(u16(0));
+                push(nameBytes);
+                push(file.data);
+                central.push({ nameBytes, crc, size: file.data.length, localStart });
+            });
+            const centralStart = offset;
+            central.forEach(entry => {
+                push(new Uint8Array([0x50, 0x4b, 0x01, 0x02]));
+                push(u16(20));
+                push(u16(20));
+                push(u16(0));
+                push(u16(0));
+                push(u16(0));
+                push(u16(0));
+                push(u32(entry.crc));
+                push(u32(entry.size));
+                push(u32(entry.size));
+                push(u16(entry.nameBytes.length));
+                push(u16(0));
+                push(u16(0));
+                push(u16(0));
+                push(u16(0));
+                push(u32(0));
+                push(u32(entry.localStart));
+                push(entry.nameBytes);
+            });
+            const centralSize = offset - centralStart;
+            push(new Uint8Array([0x50, 0x4b, 0x05, 0x06]));
+            push(u16(0));
+            push(u16(0));
+            push(u16(central.length));
+            push(u16(central.length));
+            push(u32(centralSize));
+            push(u32(centralStart));
+            push(u16(0));
+            return new Blob([concatBytes(parts)], { type: 'application/zip' });
+        }
+
+        async function inflateRaw(bytes) {
+            const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+            return new Uint8Array(await new Response(stream).arrayBuffer());
+        }
+
+        async function readZipEntries(bytes) {
+            const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+            let eocd = -1;
+            const scanFrom = Math.max(0, bytes.length - 22 - 65536);
+            for (let i = bytes.length - 22; i >= scanFrom; i--) {
+                if (view.getUint32(i, true) === 0x06054b50) {
+                    eocd = i;
+                    break;
+                }
+            }
+            if (eocd < 0) throw new Error('The E-Badge download was not a ZIP file.');
+            const count = view.getUint16(eocd + 10, true);
+            let ptr = view.getUint32(eocd + 16, true);
+            const files = [];
+            for (let n = 0; n < count; n++) {
+                if (view.getUint32(ptr, true) !== 0x02014b50) break;
+                const method = view.getUint16(ptr + 10, true);
+                const compSize = view.getUint32(ptr + 20, true);
+                const nameLen = view.getUint16(ptr + 28, true);
+                const extraLen = view.getUint16(ptr + 30, true);
+                const commentLen = view.getUint16(ptr + 32, true);
+                const localOff = view.getUint32(ptr + 42, true);
+                const name = new TextDecoder().decode(bytes.subarray(ptr + 46, ptr + 46 + nameLen));
+                const localNameLen = view.getUint16(localOff + 26, true);
+                const localExtraLen = view.getUint16(localOff + 28, true);
+                const dataOff = localOff + 30 + localNameLen + localExtraLen;
+                const compressed = bytes.subarray(dataOff, dataOff + compSize);
+                const data = method === 0 ? compressed : (method === 8 ? await inflateRaw(compressed) : null);
+                if (!data) throw new Error('This ZIP uses a compression type the page cannot read.');
+                files.push({ name, data });
+                ptr += 46 + nameLen + extraLen + commentLen;
+            }
+            return files;
+        }
+
+        async function imageZipToPdfZip(zipBlob) {
+            const files = await readZipEntries(new Uint8Array(await zipBlob.arrayBuffer()));
+            const images = files.filter(file => /\.(jpe?g|png)$/i.test(file.name));
+            if (!images.length) throw new Error('The E-Badge download did not contain any images.');
+            const pdfs = [];
+            for (let index = 0; index < images.length; index++) {
+                const image = images[index];
+                const type = /\.png$/i.test(image.name) ? 'image/png' : 'image/jpeg';
+                const converted = await imageBlobToJpeg(new Blob([image.data], { type }));
+                const pdf = jpegBadgeToPdfBlob(converted.bytes, converted.width, converted.height);
+                pdfs.push({
+                    name: image.name
+                        .replace(/AramcoFarewellInvite\.(jpe?g|png)$/i, 'AramcoFarewellEbadge.pdf')
+                        .replace(/\.(jpe?g|png)$/i, '.pdf'),
+                    data: new Uint8Array(await pdf.arrayBuffer())
+                });
+            }
+            return zipStored(pdfs);
+        }
+
+        function concatBytes(parts) {
+            const total = parts.reduce((sum, part) => sum + part.length, 0);
+            const out = new Uint8Array(total);
+            let offset = 0;
+            parts.forEach(part => {
+                out.set(part, offset);
+                offset += part.length;
+            });
+            return out;
+        }
+
+        function jpegBadgeToPdfBlob(jpegBytes, pixelWidth, pixelHeight) {
+            const pageW = 402;
+            const pageH = Math.max(1, Math.round(pageW * pixelHeight / Math.max(1, pixelWidth)));
+            const enc = new TextEncoder();
+            const chunks = [];
+            const offsets = [0];
+            const lengthNow = () => chunks.reduce((sum, part) => sum + part.length, 0);
+            const addText = (text) => chunks.push(enc.encode(text));
+            addText('%PDF-1.4\n');
+            offsets.push(lengthNow());
+            addText('1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n');
+            offsets.push(lengthNow());
+            addText('2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n');
+            offsets.push(lengthNow());
+            addText(`3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${pageW} ${pageH}] /Contents 4 0 R /Resources << /XObject << /Im1 5 0 R >> >> >>\nendobj\n`);
+            const content = `q\n${pageW} 0 0 ${pageH} 0 0 cm\n/Im1 Do\nQ\n`;
+            offsets.push(lengthNow());
+            addText(`4 0 obj\n<< /Length ${enc.encode(content).length} >>\nstream\n${content}endstream\nendobj\n`);
+            offsets.push(lengthNow());
+            addText(`5 0 obj\n<< /Type /XObject /Subtype /Image /Width ${pixelWidth} /Height ${pixelHeight} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${jpegBytes.length} >>\nstream\n`);
+            chunks.push(jpegBytes);
+            addText('\nendstream\nendobj\n');
+            const xrefAt = lengthNow();
+            let xref = 'xref\n0 6\n0000000000 65535 f \n';
+            for (let index = 1; index <= 5; index++) {
+                xref += `${String(offsets[index]).padStart(10, '0')} 00000 n \n`;
+            }
+            addText(xref);
+            addText(`trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n${xrefAt}\n%%EOF`);
+            return new Blob([concatBytes(chunks)], { type: 'application/pdf' });
+        }
+
+        async function imageBlobToJpeg(blob) {
+            const bitmap = await createImageBitmap(blob);
+            const width = bitmap.width;
+            const height = bitmap.height;
+            const type = (blob.type || '').toLowerCase();
+            if (type.indexOf('jpeg') !== -1 || type.indexOf('jpg') !== -1) {
+                return { bytes: new Uint8Array(await blob.arrayBuffer()), width, height };
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            canvas.getContext('2d').drawImage(bitmap, 0, 0);
+            const jpegBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+            if (!jpegBlob) throw new Error('Could not build the E-Badge PDF.');
+            return { bytes: new Uint8Array(await jpegBlob.arrayBuffer()), width, height };
+        }
+
+        function ebadgePdfFileName(name) {
+            const safe = inviteCardFileName(name).replace(/AramcoFarewellInvite\.jpg$/i, '');
+            return `${safe}AramcoFarewellEbadge.pdf`;
+        }
+
+        async function downloadQrPdf(src, name) {
+            if (!src) return;
+            const filename = ebadgePdfFileName(name);
+            const href = src.indexOf('data:') === 0 || src.indexOf('http') === 0 ?
+                src :
+                ('data:image/png;base64,' + src);
+            try {
+                const res = await fetch(href, { mode: 'cors', cache: 'no-store' });
+                if (!res.ok) throw new Error('E-Badge download failed');
+                const image = await imageBlobToJpeg(await res.blob());
+                const pdf = jpegBadgeToPdfBlob(image.bytes, image.width, image.height);
+                const objectUrl = URL.createObjectURL(pdf);
+                const a = document.createElement('a');
+                a.href = objectUrl;
+                a.download = filename;
+                a.rel = 'noopener';
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+            } catch (err) {
+                console.error(err);
+                alert('Could not download the E-Badge PDF. Please try again.');
+            }
         }
 
         async function downloadQR(src, name) {
