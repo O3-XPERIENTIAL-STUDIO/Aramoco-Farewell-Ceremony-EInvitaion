@@ -290,6 +290,12 @@
             font-size: 48px;
         }
 
+        .seat-code.is-table {
+            font-size: clamp(34px, 8.5vw, 56px);
+            line-height: 1.05;
+            word-break: normal;
+        }
+
         .history ul {
             max-height: 52vh;
             overflow: auto;
@@ -499,6 +505,72 @@
                 } catch (e) {}
             }
 
+            var seatLabels = {};
+            var seatLabelsReady = null;
+
+            function padSeat(n) {
+                var text = String(n);
+                while (text.length < 3) text = "0" + text;
+                return text;
+            }
+
+            function displayForStoredSeat(code) {
+                var key = String(code || "").trim().toUpperCase();
+                if (!key) return "";
+                return seatLabels[key] || String(code).trim();
+            }
+
+            function indexSeatPlan(doc) {
+                seatLabels = {};
+                if (!doc || !doc.layouts || !doc.layouts.length) return;
+                var layout = doc.layouts[0];
+                for (var i = 0; i < doc.layouts.length; i++) {
+                    if (doc.layouts[i].id === doc.activeLayoutId) layout = doc.layouts[i];
+                }
+                var objects = layout.objects || [];
+                var tables = {};
+                var byTable = {};
+                objects.forEach(function(obj) {
+                    if (obj.type === "table") tables[obj.id] = obj;
+                    if (obj.type === "chair" && obj.tableId) {
+                        if (!byTable[obj.tableId]) byTable[obj.tableId] = [];
+                        byTable[obj.tableId].push(obj);
+                    }
+                });
+                Object.keys(byTable).forEach(function(tableId) {
+                    var chairs = byTable[tableId].sort(function(a, b) {
+                        return (a.slot || 0) - (b.slot || 0);
+                    });
+                    var table = tables[tableId];
+                    var number = table ? parseInt(table.tableNo, 10) : 0;
+                    var tableText = number ? ("Table " + number) : ((table && table.label) || "Table");
+                    chairs.forEach(function(chair, index) {
+                        var stored = String(chair.seatNumber || "").trim().toUpperCase();
+                        if (!stored) return;
+                        seatLabels[stored] = tableText + " - C-" + padSeat(index + 1);
+                    });
+                });
+            }
+
+            function loadSeatPlan() {
+                if (seatLabelsReady) return seatLabelsReady;
+                seatLabelsReady = fetch(API_BASE + "/api/AramcoFarewell/seats/map", {
+                    cache: "no-store"
+                }).then(function(res) {
+                    return res.ok ? res.text() : "";
+                }).then(function(svgText) {
+                    if (!svgText || svgText.indexOf("<svg") === -1) return;
+                    var xml = new DOMParser().parseFromString(svgText, "image/svg+xml");
+                    var meta = xml.querySelector("[id='aramco-seat-layout']");
+                    if (!meta || !meta.textContent) return;
+                    var data = JSON.parse(meta.textContent);
+                    if (data && data.version === 2) indexSeatPlan(data);
+                }).catch(function() {
+                    seatLabelsReady = null;
+                });
+                return seatLabelsReady;
+            }
+
             function showSeat(code) {
                 var box = document.getElementById("seatDisplay");
                 var value = document.getElementById("seatCode");
@@ -506,7 +578,7 @@
                 box.hidden = false;
                 if (code) {
                     value.textContent = code;
-                    value.className = "seat-code";
+                    value.className = code.indexOf("Table ") === 0 ? "seat-code is-table" : "seat-code";
                 } else {
                     value.textContent = "No seat";
                     value.className = "seat-code is-empty";
@@ -784,24 +856,27 @@
                     var type = returningGuest ? "warn" : "ok";
                     var title = returningGuest ? "Already checked in" : "Checked in";
                     beep(true);
-                    showSeat(seat);
-                    showResult(type, title,
-                        "<strong>" + esc(name) + "</strong>" +
-                        (company ? "<br>" + esc(company) : "") +
-                        (position ? "<br>" + esc(position) : "") +
-                        "<br>Status: " + esc(status) + "<br>" +
-                        "Check-ins: " + count + "<br>" +
-                        esc(when) + previousHtml);
-                    renderSeatAction({
-                        uniqueId: body.uniqueId || body.UniqueId || uniqueId,
-                        name: name,
-                        company: company,
-                        position: position,
-                        seat: seat,
-                        isSeated: isSeated,
-                        seatedAt: seatedAt
+                    return loadSeatPlan().then(function() {
+                        var label = seat ? displayForStoredSeat(seat) : "";
+                        showSeat(label);
+                        showResult(type, title,
+                            "<strong>" + esc(name) + "</strong>" +
+                            (company ? "<br>" + esc(company) : "") +
+                            (position ? "<br>" + esc(position) : "") +
+                            "<br>Status: " + esc(status) + "<br>" +
+                            "Check-ins: " + count + "<br>" +
+                            esc(when) + previousHtml);
+                        renderSeatAction({
+                            uniqueId: body.uniqueId || body.UniqueId || uniqueId,
+                            name: name,
+                            company: company,
+                            position: position,
+                            seat: label,
+                            isSeated: isSeated,
+                            seatedAt: seatedAt
+                        });
+                        addHistory(name, body.checkIns || body.CheckIns || []);
                     });
-                    addHistory(name, body.checkIns || body.CheckIns || []);
                 }).catch(function(err) {
                     beep(false);
                     hideSeat();
@@ -1140,6 +1215,7 @@
             laserMode = true;
             applyMode();
             setInputKind("keyboard");
+            loadSeatPlan();
             focusLaser();
         })();
     </script>
