@@ -1644,8 +1644,10 @@
             border-radius: 999px;
             background: rgba(203, 168, 134, 0.16);
             color: var(--gold);
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 700;
+            white-space: nowrap;
+            vertical-align: middle;
         }
     </style>
 </head>
@@ -3319,7 +3321,9 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                     u.company,
                     u.position,
                     u.groupName,
-                    u.groupMemberName
+                    u.groupMemberName,
+                    u.seatCode,
+                    displayForStoredSeat(u.seatCode)
                 ].map(v => (v || '').toString().toLowerCase()).join(' ');
                 const groupOk = !groupFilter ||
                     (groupFilter === '0' ? !u.groupId : String(u.groupId) === groupFilter);
@@ -3561,7 +3565,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
 
             <div class="card-top">
               <div class="card-name-row">
-                <div class="card-name">${u.userName || 'Guest'}${u.seatCode ? `<span class="seat-badge">${u.seatCode}</span>` : ''}</div>
+                <div class="card-name">${u.userName || 'Guest'}${u.seatCode ? `<span class="seat-badge">${escapeHtml(displayForStoredSeat(u.seatCode))}</span>` : ''}</div>
               </div>
               <span class="status-badge ${statusBadgeClass}">${statusLabel}</span>
             </div>
@@ -4704,6 +4708,66 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             }, 1000);
         }
 
+        let seatLabels = {};
+        let seatLabelsReady = null;
+
+        function displayForStoredSeat(code) {
+            const key = String(code || '').trim().toUpperCase();
+            if (!key) return '';
+            return seatLabels[key] || String(code).trim();
+        }
+
+        function indexSeatPlan(doc) {
+            seatLabels = {};
+            if (!doc || !doc.layouts || !doc.layouts.length) return;
+            let layout = doc.layouts[0];
+            for (let i = 0; i < doc.layouts.length; i++) {
+                if (doc.layouts[i].id === doc.activeLayoutId) layout = doc.layouts[i];
+            }
+            const objects = layout.objects || [];
+            const tables = {};
+            const byTable = {};
+            objects.forEach(obj => {
+                if (obj.type === 'table') tables[obj.id] = obj;
+                if (obj.type === 'chair' && obj.tableId) {
+                    if (!byTable[obj.tableId]) byTable[obj.tableId] = [];
+                    byTable[obj.tableId].push(obj);
+                }
+            });
+            Object.keys(byTable).forEach(tableId => {
+                const chairs = byTable[tableId].sort((a, b) => (a.slot || 0) - (b.slot || 0));
+                const table = tables[tableId];
+                const number = table ? parseInt(table.tableNo, 10) : 0;
+                const tableText = number ? ('Table ' + number) : ((table && table.label) || 'Table');
+                chairs.forEach((chair, index) => {
+                    const stored = String(chair.seatNumber || '').trim().toUpperCase();
+                    if (!stored) return;
+                    seatLabels[stored] = tableText + ' - C-' + String(index + 1).padStart(3, '0');
+                });
+            });
+        }
+
+        function loadSeatPlan(force) {
+            if (force) seatLabelsReady = null;
+            if (seatLabelsReady) return seatLabelsReady;
+            const request = fetch(`${baseURL}/api/AramcoFarewell/seats/map`, {
+                cache: 'no-store'
+            }).then(res => res.ok ? res.text() : '').then(svgText => {
+                if (!svgText || svgText.indexOf('<svg') === -1) return;
+                const xml = new DOMParser().parseFromString(svgText, 'image/svg+xml');
+                const meta = xml.querySelector("[id='aramco-seat-layout']");
+                if (!meta || !meta.textContent) return;
+                const data = JSON.parse(meta.textContent);
+                if (data && data.version === 2) indexSeatPlan(data);
+            }).then(() => {
+                if (users.length) applyFilters();
+            }).catch(() => {
+                if (seatLabelsReady === request) seatLabelsReady = null;
+            });
+            seatLabelsReady = request;
+            return request;
+        }
+
         async function fetchUsers(silent = false) {
             if (usersFetchInFlight) return;
             usersFetchInFlight = true;
@@ -4834,7 +4898,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
         }
 
         async function manualRefresh() {
-            await fetchUsers(false);
+            await Promise.all([fetchUsers(false), loadSeatPlan(true)]);
         }
 
         function switchTab(tab) {
@@ -4849,6 +4913,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
 
         // Kick off
         fetchUsers(false);
+        loadSeatPlan(false);
         refreshInviteQueueStatus();
     </script>
 </body>
