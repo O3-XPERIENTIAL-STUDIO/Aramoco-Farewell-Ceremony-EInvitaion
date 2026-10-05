@@ -296,6 +296,7 @@
     <script>
         (function () {
             var API_BASE = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
+            var eventApi = new URLSearchParams(location.search).has("cmc") ? "CapitalMarketConversation" : "AramcoFarewell";
             var form = document.getElementById("directRsvpForm");
             var nameInput = document.getElementById("fullName");
             var emailInput = document.getElementById("emailId");
@@ -350,7 +351,7 @@
                 setBusy(true);
                 statusMsg.textContent = "جاري الإرسال…";
 
-                fetch(API_BASE + "/api/AramcoFarewell/direct-rsvp", {
+                fetch(API_BASE + "/api/" + eventApi + "/direct-rsvp", {
                     method: "POST",
                     mode: "cors",
                     cache: "no-store",
@@ -386,6 +387,7 @@
                     next.set("name", fullName);
                     next.set("uniqueId", uniqueId);
                     next.set("status", status);
+                    if (new URLSearchParams(location.search).has("cmc")) next.set("cmc", "1");
                     window.location.href = "https://aramcocorporateevents.com/rsvp?" + next.toString();
                 }).catch(function () {
                     showError("تعذر الاتصال بالخادم. تحقق من الإنترنت وحاول مرة أخرى.");

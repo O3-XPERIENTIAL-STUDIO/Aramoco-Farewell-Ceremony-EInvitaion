@@ -158,16 +158,19 @@
             var btnWallet = document.getElementById("btnAppleWallet");
             var btnDownloadQrCard = document.getElementById("btnDownloadQrCard");
 
+            var eventApi = params.has("cmc") ? "CapitalMarketConversation" : "AramcoFarewell";
+            var cmcSuffix = eventApi === "CapitalMarketConversation" ? "?cmc=1" : "";
+
             if (name && guestEl) {
                 guestEl.textContent = name;
             }
 
             if (uniqueId && qrImage) {
-                qrImage.src = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net/api/AramcoFarewell/qr/" + encodeURIComponent(uniqueId);
+                qrImage.src = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net/api/" + eventApi + "/qr/" + encodeURIComponent(uniqueId);
             }
 
             if (uniqueId && btnDownloadQrCard) {
-                btnDownloadQrCard.href = "/qr-card/" + encodeURIComponent(uniqueId);
+                btnDownloadQrCard.href = "/qr-card/" + encodeURIComponent(uniqueId) + cmcSuffix;
             }
 
             function isAppleDevice() {
@@ -180,7 +183,7 @@
             }
 
             if (uniqueId && btnWallet && isAppleDevice()) {
-                btnWallet.href = "/wallet/" + encodeURIComponent(uniqueId);
+                btnWallet.href = "/wallet/" + encodeURIComponent(uniqueId) + cmcSuffix;
                 btnWallet.style.display = "inline-block";
                 var walletHint = document.getElementById("walletHint");
                 if (walletHint) {

@@ -1664,6 +1664,7 @@
             </div>
             <div class="header-right">
                 <span id="lastUpdated" style="font-size:11px;color:var(--text-muted);"></span>
+                <a class="btn btn-ghost" href="report.html" style="padding:7px 14px;font-size:12px;text-decoration:none;">Client report</a>
                 <a class="btn btn-ghost" href="seats.html" style="padding:7px 14px;font-size:12px;text-decoration:none;">Seat map</a>
                 <a class="btn btn-ghost" href="scanner.html" style="padding:7px 14px;font-size:12px;text-decoration:none;">Scan E-Badge</a>
                 <button class="btn btn-ghost" onclick="manualRefresh()" style="padding:7px 14px;font-size:12px;display:inline-flex;align-items:center;gap:6px;">
@@ -1879,11 +1880,12 @@
     </div>
     <script>
         const baseURL = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
+        const eventApi = new URLSearchParams(location.search).has("cmc") ? "CapitalMarketConversation" : "AramcoFarewell";
         const publicSiteUrl = "https://aramcocorporateevents.com";
-        const inviteEmailEndpoint = `${baseURL}/api/AramcoFarewell/send-invitation-email`;
-        const inviteSmsEndpoint = `${baseURL}/api/AramcoFarewell/send-invitation-sms`;
-        const inviteQueueStatusEndpoint = `${baseURL}/api/AramcoFarewell/invitation-email-queue-status`;
-        const inviteJobStatusEndpoint = `${baseURL}/api/AramcoFarewell/invitation-email-status`;
+        const inviteEmailEndpoint = `${baseURL}/api/${eventApi}/send-invitation-email`;
+        const inviteSmsEndpoint = `${baseURL}/api/${eventApi}/send-invitation-sms`;
+        const inviteQueueStatusEndpoint = `${baseURL}/api/${eventApi}/invitation-email-queue-status`;
+        const inviteJobStatusEndpoint = `${baseURL}/api/${eventApi}/invitation-email-status`;
         const INVITE_QUEUE_POLL_MS = 30000;
         const REMINDER_EMAIL_SUBJECT = 'A kind reminder to confirm your attendance | Aramco Farewells';
         const FINAL_REMINDER_EMAIL_SUBJECT = 'Action Required: Please Confirm Your Attendance | Aramco Farewells';
@@ -3021,7 +3023,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                     if (!isValidEmail(item.emailId)) throw new Error('Invalid EmailId');
                     const status = normalizeImportStatus(item.status);
 
-                    const response = await fetch(`${baseURL}/api/AramcoFarewell/create-user`, {
+                    const response = await fetch(`${baseURL}/api/${eventApi}/create-user`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
@@ -3252,7 +3254,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             }
             setGroupStatus('Creating group...');
             try {
-                const response = await fetch(`${baseURL}/api/AramcoFarewell/groups`, {
+                const response = await fetch(`${baseURL}/api/${eventApi}/groups`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -3532,7 +3534,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                 const qrSrc = u.qrCode ?
                     `data:image/png;base64,${u.qrCode}` :
                     (u.qrCodeUrl || '');
-                const qrCardSrc = u.qrCardUrl || (u.uniqueId ? `${baseURL}/api/AramcoFarewell/qr-card/${encodeURIComponent(u.uniqueId)}` : qrSrc);
+                const qrCardSrc = u.qrCardUrl || (u.uniqueId ? `${baseURL}/api/${eventApi}/qr-card/${encodeURIComponent(u.uniqueId)}` : qrSrc);
                 if (qrSrc) {
                     const isInline = qrSrc.indexOf('data:') === 0;
                     const imgTag = isInline ?
@@ -3709,7 +3711,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
         async function downloadInvitePdf(uniqueId, name) {
             if (!uniqueId) return;
             // Direct navigation avoids cross-origin fetch/CORS; API returns Content-Disposition: attachment.
-            const url = `${baseURL}/api/AramcoFarewell/invite-pdf/${encodeURIComponent(uniqueId)}`;
+            const url = `${baseURL}/api/${eventApi}/invite-pdf/${encodeURIComponent(uniqueId)}`;
             const a = document.createElement('a');
             a.href = url;
             a.target = '_blank';
@@ -3772,7 +3774,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             }
             selectEl.disabled = true;
             try {
-                const response = await fetch(`${baseURL}/api/AramcoFarewell/admin/user-status`, {
+                const response = await fetch(`${baseURL}/api/${eventApi}/admin/user-status`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ uniqueId: user.uniqueId, status: next })
@@ -3839,7 +3841,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                 return;
             }
             try {
-                const response = await fetch(`${baseURL}/api/AramcoFarewell/update-user`, {
+                const response = await fetch(`${baseURL}/api/${eventApi}/update-user`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -3871,7 +3873,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                 : `Delete ${user.userName || 'this guest'}? This cannot be undone.`;
             if (!confirm(message)) return;
             try {
-                const response = await fetch(`${baseURL}/api/AramcoFarewell/users/${encodeURIComponent(user.uniqueId)}?confirm=true`, {
+                const response = await fetch(`${baseURL}/api/${eventApi}/users/${encodeURIComponent(user.uniqueId)}?confirm=true`, {
                     method: 'DELETE'
                 });
                 if (!response.ok) throw new Error(await readApiError(response));
@@ -3891,7 +3893,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             }
             if (!confirm(`Delete the group "${name}"? Guests are not removed, and an empty group is the only one that can be deleted.`)) return;
             try {
-                const response = await fetch(`${baseURL}/api/AramcoFarewell/groups/${encodeURIComponent(groupId)}`, {
+                const response = await fetch(`${baseURL}/api/${eventApi}/groups/${encodeURIComponent(groupId)}`, {
                     method: 'DELETE'
                 });
                 if (!response.ok) throw new Error(await readApiError(response));
@@ -3927,8 +3929,8 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             const isPdf = kind === 'pdf';
             const isQrPdf = kind === 'qr-pdf';
             const endpoint = isPdf ?
-                `${baseURL}/api/AramcoFarewell/bulk-download-pdf` :
-                `${baseURL}/api/AramcoFarewell/bulk-download-qr`;
+                `${baseURL}/api/${eventApi}/bulk-download-pdf` :
+                `${baseURL}/api/${eventApi}/bulk-download-qr`;
             const btn = byGroup ? null : document.getElementById(isPdf ? 'btnBulkPdfZip' : (isQrPdf ? 'btnBulkQrPdfZip' : 'btnBulkQrZip'));
             const label = btn ? btn.textContent : '';
             if (btn) {
@@ -4333,7 +4335,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             }
 
             try {
-                const response = await fetch(`${baseURL}/api/AramcoFarewell/create-user`, {
+                const response = await fetch(`${baseURL}/api/${eventApi}/create-user`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -4750,7 +4752,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
         function loadSeatPlan(force) {
             if (force) seatLabelsReady = null;
             if (seatLabelsReady) return seatLabelsReady;
-            const request = fetch(`${baseURL}/api/AramcoFarewell/seats/map`, {
+            const request = fetch(`${baseURL}/api/${eventApi}/seats/map`, {
                 cache: 'no-store'
             }).then(res => res.ok ? res.text() : '').then(svgText => {
                 if (!svgText || svgText.indexOf('<svg') === -1) return;
@@ -4785,8 +4787,8 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
 
             try {
                 const [response, groupsResponse] = await Promise.all([
-                    fetch(`${baseURL}/api/AramcoFarewell/users`),
-                    fetch(`${baseURL}/api/AramcoFarewell/groups`)
+                    fetch(`${baseURL}/api/${eventApi}/users`),
+                    fetch(`${baseURL}/api/${eventApi}/groups`)
                 ]);
                 if (!response.ok) throw new Error("Failed to fetch");
                 const data = (await response.json()) || [];
@@ -4804,7 +4806,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                     const hashKey = u.hashKey || '';
                     const uniqueId = u.uniqueId || '';
                     const encodedPosition = encodeURIComponent((u.position || '').toString().trim());
-                    const emailInviteUrl = `${publicSiteUrl}/emailInvite?name=${encodedName}&position=${encodedPosition}&uniqueId=${encodeURIComponent(uniqueId)}`;
+                    const emailInviteUrl = `${publicSiteUrl}/emailInvite?name=${encodedName}&position=${encodedPosition}&uniqueId=${encodeURIComponent(uniqueId)}${eventApi === "CapitalMarketConversation" ? "&cmc=1" : ""}`;
                     return {
                         uniqueId: uniqueId,
                         userName: u.fullName,
@@ -4833,8 +4835,8 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                         urlLink: emailInviteUrl,
                         emailInviteLink: emailInviteUrl,
                         qrCode: u.qrCode || null,
-                        qrCodeUrl: u.qrCodeUrl || (uniqueId ? `${baseURL}/api/AramcoFarewell/qr/${encodeURIComponent(uniqueId)}` : ''),
-                        qrCardUrl: u.qrCardUrl || (uniqueId ? `${baseURL}/api/AramcoFarewell/qr-card/${encodeURIComponent(uniqueId)}` : ''),
+                        qrCodeUrl: u.qrCodeUrl || (uniqueId ? `${baseURL}/api/${eventApi}/qr/${encodeURIComponent(uniqueId)}` : ''),
+                        qrCardUrl: u.qrCardUrl || (uniqueId ? `${baseURL}/api/${eventApi}/qr-card/${encodeURIComponent(uniqueId)}` : ''),
                         seatCode: u.seatCode || u.SeatCode || '',
                         groupId: u.groupId || u.GroupId || null,
                         groupName: u.groupName || u.GroupName || '',
@@ -4912,6 +4914,13 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
         document.getElementById('editUserForm').onsubmit = saveEditUser;
 
         // Kick off
+        if (eventApi === "CapitalMarketConversation") {
+            document.querySelectorAll('a[href="report.html"], a[href="seats.html"], a[href="scanner.html"]').forEach(link => {
+                link.href = link.getAttribute("href") + "?cmc=1";
+            });
+            const eyebrow = document.querySelector(".header-eyebrow");
+            if (eyebrow) eyebrow.textContent = "Capital Markets Conversation";
+        }
         fetchUsers(false);
         loadSeatPlan(false);
         refreshInviteQueueStatus();

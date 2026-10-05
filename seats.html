@@ -1305,6 +1305,7 @@
     </div>
     <script>
         const baseURL = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
+        const eventApi = new URLSearchParams(location.search).has("cmc") ? "CapitalMarketConversation" : "AramcoFarewell";
         const ADMIN_PASSWORD = "admin123";
         const AUTH_KEY = "aramcoFarewellSeatAdmin";
         const DRAFT_KEY = "aramcoDesignerV2";
@@ -2291,7 +2292,7 @@
             }
             let failed = false;
             for (const move of moves) {
-                const assigned = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(move.to)}/assign`, {
+                const assigned = await fetch(`${baseURL}/api/${eventApi}/seats/${encodeURIComponent(move.to)}/assign`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json"
@@ -3299,13 +3300,13 @@
         }
         async function moveGuestSeats(moves) {
             for (const move of moves) {
-                const released = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(move.from)}/release`, {
+                const released = await fetch(`${baseURL}/api/${eventApi}/seats/${encodeURIComponent(move.from)}/release`, {
                     method: "PUT"
                 });
                 if (!released.ok) return false;
             }
             for (const move of moves) {
-                const assigned = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(move.to)}/assign`, {
+                const assigned = await fetch(`${baseURL}/api/${eventApi}/seats/${encodeURIComponent(move.to)}/assign`, {
                     method: "PUT",
                     headers: {
                         "Content-Type": "application/json"
@@ -3568,7 +3569,7 @@
             toast("Converting CAD floor plan…");
             const body = new FormData();
             body.append("file", file);
-            const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/map`, {
+            const res = await fetch(`${baseURL}/api/${eventApi}/seats/map`, {
                 method: "POST",
                 body
             });
@@ -3577,7 +3578,7 @@
                 toast(payload.message || payload.Message || "Could not read that CAD file.", "bad");
                 return;
             }
-            const svgRes = await fetch(`${baseURL}/api/AramcoFarewell/seats/map`, {
+            const svgRes = await fetch(`${baseURL}/api/${eventApi}/seats/map`, {
                 cache: "no-store"
             });
             const svgText = await svgRes.text();
@@ -3634,7 +3635,7 @@
                 });
                 const body = new FormData();
                 body.append("file", file);
-                const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/map`, {
+                const res = await fetch(`${baseURL}/api/${eventApi}/seats/map`, {
                     method: "POST",
                     body
                 });
@@ -3661,7 +3662,7 @@
         }
 
         async function loadGuests() {
-            const res = await fetch(`${baseURL}/api/AramcoFarewell/users`, {
+            const res = await fetch(`${baseURL}/api/${eventApi}/users`, {
                 cache: "no-store"
             });
             if (!res.ok) return;
@@ -3676,7 +3677,7 @@
             }));
         }
         async function loadSeats() {
-            const res = await fetch(`${baseURL}/api/AramcoFarewell/seats`, {
+            const res = await fetch(`${baseURL}/api/${eventApi}/seats`, {
                 cache: "no-store"
             });
             if (!res.ok) return false;
@@ -3794,7 +3795,7 @@
             doc = blankDoc();
             try {
                 const [svgRes] = await Promise.all([
-                    fetch(`${baseURL}/api/AramcoFarewell/seats/map`, {
+                    fetch(`${baseURL}/api/${eventApi}/seats/map`, {
                         cache: "no-store"
                     }),
                     loadGuests(),
@@ -3890,7 +3891,7 @@
                 return;
             }
             toast("Assigning…");
-            const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(chair.seatNumber)}/assign`, {
+            const res = await fetch(`${baseURL}/api/${eventApi}/seats/${encodeURIComponent(chair.seatNumber)}/assign`, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json"
@@ -3915,7 +3916,7 @@
         async function unassign() {
             const chair = selectedObjects().find(o => o.type === "chair");
             if (!chair) return;
-            const res = await fetch(`${baseURL}/api/AramcoFarewell/seats/${encodeURIComponent(chair.seatNumber)}/release`, {
+            const res = await fetch(`${baseURL}/api/${eventApi}/seats/${encodeURIComponent(chair.seatNumber)}/release`, {
                 method: "PUT"
             });
             const payload = await res.json().catch(() => ({}));

@@ -364,6 +364,7 @@
     <script>
         (function() {
             var API_BASE = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
+            var eventApi = new URLSearchParams(location.search).has("cmc") ? "CapitalMarketConversation" : "AramcoFarewell";
             var params = new URLSearchParams(window.location.search);
             var status = (params.get("status") || "").trim().toLowerCase();
             var name = (params.get("name") || "").trim();
@@ -447,7 +448,7 @@
 
             function applyWallet(unique) {
                 if (!btnWallet || !unique || !isAppleDevice()) return;
-                btnWallet.href = "/wallet/" + encodeURIComponent(unique);
+                btnWallet.href = "/wallet/" + encodeURIComponent(unique) + (eventApi === "CapitalMarketConversation" ? "?cmc=1" : "");
                 btnWallet.classList.remove("hidden");
                 if (walletHint) {
                     walletHint.classList.remove("hidden");
@@ -456,7 +457,7 @@
             }
 
             var PUBLIC_SITE = "https://aramcocorporateevents.com";
-            var ebadgePath = uniqueId ? ("/e-badge/" + encodeURIComponent(uniqueId)) : "";
+            var ebadgePath = uniqueId ? ("/e-badge/" + encodeURIComponent(uniqueId) + (eventApi === "CapitalMarketConversation" ? "?cmc=1" : "")) : "";
             var ebadgeUrl = uniqueId ? (PUBLIC_SITE + ebadgePath) : "";
 
             function saveBlob(blob, filename) {
@@ -474,7 +475,7 @@
             function downloadEbadge() {
                 if (!uniqueId || !btnViewEbadge) return;
                 var filename = "Aramco-Farewell-E-Badge.jpg";
-                var url = API_BASE + "/api/AramcoFarewell/qr-card/" + encodeURIComponent(uniqueId) + "?download=1";
+                var url = API_BASE + "/api/" + eventApi + "/qr-card/" + encodeURIComponent(uniqueId) + "?download=1";
                 var previousLabel = btnViewEbadge.textContent;
                 btnViewEbadge.disabled = true;
                 btnViewEbadge.textContent = "Downloading…";
@@ -553,7 +554,7 @@
                 }
                 if (confirmError) confirmError.textContent = "";
 
-                fetch(API_BASE + "/api/AramcoFarewell/user-status", {
+                fetch(API_BASE + "/api/" + eventApi + "/user-status", {
                     method: "POST",
                     mode: "cors",
                     cache: "no-store",

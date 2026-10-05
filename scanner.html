@@ -438,6 +438,7 @@
     <script>
         (function() {
             var API_BASE = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
+            var eventApi = new URLSearchParams(location.search).has("cmc") ? "CapitalMarketConversation" : "AramcoFarewell";
             var scanner = null;
             var running = false;
             var busy = false;
@@ -554,7 +555,7 @@
 
             function loadSeatPlan() {
                 if (seatLabelsReady) return seatLabelsReady;
-                seatLabelsReady = fetch(API_BASE + "/api/AramcoFarewell/seats/map", {
+                seatLabelsReady = fetch(API_BASE + "/api/" + eventApi + "/seats/map", {
                     cache: "no-store"
                 }).then(function(res) {
                     return res.ok ? res.text() : "";
@@ -642,7 +643,7 @@
                     btn.textContent = "Marking…";
                 }
                 if (note) note.textContent = "";
-                fetch(API_BASE + "/api/AramcoFarewell/seats/mark-seated?uniqueId=" + encodeURIComponent(currentGuest.uniqueId), {
+                fetch(API_BASE + "/api/" + eventApi + "/seats/mark-seated?uniqueId=" + encodeURIComponent(currentGuest.uniqueId), {
                     method: "POST",
                     mode: "cors",
                     cache: "no-store",
@@ -798,7 +799,7 @@
                 hideSeat();
                 hideSeatAction();
 
-                return fetch(API_BASE + "/api/AramcoFarewell/check-in?uniqueId=" + encodeURIComponent(uniqueId), {
+                return fetch(API_BASE + "/api/" + eventApi + "/check-in?uniqueId=" + encodeURIComponent(uniqueId), {
                     method: "POST",
                     mode: "cors",
                     cache: "no-store",

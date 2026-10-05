@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Olivier Thorel Farewell — Client report</title>
+    <style>
+        :root {
+            --ink: #1c2430;
+            --muted: #5c6672;
+            --line: #e4dccf;
+            --paper: #f4efe6;
+            --card: #fffdf9;
+            --gold: #8d6b3a;
+            --navy: #243044;
+            --green: #1f8a5b;
+            --red: #b4332c;
+            --amber: #9a6b12;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            color: var(--ink);
+            background: var(--paper);
+            font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        a { color: inherit; }
+
+        .toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 14px;
+            align-items: end;
+            padding: 14px 22px;
+            background: #1c2430;
+            color: #f6f1e8;
+        }
+
+        .toolbar label {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 11px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #d9cbb8;
+        }
+
+        .toolbar input {
+            height: 36px;
+            border: 1px solid #3d4a5c;
+            border-radius: 8px;
+            background: #121820;
+            color: #fff;
+            padding: 0 10px;
+            font: inherit;
+            font-size: 13px;
+        }
+
+        .toolbar button,
+        .toolbar .file-btn {
+            height: 36px;
+            border: 0;
+            border-radius: 8px;
+            padding: 0 14px;
+            font: inherit;
+            font-size: 13px;
+            font-weight: 650;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .btn-gold { background: #e7d3b0; color: #1c2430; }
+        .btn-line { background: transparent; color: #f6f1e8; border: 1px solid #6d7c90 !important; }
+        .zone-note { flex: 1 1 220px; margin: 0; font-size: 12px; color: #c8bbaa; line-height: 1.35; }
+
+        .page {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 28px 22px 64px;
+        }
+
+        .mast {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: flex-end;
+            border-bottom: 1px solid var(--line);
+            padding-bottom: 16px;
+            margin-bottom: 22px;
+        }
+
+        .eyebrow {
+            margin: 0 0 4px;
+            color: var(--gold);
+            font-size: 12px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+        }
+
+        h1 {
+            margin: 0;
+            font-family: Georgia, "Palatino Linotype", Palatino, serif;
+            font-size: 34px;
+            font-weight: 500;
+            letter-spacing: -0.03em;
+        }
+
+        h2 {
+            margin: 28px 0 10px;
+            font-family: Georgia, "Palatino Linotype", Palatino, serif;
+            font-size: 22px;
+            font-weight: 500;
+        }
+
+        .sub { margin: 6px 0 0; color: var(--muted); }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .stat {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 14px 16px;
+        }
+
+        .stat b {
+            display: block;
+            font-family: Georgia, "Palatino Linotype", Palatino, serif;
+            font-size: 32px;
+            font-weight: 500;
+            line-height: 1;
+        }
+
+        .stat span { color: var(--muted); font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+        .stat.accepted b { color: var(--green); }
+        .stat.declined b { color: var(--red); }
+        .stat.pending b { color: var(--amber); }
+
+        .window-line { margin: 8px 0 0; color: var(--muted); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 8px 10px;
+            border-bottom: 1px solid var(--line);
+            vertical-align: top;
+        }
+
+        th {
+            font-size: 11px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--muted);
+            background: #faf7f2;
+        }
+
+        tr:last-child td { border-bottom: 0; }
+
+        .pill {
+            display: inline-block;
+            min-width: 72px;
+            text-align: center;
+            border-radius: 999px;
+            padding: 2px 8px;
+            font-size: 12px;
+            font-weight: 650;
+        }
+
+        .pill.accepted { background: #e5f6ee; color: var(--green); }
+        .pill.declined { background: #fdeceb; color: var(--red); }
+        .pill.pending { background: #fbf3df; color: var(--amber); }
+        .pill.seated { background: #e5f6ee; color: var(--green); }
+        .pill.assigned { background: #fff6d4; color: #7a5b10; }
+        .pill.none { background: #eef1f4; color: #526070; }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 280px;
+            gap: 16px;
+            align-items: start;
+        }
+
+        .map-frame {
+            position: relative;
+            overflow: auto;
+            background: #f7f4ee;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            min-height: 420px;
+        }
+
+        .map-world { position: relative; transform-origin: 0 0; }
+
+        .piece {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            overflow: hidden;
+        }
+
+        .piece.table {
+            background: #f3ecdf;
+            color: #1d2836;
+            border-radius: 16px;
+            box-shadow: 0 8px 18px rgba(30, 24, 16, 0.12);
+            font-weight: 700;
+            z-index: 1;
+        }
+
+        .piece.table.shape-round,
+        .piece.table.shape-oval { border-radius: 50%; }
+
+        .piece.table.shape-crescent { border-radius: 0 0 999px 999px; }
+
+        .piece.chair {
+            z-index: 2;
+            border-radius: 8px;
+            background: #243044;
+            color: transparent;
+            text-decoration: none;
+            font-size: 0;
+            box-shadow: 0 2px 6px rgba(16, 24, 36, 0.16);
+        }
+
+        .piece.chair.is-assigned { background: #ffe14a; color: #1d2836; }
+        .piece.chair.is-seated { background: #1f8a5b; color: #fff; }
+        .piece.chair.is-declined { background: #e23b32; color: #fff; }
+        .piece.chair.is-arrived { outline: 3px solid #1c2430; outline-offset: 2px; }
+        .piece.chair.is-selected { outline: 3px solid #8d6b3a; outline-offset: 3px; }
+
+        .piece.stage, .piece.wall { background: #d7d0c6; color: #1d2836; border-radius: 8px; z-index: 0; }
+        .piece.text { color: #1d2836; z-index: 3; overflow: visible; font-weight: 650; }
+
+        .detail {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 16px;
+            min-height: 180px;
+        }
+
+        .detail h3 { margin: 0 0 8px; font-family: Georgia, "Palatino Linotype", Palatino, serif; font-size: 22px; font-weight: 500; }
+        .detail p { margin: 0 0 6px; }
+        .legend { display: flex; flex-wrap: wrap; gap: 8px 14px; margin: 8px 0 0; color: var(--muted); font-size: 12px; }
+        .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
+        .empty, .status-msg { color: var(--muted); padding: 12px 0; }
+        .status-msg.error { color: var(--red); }
+
+        @media (max-width: 800px) {
+            .stats, .layout { grid-template-columns: 1fr; }
+            h1 { font-size: 28px; }
+        }
+
+        @media print {
+            .toolbar { display: none !important; }
+            body { background: #fff; }
+            .page { max-width: none; padding: 0; }
+            .map-frame { overflow: visible; min-height: 0; }
+            .stat, table, .detail, .map-frame { break-inside: avoid; }
+            h2 { break-after: avoid; }
+            a { text-decoration: none; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="toolbar">
+        <label>Check-in from
+            <input id="fromTime" type="datetime-local" />
+        </label>
+        <label>Check-in to
+            <input id="toTime" type="datetime-local" />
+        </label>
+        <button class="btn-gold" id="applyBtn" type="button">Show this window</button>
+        <button class="btn-line" id="pdfBtn" type="button">Save PDF</button>
+        <button class="btn-line" id="csvBtn" type="button">Download CSV</button>
+        <button class="btn-line" id="htmlBtn" type="button">Download interactive report</button>
+        <p class="zone-note" id="zoneNote"></p>
+    </div>
+
+    <main class="page">
+        <header class="mast">
+            <div>
+                <p class="eyebrow">Aramco Farewells</p>
+                <h1>Olivier Thorel Farewell Ceremony</h1>
+                <p class="sub">Monday 5 October 2026 · Plaza Conference Center, Dhahran</p>
+            </div>
+            <p class="sub" id="generatedAt"></p>
+        </header>
+        <p class="status-msg" id="statusMsg">Loading the guest list and seat plan.</p>
+
+        <section>
+            <h2>1. Invitations</h2>
+            <div class="stats">
+                <div class="stat"><b id="statTotal">—</b><span>Invited</span></div>
+                <div class="stat accepted"><b id="statAccepted">—</b><span>Accepted</span></div>
+                <div class="stat declined"><b id="statDeclined">—</b><span>Declined</span></div>
+                <div class="stat pending"><b id="statPending">—</b><span>Pending</span></div>
+            </div>
+        </section>
+
+        <section>
+            <h2>2. Invited guests</h2>
+            <div id="guestTable"></div>
+        </section>
+
+        <section>
+            <h2>3. Check-ins</h2>
+            <p class="window-line" id="windowLine">Choose a from and to time. This report shows that window only.</p>
+            <p class="window-line">A guest scanned more than once is listed once, at the latest time inside the window.</p>
+            <div id="checkinTable"></div>
+        </section>
+
+        <section>
+            <h2 id="seat-plan">4. Seat plan</h2>
+            <p class="window-line">Gold is assigned, green is seated, red is a declined guest, and navy is empty. A dark outline marks a guest who checked in during the chosen window. Click a chair to see who is seated there. In the PDF, that chair links to the guest.</p>
+            <div class="legend">
+                <span><i class="swatch" style="background:#243044"></i>Empty</span>
+                <span><i class="swatch" style="background:#ffe14a"></i>Assigned</span>
+                <span><i class="swatch" style="background:#1f8a5b"></i>Seated</span>
+                <span><i class="swatch" style="background:#e23b32"></i>Declined</span>
+            </div>
+            <div class="layout">
+                <div class="map-frame" id="mapFrame"><div class="map-world" id="mapWorld"></div></div>
+                <aside class="detail" id="seatDetail">
+                    <h3>Seat</h3>
+                    <p>Select a chair on the plan.</p>
+                </aside>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        const baseURL = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
+        const eventApi = new URLSearchParams(location.search).has("cmc") ? "CapitalMarketConversation" : "AramcoFarewell";
+        let report = null;
+
+        function esc(value) {
+            return String(value == null ? "" : value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+        }
+
+        function normalizeStatus(value) {
+            const status = String(value || "").trim().toLowerCase();
+            if (status.indexOf("accept") === 0) return "accepted";
+            if (status.indexOf("declin") === 0) return "declined";
+            return "pending";
+        }
+
+        function statusText(value) {
+            const status = normalizeStatus(value);
+            if (status === "accepted") return "Accepted";
+            if (status === "declined") return "Declined";
+            return "Pending";
+        }
+
+        function viewerZoneLabel() {
+            try {
+                const zone = Intl.DateTimeFormat().resolvedOptions().timeZone || "local";
+                const parts = new Intl.DateTimeFormat(undefined, { timeZoneName: "shortOffset" }).formatToParts(new Date());
+                const offset = (parts.find(part => part.type === "timeZoneName") || {}).value || "";
+                return offset ? (zone + " · " + offset) : zone;
+            } catch (err) {
+                return "local time";
+            }
+        }
+
+        function parseBackendTime(value) {
+            if (!value) return null;
+            const raw = String(value).trim();
+            const iso = /Z$|[+-]\d{2}:\d{2}$/.test(raw) ? raw : raw.replace(" ", "T") + "Z";
+            const date = new Date(iso);
+            return Number.isNaN(date.getTime()) ? null : date;
+        }
+
+        function formatViewerTime(value) {
+            const date = value instanceof Date ? value : parseBackendTime(value);
+            if (!date) return "";
+            const options = {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+                timeZoneName: "shortOffset"
+            };
+            try {
+                return date.toLocaleString(undefined, options);
+            } catch (err) {
+                options.timeZoneName = "short";
+                return date.toLocaleString(undefined, options);
+            }
+        }
+
+        function pad3(n) {
+            return String(n).padStart(3, "0");
+        }
+
+        function indexLayout(doc) {
+            const labels = {};
+            const chairsByTable = {};
+            if (!doc || !doc.layouts || !doc.layouts.length) return { layout: null, labels: labels };
+            let layout = doc.layouts[0];
+            doc.layouts.forEach(item => {
+                if (item.id === doc.activeLayoutId) layout = item;
+            });
+            const objects = layout.objects || [];
+            const tables = {};
+            objects.forEach(obj => {
+                if (obj.type === "table") tables[obj.id] = obj;
+                if (obj.type === "chair" && obj.tableId) {
+                    if (!chairsByTable[obj.tableId]) chairsByTable[obj.tableId] = [];
+                    chairsByTable[obj.tableId].push(obj);
+                }
+            });
+            Object.keys(chairsByTable).forEach(tableId => {
+                const chairs = chairsByTable[tableId].sort((a, b) => (a.slot || 0) - (b.slot || 0));
+                const table = tables[tableId];
+                const number = table ? parseInt(table.tableNo, 10) : 0;
+                const tableText = number ? ("Table " + number) : ((table && table.label) || "Table");
+                chairs.forEach((chair, index) => {
+                    const stored = String(chair.seatNumber || "").trim().toUpperCase();
+                    if (stored) labels[stored] = tableText + " - C-" + pad3(index + 1);
+                });
+            });
+            return { layout: layout, labels: labels };
+        }
+
+        function seatLabel(code, labels) {
+            const key = String(code || "").trim().toUpperCase();
+            if (!key) return "No seat";
+            return labels[key] || String(code).trim();
+        }
+
+        function scansOf(user) {
+            const list = user.checkIns || user.CheckIns || [];
+            return list.map(item => parseBackendTime(item && (item.checkedInOn || item.CheckedInOn))).filter(Boolean);
+        }
+
+        function lastScanInWindow(user, from, to) {
+            if (!from || !to) return null;
+            const hits = scansOf(user).filter(date => date >= from && date <= to);
+            if (!hits.length) return null;
+            return new Date(Math.max.apply(null, hits.map(date => date.getTime())));
+        }
+
+        function seatRecordFor(user, seatsByGuest, seatsByCode) {
+            const byGuest = seatsByGuest.get(String(user.uniqueId || user.UniqueId || "").toLowerCase());
+            if (byGuest) return byGuest;
+            const code = String(user.seatCode || user.SeatCode || "").trim().toUpperCase();
+            return code ? seatsByCode.get(code) : null;
+        }
+
+        function seatStatus(record) {
+            if (!record || String(record.status || record.Status || "") !== "Assigned") return "No seat";
+            const at = record.seatedAt || record.SeatedAt;
+            if (record.isSeated || record.IsSeated || at) return "Seated";
+            return "Assigned";
+        }
+
+        function readWindow() {
+            const fromValue = document.getElementById("fromTime").value;
+            const toValue = document.getElementById("toTime").value;
+            if (!fromValue || !toValue) return null;
+            const from = new Date(fromValue);
+            const to = new Date(toValue);
+            if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || from > to) return { error: "Choose a from time that is earlier than the to time." };
+            if (to.getSeconds() === 0 && to.getMilliseconds() === 0) to.setSeconds(59, 999);
+            return { from: from, to: to };
+        }
+
+        function guestRows(state) {
+            return state.guests.slice().sort((a, b) => a.name.localeCompare(b.name));
+        }
+
+        function checkinRows(state) {
+            const window = state.window;
+            if (!window) return [];
+            return state.guests.map(guest => {
+                const when = lastScanInWindow(guest.source, window.from, window.to);
+                if (!when) return null;
+                return {
+                    guest: guest,
+                    when: when
+                };
+            }).filter(Boolean).sort((a, b) => a.when - b.when);
+        }
+
+        function renderStats(state) {
+            const guests = state.guests;
+            document.getElementById("statTotal").textContent = String(guests.length);
+            document.getElementById("statAccepted").textContent = String(guests.filter(guest => guest.status === "accepted").length);
+            document.getElementById("statDeclined").textContent = String(guests.filter(guest => guest.status === "declined").length);
+            document.getElementById("statPending").textContent = String(guests.filter(guest => guest.status === "pending").length);
+        }
+
+        function renderGuests(state) {
+            const rows = guestRows(state).map(guest => `
+                <tr id="guest-${esc(guest.id)}">
+                    <td>${esc(guest.name)}</td>
+                    <td>${esc(guest.company || "—")}</td>
+                    <td>${esc(guest.position || "—")}</td>
+                    <td><span class="pill ${guest.status}">${esc(statusText(guest.status))}</span></td>
+                    <td>${esc(guest.seat)}</td>
+                </tr>`).join("");
+            document.getElementById("guestTable").innerHTML = `
+                <table>
+                    <thead><tr><th>Name</th><th>Company</th><th>Position</th><th>Status</th><th>Seat</th></tr></thead>
+                    <tbody>${rows || '<tr><td colspan="5">No guests.</td></tr>'}</tbody>
+                </table>`;
+        }
+
+        function renderCheckins(state) {
+            const line = document.getElementById("windowLine");
+            const host = document.getElementById("checkinTable");
+            if (!state.window) {
+                line.textContent = "Choose a from and to time. This report shows that window only.";
+                host.innerHTML = '<p class="empty">Check-in names appear after you set the window.</p>';
+                return;
+            }
+            if (state.window.error) {
+                line.textContent = state.window.error;
+                host.innerHTML = "";
+                return;
+            }
+            line.textContent = "Check-ins from " + formatViewerTime(state.window.from) + " to " + formatViewerTime(state.window.to) + ".";
+            const rows = checkinRows(state);
+            host.innerHTML = `
+                <table>
+                    <thead><tr><th>Name</th><th>Seat</th><th>Checked in</th><th>Seat status</th></tr></thead>
+                    <tbody>${rows.length ? rows.map(row => `
+                        <tr id="checkin-${esc(row.guest.id)}">
+                            <td>${esc(row.guest.name)}</td>
+                            <td>${esc(row.guest.seat)}</td>
+                            <td>${esc(formatViewerTime(row.when))}</td>
+                            <td><span class="pill ${row.guest.seatStatus === "Seated" ? "seated" : (row.guest.seatStatus === "Assigned" ? "assigned" : "none")}">${esc(row.guest.seatStatus)}</span></td>
+                        </tr>`).join("") : '<tr><td colspan="4">No check-ins in this window.</td></tr>'}</tbody>
+                </table>`;
+        }
+
+        function pieceStyle(obj, origin, scale) {
+            const x = ((obj.type === "table" ? obj.x + (obj.bx || 0) : obj.x) - origin.x) * scale;
+            const y = ((obj.type === "table" ? obj.y + (obj.by || 0) : obj.y) - origin.y) * scale;
+            const w = Math.max(8, (obj.w || 40) * scale);
+            const h = Math.max(8, (obj.h || 40) * scale);
+            return `left:${x}px;top:${y}px;width:${w}px;height:${h}px;transform:rotate(${obj.rotation || 0}deg)`;
+        }
+
+        function renderMap(state) {
+            const world = document.getElementById("mapWorld");
+            const objects = (state.layout && state.layout.objects) || [];
+            const draw = objects.filter(obj => obj && ["table", "chair", "text", "stage", "wall"].indexOf(obj.type) >= 0);
+            if (!draw.length) {
+                world.innerHTML = '<p class="empty">No seat plan is saved yet.</p>';
+                return;
+            }
+            let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+            draw.forEach(obj => {
+                const x = obj.type === "table" ? obj.x + (obj.bx || 0) : obj.x;
+                const y = obj.type === "table" ? obj.y + (obj.by || 0) : obj.y;
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y);
+                maxX = Math.max(maxX, x + (obj.w || 0));
+                maxY = Math.max(maxY, y + (obj.h || 0));
+            });
+            const origin = { x: minX - 24, y: minY - 24 };
+            const width = Math.max(100, maxX - minX + 48);
+            const height = Math.max(100, maxY - minY + 48);
+            const frame = document.getElementById("mapFrame");
+            const scale = Math.min(1, Math.max(280, frame.clientWidth - 8) / width);
+            const arrived = {};
+            checkinRows(state).forEach(row => { arrived[row.guest.id] = true; });
+            world.style.width = (width * scale) + "px";
+            world.style.height = (height * scale) + "px";
+            world.style.transform = "none";
+            frame.style.height = Math.max(280, height * scale + 8) + "px";
+            world.innerHTML = draw.map(obj => {
+                if (obj.type === "chair") {
+                    const code = String(obj.seatNumber || "").trim().toUpperCase();
+                    const guest = state.bySeat.get(code) || null;
+                    const label = state.labels[code] || code;
+                    const classes = ["piece", "chair"];
+                    if (guest && guest.seatStatus === "Assigned") classes.push("is-assigned");
+                    if (guest && guest.seatStatus === "Seated") classes.push("is-seated");
+                    if (guest && guest.status === "declined") classes.push("is-declined");
+                    if (guest && arrived[guest.id]) classes.push("is-arrived");
+                    const href = guest ? ("#guest-" + guest.id) : "#seat-plan";
+                    return `<a class="${classes.join(" ")}" data-seat="${esc(code)}" href="${esc(href)}" style="${pieceStyle(obj, origin, scale)}" title="${esc(guest ? (label + " · " + guest.name) : label)}"></a>`;
+                }
+                if (obj.type === "table") {
+                    const number = parseInt(obj.tableNo, 10);
+                    const text = number ? String(number) : (obj.label || "");
+                    const font = Math.max(11, Math.min(18, (obj.w || 80) * scale / 5));
+                    const turn = -(obj.rotation || 0);
+                    return `<div class="piece table shape-${esc(obj.shape || "rect")}" style="${pieceStyle(obj, origin, scale)};font-size:${font}px"><span style="transform:rotate(${turn}deg)">${esc(text)}</span></div>`;
+                }
+                if (obj.type === "text") {
+                    const font = Math.max(11, Math.min(22, (obj.fontSize || 18) * scale));
+                    const turn = -(obj.rotation || 0);
+                    return `<div class="piece text" style="${pieceStyle(obj, origin, scale)};font-size:${font}px"><span style="transform:rotate(${turn}deg)">${esc(obj.text || obj.label || "")}</span></div>`;
+                }
+                return `<div class="piece ${esc(obj.type)}" style="${pieceStyle(obj, origin, scale)}">${esc(obj.label || "")}</div>`;
+            }).join("");
+        }
+
+        function fitMap() {
+            if (report) renderMap(report);
+        }
+
+        function showSeat(code) {
+            const guest = report && report.bySeat.get(String(code || "").toUpperCase());
+            const box = document.getElementById("seatDetail");
+            document.querySelectorAll(".piece.chair").forEach(el => {
+                el.classList.toggle("is-selected", el.getAttribute("data-seat") === String(code || "").toUpperCase());
+            });
+            if (!guest) {
+                const label = report ? seatLabel(code, report.labels) : code;
+                box.innerHTML = `<h3>${esc(label || "Seat")}</h3><p>No guest is assigned to this chair.</p>`;
+                return;
+            }
+            const when = report.window && !report.window.error ? lastScanInWindow(guest.source, report.window.from, report.window.to) : null;
+            box.innerHTML = `
+                <h3>${esc(guest.seat)}</h3>
+                <p><strong>${esc(guest.name)}</strong></p>
+                <p>${esc(guest.company || "—")}${guest.position ? " · " + esc(guest.position) : ""}</p>
+                <p>Invitation: ${esc(statusText(guest.status))}</p>
+                <p>Seat status: ${esc(guest.seatStatus)}</p>
+                <p>Checked in: ${when ? esc(formatViewerTime(when)) : "Not in this window"}</p>`;
+        }
+
+        function renderAll() {
+            if (!report) return;
+            renderStats(report);
+            renderGuests(report);
+            renderCheckins(report);
+            renderMap(report);
+            document.getElementById("generatedAt").textContent = "Prepared " + formatViewerTime(report.generatedAt);
+        }
+
+        function applyWindow() {
+            if (!report) return;
+            const chosen = readWindow();
+            report.window = chosen;
+            renderCheckins(report);
+            renderMap(report);
+        }
+
+        function csvValue(value) {
+            const text = String(value == null ? "" : value);
+            if (/[",\n]/.test(text)) return '"' + text.replace(/"/g, '""') + '"';
+            return text;
+        }
+
+        function downloadCsv() {
+            if (!report || !report.window || report.window.error) {
+                setStatus("Set a check-in window before downloading the CSV.", true);
+                return;
+            }
+            const rows = checkinRows(report);
+            const lines = [["Name", "Seat number", "Checked in time"].join(",")];
+            rows.forEach(row => {
+                lines.push([row.guest.name, row.guest.seat, formatViewerTime(row.when)].map(csvValue).join(","));
+            });
+            const blob = new Blob([lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "aramco-farewell-checkins.csv";
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+
+        function downloadInteractive() {
+            if (!report || !report.window || report.window.error) {
+                setStatus("Set a check-in window before downloading the report.", true);
+                return;
+            }
+            const stamp = document.createElement("script");
+            stamp.textContent = "window.REPORT_SNAPSHOT=" + JSON.stringify(snapshot()) + ";";
+            const clone = document.documentElement.cloneNode(true);
+            clone.querySelector("head").insertBefore(stamp, clone.querySelector("head").firstChild);
+            const blob = new Blob(["<!DOCTYPE html>\n" + clone.outerHTML], { type: "text/html;charset=utf-8" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "aramco-farewell-client-report.html";
+            link.click();
+            URL.revokeObjectURL(link.href);
+        }
+
+        function snapshot() {
+            const layout = report.layout ? {
+                objects: (report.layout.objects || []).filter(obj => ["table", "chair", "text", "stage", "wall"].indexOf(obj.type) >= 0).map(obj => ({
+                    id: obj.id,
+                    type: obj.type,
+                    x: obj.x,
+                    y: obj.y,
+                    w: obj.w,
+                    h: obj.h,
+                    bx: obj.bx || 0,
+                    by: obj.by || 0,
+                    rotation: obj.rotation || 0,
+                    shape: obj.shape || "",
+                    label: obj.label || "",
+                    text: obj.text || "",
+                    fontSize: obj.fontSize || 0,
+                    tableNo: obj.tableNo || 0,
+                    tableId: obj.tableId || "",
+                    slot: obj.slot || 0,
+                    seatNumber: obj.seatNumber || ""
+                }))
+            } : null;
+            return {
+                generatedAt: report.generatedAt.toISOString(),
+                window: report.window ? { from: report.window.from.toISOString(), to: report.window.to.toISOString() } : null,
+                labels: report.labels,
+                layout: layout,
+                guests: report.guests.map(guest => ({
+                    id: guest.id,
+                    name: guest.name,
+                    company: guest.company,
+                    position: guest.position,
+                    status: guest.status,
+                    seat: guest.seat,
+                    seatCode: guest.seatCode,
+                    seatStatus: guest.seatStatus,
+                    checkIns: scansOf(guest.source).map(date => date.toISOString())
+                }))
+            };
+        }
+
+        function setStatus(message, isError) {
+            const el = document.getElementById("statusMsg");
+            el.textContent = message || "";
+            el.className = "status-msg" + (isError ? " error" : "");
+            el.hidden = !message;
+        }
+
+        function buildReport(users, seatRows, designer) {
+            const indexed = indexLayout(designer);
+            const seatsByCode = new Map();
+            const seatsByGuest = new Map();
+            seatRows.forEach(seat => {
+                const code = String(seat.seatCode || seat.SeatCode || "").trim().toUpperCase();
+                if (!code) return;
+                seatsByCode.set(code, seat);
+                const id = String(seat.uniqueId || seat.UniqueId || "").toLowerCase();
+                if (id) seatsByGuest.set(id, seat);
+            });
+            const guests = users.map(user => {
+                const id = String(user.uniqueId || user.UniqueId || "");
+                const record = seatRecordFor(user, seatsByGuest, seatsByCode);
+                const code = String((record && (record.seatCode || record.SeatCode)) || user.seatCode || user.SeatCode || "").trim().toUpperCase();
+                return {
+                    id: id,
+                    name: user.fullName || user.FullName || user.userName || "Guest",
+                    company: user.company || user.Company || "",
+                    position: user.position || user.Position || "",
+                    status: normalizeStatus(user.status || user.Status),
+                    seatCode: code,
+                    seat: code ? seatLabel(code, indexed.labels) : "No seat",
+                    seatStatus: seatStatus(record),
+                    source: user
+                };
+            });
+            const bySeat = new Map();
+            guests.forEach(guest => {
+                if (guest.seatCode) bySeat.set(guest.seatCode, guest);
+            });
+            report = {
+                generatedAt: new Date(),
+                window: null,
+                labels: indexed.labels,
+                layout: indexed.layout,
+                guests: guests,
+                bySeat: bySeat
+            };
+        }
+
+        function restoreSnapshot(data) {
+            const guests = (data.guests || []).map(guest => ({
+                id: guest.id,
+                name: guest.name,
+                company: guest.company,
+                position: guest.position,
+                status: guest.status,
+                seatCode: String(guest.seatCode || "").toUpperCase(),
+                seat: guest.seat,
+                seatStatus: guest.seatStatus,
+                source: { checkIns: (guest.checkIns || []).map(value => ({ checkedInOn: value })) }
+            }));
+            const bySeat = new Map();
+            guests.forEach(guest => {
+                if (guest.seatCode) bySeat.set(guest.seatCode, guest);
+            });
+            report = {
+                generatedAt: parseBackendTime(data.generatedAt) || new Date(),
+                window: data.window ? { from: new Date(data.window.from), to: new Date(data.window.to) } : null,
+                labels: data.labels || {},
+                layout: data.layout,
+                guests: guests,
+                bySeat: bySeat
+            };
+            if (report.window) {
+                const fromInput = document.getElementById("fromTime");
+                const toInput = document.getElementById("toTime");
+                fromInput.value = toLocalInput(report.window.from);
+                toInput.value = toLocalInput(report.window.to);
+            }
+        }
+
+        function toLocalInput(date) {
+            const pad = n => String(n).padStart(2, "0");
+            return date.getFullYear() + "-" + pad(date.getMonth() + 1) + "-" + pad(date.getDate()) + "T" + pad(date.getHours()) + ":" + pad(date.getMinutes());
+        }
+
+        async function loadLive() {
+            setStatus("Loading the guest list and seat plan.");
+            const [usersRes, seatsRes, mapRes] = await Promise.all([
+                fetch(baseURL + "/api/" + eventApi + "/users", { cache: "no-store" }),
+                fetch(baseURL + "/api/" + eventApi + "/seats", { cache: "no-store" }),
+                fetch(baseURL + "/api/" + eventApi + "/seats/map", { cache: "no-store" })
+            ]);
+            if (!usersRes.ok) throw new Error("The guest list could not be loaded.");
+            const users = await usersRes.json();
+            const seats = seatsRes.ok ? await seatsRes.json() : {};
+            const svgText = mapRes.ok ? await mapRes.text() : "";
+            let designer = null;
+            if (svgText && svgText.indexOf("<svg") >= 0) {
+                const xml = new DOMParser().parseFromString(svgText, "image/svg+xml");
+                const meta = xml.querySelector("[id='aramco-seat-layout']");
+                if (meta && meta.textContent) {
+                    const data = JSON.parse(meta.textContent);
+                    if (data && data.version === 2) designer = data;
+                }
+            }
+            buildReport(users || [], seats.seats || seats.Seats || [], designer);
+            setStatus("");
+            renderAll();
+        }
+
+        document.getElementById("zoneNote").textContent = "Times use the same clock as the dashboard: " + viewerZoneLabel() + ". Stored check-in times are read as UTC and shown in that clock. Repeated scans keep the latest time only.";
+        document.getElementById("applyBtn").onclick = applyWindow;
+        document.getElementById("pdfBtn").onclick = () => window.print();
+        document.getElementById("csvBtn").onclick = downloadCsv;
+        document.getElementById("htmlBtn").onclick = downloadInteractive;
+        document.getElementById("mapWorld").addEventListener("click", event => {
+            const chair = event.target.closest(".piece.chair");
+            if (!chair) return;
+            event.preventDefault();
+            showSeat(chair.getAttribute("data-seat"));
+        });
+        window.addEventListener("resize", fitMap);
+
+        if (window.REPORT_SNAPSHOT) {
+            restoreSnapshot(window.REPORT_SNAPSHOT);
+            setStatus("");
+            renderAll();
+        } else {
+            loadLive().catch(err => setStatus(err.message || "The report could not be loaded.", true));
+        }
+    </script>
+</body>
+
+</html>

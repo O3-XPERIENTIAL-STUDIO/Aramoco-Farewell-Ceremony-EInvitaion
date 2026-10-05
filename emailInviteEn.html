@@ -187,6 +187,7 @@
                 var next = new URLSearchParams();
                 if (name) next.set("name", name);
                 if (uniqueId) next.set("uniqueId", uniqueId);
+                if (params.has("cmc")) next.set("cmc", "1");
                 next.set("status", statusValue);
                 return RSVP_BASE + "?" + next.toString();
             }

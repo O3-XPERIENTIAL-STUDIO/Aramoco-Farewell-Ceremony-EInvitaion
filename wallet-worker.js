@@ -6,12 +6,12 @@ export default {
 
     const cardMatch = url.pathname.match(/^\/qr-card\/([^/]+?)\/?$/i);
     if (cardMatch) {
-      return proxyQrCard(decodeURIComponent(cardMatch[1]));
+      return proxyQrCard(decodeURIComponent(cardMatch[1]), url);
     }
 
     const badgeMatch = url.pathname.match(/^\/e-badge\/([^/]+?)\/?$/i);
     if (badgeMatch) {
-      return new Response(ebadgeHtml(decodeURIComponent(badgeMatch[1])), {
+      return new Response(ebadgeHtml(decodeURIComponent(badgeMatch[1]), url), {
         status: 200,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
@@ -29,7 +29,7 @@ export default {
     const wantPass = Boolean(match[2]) || url.searchParams.get("format") === "pkpass";
 
     if (!wantPass) {
-      return new Response(landingHtml(uniqueId), {
+      return new Response(landingHtml(uniqueId, url), {
         status: 200,
         headers: {
           "Content-Type": "text/html; charset=utf-8",
@@ -39,7 +39,7 @@ export default {
     }
 
     const upstream = await fetch(
-      `${API_BASE}/api/AramcoFarewell/wallet/${encodeURIComponent(uniqueId)}`,
+      `${API_BASE}/api/${eventApiName(url)}/wallet/${encodeURIComponent(uniqueId)}`,
       {
         headers: {
           Accept: "application/vnd.apple.pkpass",
@@ -72,9 +72,9 @@ export default {
   }
 };
 
-async function proxyQrCard(uniqueId) {
+async function proxyQrCard(uniqueId, url) {
   const upstream = await fetch(
-    `${API_BASE}/api/AramcoFarewell/qr-card/${encodeURIComponent(uniqueId)}?download=1`,
+    `${API_BASE}/api/${eventApiName(url)}/qr-card/${encodeURIComponent(uniqueId)}?download=1`,
     {
       cf: { cacheTtl: 0, cacheEverything: false }
     }
@@ -101,9 +101,13 @@ async function proxyQrCard(uniqueId) {
   });
 }
 
-function ebadgeHtml(uniqueId) {
+function eventApiName(url) {
+  return url && url.searchParams && url.searchParams.has("cmc") ? "CapitalMarketConversation" : "AramcoFarewell";
+}
+
+function ebadgeHtml(uniqueId, url) {
   const safeId = encodeURIComponent(uniqueId);
-  const imageUrl = `${API_BASE}/api/AramcoFarewell/qr-card/${safeId}`;
+  const imageUrl = `${API_BASE}/api/${eventApiName(url)}/qr-card/${safeId}`;
   return `<!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
@@ -130,10 +134,11 @@ function ebadgeHtml(uniqueId) {
 </html>`;
 }
 
-function landingHtml(uniqueId) {
+function landingHtml(uniqueId, url) {
   const safeId = encodeURIComponent(uniqueId);
-  const pkpassUrl = `/wallet/${safeId}.pkpass`;
-  const qrUrl = `${API_BASE}/api/AramcoFarewell/qr/${safeId}`;
+  const cmc = url && url.searchParams && url.searchParams.has("cmc") ? "?cmc=1" : "";
+  const pkpassUrl = `/wallet/${safeId}.pkpass${cmc}`;
+  const qrUrl = `${API_BASE}/api/${eventApiName(url)}/qr/${safeId}`;
   return `<!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>

@@ -206,6 +206,7 @@
                 var next = new URLSearchParams();
                 if (name) next.set("name", name);
                 if (uniqueId) next.set("uniqueId", uniqueId);
+                if (params.has("cmc")) next.set("cmc", "1");
                 next.set("status", statusValue);
                 return RSVP_BASE + "?" + next.toString();
             }
@@ -219,11 +220,12 @@
             var defaultBody = "assets/emailInvitation/emailInvite-vvip/email-invite-vvip-body.jpg?v=2";
             if (bodyImg && uniqueId) {
                 var apiBase = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
+                var eventApi = params.has("cmc") ? "CapitalMarketConversation" : "AramcoFarewell";
                 bodyImg.onerror = function() {
                     bodyImg.onerror = null;
                     bodyImg.src = defaultBody;
                 };
-                bodyImg.src = apiBase + "/api/AramcoFarewell/vvip-body/" + encodeURIComponent(uniqueId);
+                bodyImg.src = apiBase + "/api/" + eventApi + "/vvip-body/" + encodeURIComponent(uniqueId);
             }
         })();
     </script>
