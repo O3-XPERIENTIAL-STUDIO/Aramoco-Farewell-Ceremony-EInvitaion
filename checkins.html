@@ -99,6 +99,7 @@
             border: 1px solid var(--border);
             border-radius: var(--radius);
             background: var(--surface);
+            max-height: calc(100vh - 230px);
             overflow: auto;
         }
 
@@ -108,10 +109,15 @@
             padding: 12px 14px;
             text-align: left;
             border-bottom: 1px solid var(--border);
-            white-space: nowrap;
+            white-space: normal;
+            vertical-align: top;
         }
 
         th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: var(--surface);
             font-size: 11px;
             letter-spacing: 0.06em;
             text-transform: uppercase;
@@ -135,10 +141,18 @@
         .status-pending { background: rgba(210, 153, 34, 0.16); color: #D29922; }
         .status-declined { background: rgba(248, 81, 73, 0.16); color: #F85149; }
 
-        .empty {
-            padding: 28px 16px;
-            color: var(--text-muted);
+        .not-live {
+            margin-top: 28px;
+            padding: 36px 20px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface);
+            text-align: center;
         }
+
+        .not-live h2 { font-size: 22px; margin-bottom: 8px; }
+
+        .not-live p { color: var(--text-muted); font-size: 14px; }
 
         .live-dot {
             display: inline-block;
@@ -164,6 +178,11 @@
                 <button class="btn" type="button" onclick="refreshCheckins(true)">Refresh</button>
             </div>
         </div>
+        <div id="notLive" class="not-live" hidden>
+            <h2>The event is not live</h2>
+            <p>Check-ins appear here after Go live on the dashboard.</p>
+        </div>
+        <div id="board">
         <div class="count" id="count">—<span id="countLabel">Checked in</span></div>
         <p class="status-line" id="statusLine">Loading…</p>
         <div class="panel">
@@ -181,6 +200,7 @@
                 <tbody id="rows"></tbody>
             </table>
             <div class="empty" id="empty" hidden>No guests yet.</div>
+        </div>
         </div>
     </div>
     <script>
@@ -242,6 +262,7 @@
                     const body = await res.json();
                     const value = body.wentLiveOn || body.WentLiveOn || null;
                     if (value) localStorage.setItem(liveStorageKey, value);
+                    else localStorage.removeItem(liveStorageKey);
                     return value;
                 }
             } catch (e) {}
@@ -345,6 +366,16 @@
             try {
                 const wentLive = await readWentLive();
                 const liveAt = parseInstant(wentLive);
+                const board = document.getElementById("board");
+                const notLive = document.getElementById("notLive");
+                if (!liveAt) {
+                    board.hidden = true;
+                    notLive.hidden = false;
+                    status.textContent = "";
+                    return;
+                }
+                notLive.hidden = true;
+                board.hidden = false;
                 const res = await fetch(`${baseURL}/api/${eventApi}/users`, { cache: "no-store" });
                 if (!res.ok) throw new Error("Could not load guests");
                 const data = (await res.json()) || [];
@@ -369,9 +400,7 @@
                 });
                 renderRows(guests);
                 const updated = `updated ${escapeHtml(formatViewerTime(new Date()))} · refreshes every 30 seconds`;
-                status.innerHTML = liveAt
-                    ? `<span class="live-dot"></span>Live since ${escapeHtml(formatViewerTime(liveAt))} · ${updated}`
-                    : `Not live yet · every guest is listed · check-ins move to the top after Go live · ${updated}`;
+                status.innerHTML = `<span class="live-dot"></span>Live since ${escapeHtml(formatViewerTime(liveAt))} · ${updated}`;
             } catch (e) {
                 status.textContent = manual ? (e.message || "Update failed") : "Update failed · refreshes every 30 seconds";
             } finally {

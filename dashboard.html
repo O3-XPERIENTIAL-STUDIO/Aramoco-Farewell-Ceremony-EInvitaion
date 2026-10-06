@@ -5001,6 +5001,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                     const body = await res.json();
                     const value = body.wentLiveOn || body.WentLiveOn || null;
                     if (value) localStorage.setItem(liveStorageKey, value);
+                    else localStorage.removeItem(liveStorageKey);
                     return value;
                 }
             } catch (e) {}
@@ -5016,9 +5017,9 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                 btn.title = 'Check-ins after this moment are the final visitors';
                 return;
             }
-            btn.textContent = 'Live';
-            btn.disabled = true;
-            btn.title = 'Live since ' + (formatViewerTime(value) || value);
+            btn.textContent = 'Stop live';
+            btn.disabled = false;
+            btn.title = 'Live since ' + (formatViewerTime(value) || value) + '. Click to stop.';
         }
 
         async function refreshGoLiveButton() {
@@ -5028,8 +5029,19 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
         async function goLive() {
             const existing = await readWentLive();
             if (existing) {
-                paintGoLive(existing);
-                alert('This event is already live. Open Check-ins to see final visitors.');
+                if (!confirm('Stop live? The check-ins page will say the event is not live until you go live again.')) return;
+                let stopped = false;
+                try {
+                    const res = await fetch(`${baseURL}/api/${eventApi}/event-live`, { method: 'DELETE' });
+                    stopped = res.ok;
+                } catch (e) {}
+                if (!stopped) {
+                    alert('Could not stop live. The API needs to be published before Stop live can turn the event off.');
+                    paintGoLive(existing);
+                    return;
+                }
+                localStorage.removeItem(liveStorageKey);
+                paintGoLive(null);
                 return;
             }
             if (!confirm('Mark this event live now? Only people who check in after this moment show on the check-ins page.')) return;
