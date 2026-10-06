@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <title>Live check-ins</title>
+    <link rel="icon" type="image/png" href="assets/icon.png" />
+    <style>
+        *,
+        *::before,
+        *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0D1117;
+            --surface: #161B22;
+            --border: #30363D;
+            --text: #E6EDF3;
+            --text-muted: #8B949E;
+            --accent: #2F81F7;
+            --green: #3FB950;
+            --radius: 14px;
+        }
+
+        body {
+            font-family: Inter, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            color-scheme: dark;
+        }
+
+        .wrapper {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 32px 20px 64px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 24px;
+        }
+
+        .eyebrow {
+            font-size: 11px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+
+        h1 { font-size: 28px; font-weight: 700; }
+
+        .links { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+        a.btn, button.btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 7px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: transparent;
+            color: var(--text);
+            font: inherit;
+            font-size: 12px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .status-line {
+            margin-bottom: 16px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .count {
+            font-size: 42px;
+            font-weight: 700;
+            line-height: 1;
+        }
+
+        .count span {
+            display: block;
+            margin-top: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .panel {
+            margin-top: 18px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: var(--surface);
+            overflow: auto;
+        }
+
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+
+        th, td {
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        th {
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+
+        tr:last-child td { border-bottom: 0; }
+
+        .empty {
+            padding: 28px 16px;
+            color: var(--text-muted);
+        }
+
+        .live-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            margin-right: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 0 4px rgba(63, 185, 80, 0.16);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrapper">
+        <div class="header">
+            <div>
+                <div class="eyebrow" id="eyebrow">Invitation Management System</div>
+                <h1>Live check-ins</h1>
+            </div>
+            <div class="links">
+                <a class="btn" id="dashboardLink" href="dashboard.html">Dashboard</a>
+                <button class="btn" type="button" onclick="refreshCheckins(true)">Refresh</button>
+            </div>
+        </div>
+        <div class="count" id="count">—<span id="countLabel">Final visitors</span></div>
+        <p class="status-line" id="statusLine">Loading…</p>
+        <div class="panel">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Company</th>
+                        <th>Position</th>
+                        <th>Seat</th>
+                        <th>Checked in</th>
+                    </tr>
+                </thead>
+                <tbody id="rows"></tbody>
+            </table>
+            <div class="empty" id="empty" hidden>No final visitors yet.</div>
+        </div>
+    </div>
+    <script>
+        const baseURL = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
+        const eventApi = new URLSearchParams(location.search).has("cmc") ? "CapitalMarketConversation" : "AramcoFarewell";
+        const liveStorageKey = eventApi === "CapitalMarketConversation" ? "cmcWentLiveOn" : "aramcoFarewellWentLiveOn";
+        const cmc = eventApi === "CapitalMarketConversation";
+        if (cmc) {
+            document.getElementById("eyebrow").textContent = "Capital Markets Conversation";
+            document.getElementById("dashboardLink").href = "dashboard.html?cmc=1";
+        }
+
+        let seatLabels = {};
+        let refreshing = false;
+        let refreshTimer = null;
+
+        function parseInstant(value) {
+            if (!value) return null;
+            const raw = String(value).trim();
+            const iso = /Z$|[+-]\d{2}:\d{2}$/.test(raw) ? raw : raw.replace(" ", "T") + "Z";
+            const date = new Date(iso);
+            return Number.isNaN(date.getTime()) ? null : date;
+        }
+
+        function formatViewerTime(value) {
+            const date = value instanceof Date ? value : parseInstant(value);
+            if (!date) return "";
+            const options = {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+                hour: "2-digit",
+                minute: "2-digit",
+                hour12: true,
+                timeZoneName: "shortOffset"
+            };
+            try {
+                return date.toLocaleString(undefined, options);
+            } catch (e) {
+                options.timeZoneName = "short";
+                return date.toLocaleString(undefined, options);
+            }
+        }
+
+        function escapeHtml(value) {
+            return String(value || "").replace(/[&<>"']/g, ch => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            }[ch]));
+        }
+
+        async function readWentLive() {
+            try {
+                const res = await fetch(`${baseURL}/api/${eventApi}/event-live`, { cache: "no-store" });
+                if (res.ok) {
+                    const body = await res.json();
+                    const value = body.wentLiveOn || body.WentLiveOn || null;
+                    if (value) localStorage.setItem(liveStorageKey, value);
+                    return value;
+                }
+            } catch (e) {}
+            return localStorage.getItem(liveStorageKey);
+        }
+
+        function indexSeatPlan(doc) {
+            seatLabels = {};
+            if (!doc || !doc.layouts || !doc.layouts.length) return;
+            let layout = doc.layouts[0];
+            for (let i = 0; i < doc.layouts.length; i++) {
+                if (doc.layouts[i].id === doc.activeLayoutId) layout = doc.layouts[i];
+            }
+            const objects = layout.objects || [];
+            const tables = {};
+            const byTable = {};
+            objects.forEach(obj => {
+                if (obj.type === "table") tables[obj.id] = obj;
+                if (obj.type === "chair" && obj.tableId) {
+                    if (!byTable[obj.tableId]) byTable[obj.tableId] = [];
+                    byTable[obj.tableId].push(obj);
+                }
+            });
+            Object.keys(byTable).forEach(tableId => {
+                const chairs = byTable[tableId].sort((a, b) => (a.slot || 0) - (b.slot || 0));
+                const table = tables[tableId];
+                const number = table ? parseInt(table.tableNo, 10) : 0;
+                const tableText = number ? ("Table " + number) : ((table && table.label) || "Table");
+                chairs.forEach((chair, index) => {
+                    const stored = String(chair.seatNumber || "").trim().toUpperCase();
+                    if (!stored) return;
+                    seatLabels[stored] = tableText + " - C-" + String(index + 1).padStart(3, "0");
+                });
+            });
+        }
+
+        async function loadSeatPlan() {
+            try {
+                const res = await fetch(`${baseURL}/api/${eventApi}/seats/map`, { cache: "no-store" });
+                if (!res.ok) return;
+                const svgText = await res.text();
+                if (!svgText || svgText.indexOf("<svg") === -1) return;
+                const xml = new DOMParser().parseFromString(svgText, "image/svg+xml");
+                const meta = xml.querySelector("[id='aramco-seat-layout']");
+                if (!meta || !meta.textContent) return;
+                const data = JSON.parse(meta.textContent);
+                if (data && data.version === 2) indexSeatPlan(data);
+            } catch (e) {}
+        }
+
+        function seatLabel(code) {
+            const key = String(code || "").trim().toUpperCase();
+            if (!key) return "—";
+            return seatLabels[key] || String(code).trim();
+        }
+
+        function arrivalAfter(user, liveAt) {
+            const stamps = (user.checkIns || user.CheckIns || [])
+                .map(item => parseInstant(item && (item.checkedInOn || item.CheckedInOn)))
+                .filter(date => date && date.getTime() >= liveAt.getTime())
+                .sort((a, b) => a - b);
+            return stamps[0] || null;
+        }
+
+        function renderRows(visitors) {
+            const body = document.getElementById("rows");
+            const empty = document.getElementById("empty");
+            document.getElementById("count").firstChild.textContent = String(visitors.length);
+            if (!visitors.length) {
+                body.innerHTML = "";
+                empty.hidden = false;
+                empty.textContent = "No final visitors yet.";
+                return;
+            }
+            empty.hidden = true;
+            body.innerHTML = visitors.map(visitor => `
+                <tr>
+                    <td>${escapeHtml(visitor.name)}</td>
+                    <td>${escapeHtml(visitor.company || "—")}</td>
+                    <td>${escapeHtml(visitor.position || "—")}</td>
+                    <td>${escapeHtml(visitor.seat)}</td>
+                    <td>${escapeHtml(formatViewerTime(visitor.arrived))}</td>
+                </tr>`).join("");
+        }
+
+        function showWaiting(message) {
+            document.getElementById("count").firstChild.textContent = "—";
+            document.getElementById("rows").innerHTML = "";
+            const empty = document.getElementById("empty");
+            empty.hidden = false;
+            empty.textContent = message;
+        }
+
+        async function refreshCheckins(manual) {
+            if (refreshing) return;
+            refreshing = true;
+            const status = document.getElementById("statusLine");
+            try {
+                const wentLive = await readWentLive();
+                const liveAt = parseInstant(wentLive);
+                if (!liveAt) {
+                    showWaiting("The event is not live yet. Final visitors appear here after Go live.");
+                    status.textContent = "Not live · refreshes every 30 seconds";
+                    return;
+                }
+                const res = await fetch(`${baseURL}/api/${eventApi}/users`, { cache: "no-store" });
+                if (!res.ok) throw new Error("Could not load guests");
+                const data = (await res.json()) || [];
+                const visitors = data.map(user => {
+                    const arrived = arrivalAfter(user, liveAt);
+                    if (!arrived) return null;
+                    const seatCode = user.seatCode || user.SeatCode || "";
+                    return {
+                        name: user.fullName || user.FullName || "Guest",
+                        company: user.company || user.Company || "",
+                        position: user.position || user.Position || "",
+                        seat: seatLabel(seatCode),
+                        arrived
+                    };
+                }).filter(Boolean).sort((a, b) => b.arrived - a.arrived);
+                renderRows(visitors);
+                status.innerHTML = `<span class="live-dot"></span>Live since ${escapeHtml(formatViewerTime(liveAt))} · updated ${escapeHtml(formatViewerTime(new Date()))} · refreshes every 30 seconds`;
+            } catch (e) {
+                status.textContent = manual ? (e.message || "Update failed") : "Update failed · refreshes every 30 seconds";
+            } finally {
+                refreshing = false;
+            }
+        }
+
+        function armRefresh() {
+            if (refreshTimer) clearInterval(refreshTimer);
+            refreshTimer = setInterval(() => {
+                if (document.hidden) return;
+                refreshCheckins(false);
+            }, 30000);
+        }
+
+        document.addEventListener("visibilitychange", () => {
+            if (!document.hidden) refreshCheckins(false);
+        });
+
+        loadSeatPlan().then(() => refreshCheckins(false));
+        armRefresh();
+    </script>
+</body>
+
+</html>

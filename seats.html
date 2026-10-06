@@ -2661,18 +2661,16 @@
             if (!items.length) return;
             const single = items.length === 1;
             const obj = items[0];
-            const b = single ?
-                {
-                    left: itemLeft(obj),
-                    top: itemTop(obj),
-                    w: obj.w,
-                    h: obj.h,
-                    rot: obj.rotation || 0
-                } :
-                {
-                    ...groupBounds(items),
-                    rot: 0
-                };
+            const b = single ? {
+                left: itemLeft(obj),
+                top: itemTop(obj),
+                w: obj.w,
+                h: obj.h,
+                rot: obj.rotation || 0
+            } : {
+                ...groupBounds(items),
+                rot: 0
+            };
             const names = ["nw", "n", "ne", "e", "se", "s", "sw", "w"];
             const box = document.createElement("div");
             box.className = "xform";
@@ -3706,7 +3704,11 @@
         const SEAT_REFRESH_KEY = "aramcoFarewellSeatRefresh";
 
         function formatRefreshClock(date) {
-            return date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit", second: "2-digit" });
+            return date.toLocaleTimeString(undefined, {
+                hour: "numeric",
+                minute: "2-digit",
+                second: "2-digit"
+            });
         }
 
         function setRefreshStatus(state) {
@@ -3719,9 +3721,9 @@
             }
             if (state === "bad") {
                 el.classList.add("is-bad");
-                el.textContent = seatRefreshLastOk
-                    ? ("Update failed · last " + formatRefreshClock(seatRefreshLastOk))
-                    : "Update failed";
+                el.textContent = seatRefreshLastOk ?
+                    ("Update failed · last " + formatRefreshClock(seatRefreshLastOk)) :
+                    "Update failed";
                 return;
             }
             el.classList.add("is-ok");
@@ -3813,7 +3815,8 @@
                             const data = JSON.parse(draft);
                             if (data.version === 2) doc = data;
                         } catch (err) {
-                            /* keep blank */ }
+                            /* keep blank */
+                        }
                     }
                     setSaveState("Only on this browser");
                     if (svgText && svgText.includes("<svg") && !parsed) {
@@ -3844,7 +3847,8 @@
                         const data = JSON.parse(draft);
                         if (data.version === 2) doc = data;
                     } catch (parseErr) {
-                        /* keep blank */ }
+                        /* keep blank */
+                    }
                 }
                 setSaveState("Only on this browser");
                 toast("Opened a layout from this browser. The server could not be reached.", "bad");
@@ -4164,7 +4168,8 @@
                 try {
                     viewport().setPointerCapture(e.pointerId);
                 } catch (err) {
-                    /* already captured */ }
+                    /* already captured */
+                }
             }
             if (activePointers.size >= 2) {
                 beginPinch();
@@ -4177,8 +4182,7 @@
                 pushHistory();
                 const single = items.length === 1;
                 const obj = items[0];
-                const bounds = single ?
-                    {
+                const bounds = single ? {
                         left: itemLeft(obj),
                         top: itemTop(obj),
                         w: obj.w,
@@ -4275,8 +4279,7 @@
                 }
                 if (!selection.has(obj.id)) selectOnly(obj.id);
                 pushHistory();
-                const moving = obj.type === "chair" ?
-                    [obj] :
+                const moving = obj.type === "chair" ? [obj] :
                     (obj.arrangementId ? membersOf(obj.arrangementId) : (obj.type === "table" ? [obj, ...chairsOf(obj)] : selectedObjects()));
                 drag = {
                     kind: "move",

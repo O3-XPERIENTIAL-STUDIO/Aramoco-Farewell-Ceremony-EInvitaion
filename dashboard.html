@@ -457,8 +457,13 @@
             display: none;
         }
 
-        .guest-group.is-open .guest-group-cards {
+        .guest-group.is-open .guest-group-cards,
+        .guest-group.is-flat .guest-group-cards {
             display: block;
+        }
+
+        .guest-group.is-flat {
+            margin-bottom: 0;
         }
 
         .guest-group-title {
@@ -1664,6 +1669,8 @@
             </div>
             <div class="header-right">
                 <span id="lastUpdated" style="font-size:11px;color:var(--text-muted);"></span>
+                <button class="btn btn-primary" id="goLiveBtn" type="button" onclick="goLive()" style="padding:7px 14px;font-size:12px;">Go live</button>
+                <a class="btn btn-ghost" id="checkinsLink" href="checkins.html" style="padding:7px 14px;font-size:12px;text-decoration:none;">Check-ins</a>
                 <a class="btn btn-ghost" href="report.html" style="padding:7px 14px;font-size:12px;text-decoration:none;">Client report</a>
                 <a class="btn btn-ghost" href="seats.html" style="padding:7px 14px;font-size:12px;text-decoration:none;">Seat map</a>
                 <a class="btn btn-ghost" href="scanner.html" style="padding:7px 14px;font-size:12px;text-decoration:none;">Scan E-Badge</a>
@@ -1735,6 +1742,7 @@
             </div>
             <div class="bulk-download-hint">
                 Paste guest email IDs (one per line, or separated by commas). Download invite PDFs, E-Badge images, or E-Badge PDFs as a ZIP.
+                Leave the box empty for an E-Badge image or E-Badge PDF download to include every guest, except guests in a group whose name contains “Test”.
             </div>
             <textarea id="bulkDownloadEmails" class="bulk-download-textarea" rows="6" placeholder="guest1@example.com&#10;guest2@example.com&#10;guest3@example.com"></textarea>
             <div class="bulk-download-actions">
@@ -3401,7 +3409,15 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                 (document.getElementById('statusFilter')?.value || '').trim());
             document.getElementById('resultsCount').innerHTML = `Showing <strong>${count}</strong> guest${count !== 1 ? 's' : ''}`;
 
+            const searchQuery = (document.getElementById('searchInput')?.value || '').trim();
             const buckets = [];
+            if (searchQuery) {
+                if (filteredUsers.length) buckets.push({
+                    group: null,
+                    users: filteredUsers,
+                    flat: true
+                });
+            } else {
             guestGroups.forEach(group => {
                 if (groupFilter && groupFilter !== String(group.id)) return;
                 const members = filteredUsers.filter(user => Number(user.groupId) === Number(group.id));
@@ -3432,6 +3448,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                 };
                 buckets.push(bucket);
             });
+            }
 
             if (!buckets.length) {
                 container.innerHTML = `
@@ -3452,9 +3469,9 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             buckets.forEach(bucket => {
                 const section = document.createElement('section');
                 const key = bucket.group ? String(bucket.group.id) : '0';
-                section.className = 'guest-group' + (openGroupIds.has(key) ? ' is-open' : '');
+                section.className = 'guest-group' + (bucket.flat ? ' is-flat' : (openGroupIds.has(key) ? ' is-open' : ''));
                 section.dataset.groupKey = key;
-                section.appendChild(buildGroupHeader(bucket));
+                if (!bucket.flat) section.appendChild(buildGroupHeader(bucket));
                 const list = document.createElement('div');
                 list.className = 'guest-group-cards';
                 if (!bucket.users.length) {
@@ -3700,12 +3717,47 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             window.open(url, '_blank', 'noopener,noreferrer');
         }
 
-        function inviteCardFileName(name) {
+        function badgeEventName() {
+            return eventApi === 'CapitalMarketConversation' ? 'CapitalMarketConversation' : 'AramcoFarewell';
+        }
+
+        function badgeFileStem(name) {
             const safe = String(name || 'Guest')
                 .replace(/[<>:"/\\|?*\x00-\x1f]/g, '')
                 .replace(/\s+/g, ' ')
                 .trim();
-            return `${safe || 'Guest'}AramcoFarewellInvite.jpg`;
+            return `${safe || 'Guest'} - ${badgeEventName()}`;
+        }
+
+        function inviteCardFileName(name) {
+            return `${badgeFileStem(name)}.jpg`;
+        }
+
+        function badgeNameFromZipEntry(fileName) {
+            let base = String(fileName || '').replace(/\.(jpe?g|png|pdf)$/i, '');
+            base = base.replace(/\s*-\s*(CapitalMarketConversation|AramcoFarewell)(Invite|Ebadge)?$/i, '');
+            base = base.replace(/(CapitalMarketConversation|AramcoFarewell)(Invite|Ebadge)?$/i, '');
+            base = base.replace(/[\s-]+$/g, '').trim();
+            return base || 'Guest';
+        }
+
+        function uniqueDownloadName(used, name) {
+            const key = name.toLowerCase();
+            if (!used.has(key)) {
+                used.add(key);
+                return name;
+            }
+            const dot = name.lastIndexOf('.');
+            const stem = dot > 0 ? name.slice(0, dot) : name;
+            const ext = dot > 0 ? name.slice(dot) : '';
+            let n = 2;
+            let next = `${stem} (${n})${ext}`;
+            while (used.has(next.toLowerCase())) {
+                n += 1;
+                next = `${stem} (${n})${ext}`;
+            }
+            used.add(next.toLowerCase());
+            return next;
         }
 
         async function downloadInvitePdf(uniqueId, name) {
@@ -3921,7 +3973,17 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
         async function downloadBulkZip(kind, emailsOverride) {
             const byGroup = !!(emailsOverride && typeof emailsOverride === 'object' && !Array.isArray(emailsOverride));
             const emails = byGroup ? '' : (emailsOverride != null ? String(emailsOverride) : getBulkDownloadEmailsText()).trim();
-            if (!emails && !byGroup) {
+            const badgeBulk = kind === 'qr' || kind === 'qr-pdf';
+            let everyoneIds = null;
+            if (!emails && !byGroup && badgeBulk) {
+                everyoneIds = users
+                    .filter(user => user.uniqueId && !isTestGroupGuest(user))
+                    .map(user => user.uniqueId);
+                if (!everyoneIds.length) {
+                    setBulkDownloadStatus('No guests to download. Guests in a Test group are left out.', 'error');
+                    return;
+                }
+            } else if (!emails && !byGroup) {
                 setBulkDownloadStatus('Paste at least one email address.', 'error');
                 return;
             }
@@ -3950,7 +4012,10 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                         groupId: emailsOverride.groupId,
                         uniqueIds: emailsOverride.uniqueIds || [],
                         emails: emailsOverride.emails || ''
-                    } : { emails })
+                    } : (everyoneIds ? {
+                        uniqueIds: everyoneIds,
+                        emails: ''
+                    } : { emails }))
                 });
 
                 if (!res.ok) {
@@ -3979,6 +4044,8 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                 if (isQrPdf) {
                     setBulkDownloadStatus('Building E-Badge PDFs…', '');
                     outBlob = await imageZipToPdfZip(blob);
+                } else if (!isPdf) {
+                    outBlob = await renameBadgeImageZip(blob);
                 } else {
                     const disposition = res.headers.get('Content-Disposition') || '';
                     const match = /filename\*?=(?:UTF-8''|")?([^\";]+)/i.exec(disposition);
@@ -4151,15 +4218,14 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             const images = files.filter(file => /\.(jpe?g|png)$/i.test(file.name));
             if (!images.length) throw new Error('The E-Badge download did not contain any images.');
             const pdfs = [];
+            const usedNames = new Set();
             for (let index = 0; index < images.length; index++) {
                 const image = images[index];
                 const type = /\.png$/i.test(image.name) ? 'image/png' : 'image/jpeg';
-                const converted = await imageBlobToJpeg(new Blob([image.data], { type }));
+                const converted = await imageBlobToJpeg(new Blob([image.data], { type }), 1206);
                 const pdf = jpegBadgeToPdfBlob(converted.bytes, converted.width, converted.height);
                 pdfs.push({
-                    name: image.name
-                        .replace(/AramcoFarewellInvite\.(jpe?g|png)$/i, 'AramcoFarewellEbadge.pdf')
-                        .replace(/\.(jpe?g|png)$/i, '.pdf'),
+                    name: uniqueDownloadName(usedNames, ebadgePdfFileName(badgeNameFromZipEntry(image.name))),
                     data: new Uint8Array(await pdf.arrayBuffer())
                 });
             }
@@ -4209,26 +4275,49 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             return new Blob([concatBytes(chunks)], { type: 'application/pdf' });
         }
 
-        async function imageBlobToJpeg(blob) {
+        async function imageBlobToJpeg(blob, maxWidth) {
             const bitmap = await createImageBitmap(blob);
-            const width = bitmap.width;
-            const height = bitmap.height;
+            let width = bitmap.width;
+            let height = bitmap.height;
+            const limit = Number(maxWidth) || 0;
             const type = (blob.type || '').toLowerCase();
-            if (type.indexOf('jpeg') !== -1 || type.indexOf('jpg') !== -1) {
+            if ((!limit || width <= limit) && (type.indexOf('jpeg') !== -1 || type.indexOf('jpg') !== -1)) {
+                bitmap.close();
                 return { bytes: new Uint8Array(await blob.arrayBuffer()), width, height };
+            }
+            if (limit && width > limit) {
+                height = Math.max(1, Math.round(height * (limit / width)));
+                width = limit;
             }
             const canvas = document.createElement('canvas');
             canvas.width = width;
             canvas.height = height;
-            canvas.getContext('2d').drawImage(bitmap, 0, 0);
-            const jpegBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.95));
+            canvas.getContext('2d').drawImage(bitmap, 0, 0, width, height);
+            bitmap.close();
+            const jpegBlob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.92));
             if (!jpegBlob) throw new Error('Could not build the E-Badge PDF.');
             return { bytes: new Uint8Array(await jpegBlob.arrayBuffer()), width, height };
         }
 
         function ebadgePdfFileName(name) {
-            const safe = inviteCardFileName(name).replace(/AramcoFarewellInvite\.jpg$/i, '');
-            return `${safe}AramcoFarewellEbadge.pdf`;
+            return `${badgeFileStem(name)}.pdf`;
+        }
+
+        async function renameBadgeImageZip(zipBlob) {
+            const files = await readZipEntries(new Uint8Array(await zipBlob.arrayBuffer()));
+            const images = files.filter(file => /\.(jpe?g|png)$/i.test(file.name));
+            if (!images.length) return zipBlob;
+            const used = new Set();
+            return zipStored(images.map(image => ({
+                name: uniqueDownloadName(used, inviteCardFileName(badgeNameFromZipEntry(image.name))),
+                data: image.data
+            })));
+        }
+
+        function isTestGroupGuest(user) {
+            const group = guestGroups.find(item => Number(item.id) === Number(user.groupId));
+            const name = (user.groupName || (group && group.name) || '').toString();
+            return name.toLowerCase().includes('test');
         }
 
         async function downloadQrPdf(src, name) {
@@ -4903,6 +4992,60 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             await Promise.all([fetchUsers(false), loadSeatPlan(true)]);
         }
 
+        const liveStorageKey = eventApi === 'CapitalMarketConversation' ? 'cmcWentLiveOn' : 'aramcoFarewellWentLiveOn';
+
+        async function readWentLive() {
+            try {
+                const res = await fetch(`${baseURL}/api/${eventApi}/event-live`, { cache: 'no-store' });
+                if (res.ok) {
+                    const body = await res.json();
+                    const value = body.wentLiveOn || body.WentLiveOn || null;
+                    if (value) localStorage.setItem(liveStorageKey, value);
+                    return value;
+                }
+            } catch (e) {}
+            return localStorage.getItem(liveStorageKey);
+        }
+
+        function paintGoLive(value) {
+            const btn = document.getElementById('goLiveBtn');
+            if (!btn) return;
+            if (!value) {
+                btn.textContent = 'Go live';
+                btn.disabled = false;
+                btn.title = 'Check-ins after this moment are the final visitors';
+                return;
+            }
+            btn.textContent = 'Live';
+            btn.disabled = true;
+            btn.title = 'Live since ' + (formatViewerTime(value) || value);
+        }
+
+        async function refreshGoLiveButton() {
+            paintGoLive(await readWentLive());
+        }
+
+        async function goLive() {
+            const existing = await readWentLive();
+            if (existing) {
+                paintGoLive(existing);
+                alert('This event is already live. Open Check-ins to see final visitors.');
+                return;
+            }
+            if (!confirm('Mark this event live now? Only people who check in after this moment show on the check-ins page.')) return;
+            let value = null;
+            try {
+                const res = await fetch(`${baseURL}/api/${eventApi}/event-live`, { method: 'POST' });
+                if (res.ok) {
+                    const body = await res.json();
+                    value = body.wentLiveOn || body.WentLiveOn || null;
+                }
+            } catch (e) {}
+            if (!value) value = new Date().toISOString();
+            localStorage.setItem(liveStorageKey, value);
+            paintGoLive(value);
+        }
+
         function switchTab(tab) {
             document.getElementById('paneManual').style.display = tab === 'manual' ? '' : 'none';
             document.getElementById('paneBulk').style.display = tab === 'bulk' ? '' : 'none';
@@ -4915,7 +5058,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
 
         // Kick off
         if (eventApi === "CapitalMarketConversation") {
-            document.querySelectorAll('a[href="report.html"], a[href="seats.html"], a[href="scanner.html"]').forEach(link => {
+            document.querySelectorAll('a[href="report.html"], a[href="seats.html"], a[href="scanner.html"], a[href="checkins.html"]').forEach(link => {
                 link.href = link.getAttribute("href") + "?cmc=1";
             });
             const eyebrow = document.querySelector(".header-eyebrow");
@@ -4924,6 +5067,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
         fetchUsers(false);
         loadSeatPlan(false);
         refreshInviteQueueStatus();
+        refreshGoLiveButton();
     </script>
 </body>
 
