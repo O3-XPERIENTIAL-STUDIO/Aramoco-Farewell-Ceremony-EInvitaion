@@ -121,6 +121,20 @@
 
         tr:last-child td { border-bottom: 0; }
 
+        tr.is-in td { background: rgba(63, 185, 80, 0.08); }
+
+        .status {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-accepted { background: rgba(63, 185, 80, 0.16); color: var(--green); }
+        .status-pending { background: rgba(210, 153, 34, 0.16); color: #D29922; }
+        .status-declined { background: rgba(248, 81, 73, 0.16); color: #F85149; }
+
         .empty {
             padding: 28px 16px;
             color: var(--text-muted);
@@ -150,13 +164,14 @@
                 <button class="btn" type="button" onclick="refreshCheckins(true)">Refresh</button>
             </div>
         </div>
-        <div class="count" id="count">—<span id="countLabel">Final visitors</span></div>
+        <div class="count" id="count">—<span id="countLabel">Checked in</span></div>
         <p class="status-line" id="statusLine">Loading…</p>
         <div class="panel">
             <table>
                 <thead>
                     <tr>
                         <th>Name</th>
+                        <th>Status</th>
                         <th>Company</th>
                         <th>Position</th>
                         <th>Seat</th>
@@ -165,7 +180,7 @@
                 </thead>
                 <tbody id="rows"></tbody>
             </table>
-            <div class="empty" id="empty" hidden>No final visitors yet.</div>
+            <div class="empty" id="empty" hidden>No guests yet.</div>
         </div>
     </div>
     <script>
@@ -283,41 +298,44 @@
             return seatLabels[key] || String(code).trim();
         }
 
+        function guestStatus(user) {
+            const raw = String(user.status || user.Status || "pending").trim().toLowerCase();
+            if (raw === "accept" || raw === "accepted") return "accepted";
+            if (raw === "decline" || raw === "declined" || raw === "declain") return "declined";
+            return "pending";
+        }
+
         function arrivalAfter(user, liveAt) {
+            if (!liveAt) return null;
             const stamps = (user.checkIns || user.CheckIns || [])
                 .map(item => parseInstant(item && (item.checkedInOn || item.CheckedInOn)))
                 .filter(date => date && date.getTime() >= liveAt.getTime())
-                .sort((a, b) => a - b);
+                .sort((a, b) => b - a);
             return stamps[0] || null;
         }
 
-        function renderRows(visitors) {
+        function renderRows(guests) {
             const body = document.getElementById("rows");
             const empty = document.getElementById("empty");
-            document.getElementById("count").firstChild.textContent = String(visitors.length);
-            if (!visitors.length) {
+            const checkedIn = guests.filter(guest => guest.arrived).length;
+            document.getElementById("count").firstChild.textContent = String(checkedIn);
+            document.getElementById("countLabel").textContent = `Checked in · ${guests.length} guest${guests.length === 1 ? "" : "s"}`;
+            if (!guests.length) {
                 body.innerHTML = "";
                 empty.hidden = false;
-                empty.textContent = "No final visitors yet.";
+                empty.textContent = "No guests yet.";
                 return;
             }
             empty.hidden = true;
-            body.innerHTML = visitors.map(visitor => `
-                <tr>
-                    <td>${escapeHtml(visitor.name)}</td>
-                    <td>${escapeHtml(visitor.company || "—")}</td>
-                    <td>${escapeHtml(visitor.position || "—")}</td>
-                    <td>${escapeHtml(visitor.seat)}</td>
-                    <td>${escapeHtml(formatViewerTime(visitor.arrived))}</td>
+            body.innerHTML = guests.map(guest => `
+                <tr class="${guest.arrived ? "is-in" : ""}">
+                    <td>${escapeHtml(guest.name)}</td>
+                    <td><span class="status status-${guest.status}">${escapeHtml(guest.statusLabel)}</span></td>
+                    <td>${escapeHtml(guest.company || "—")}</td>
+                    <td>${escapeHtml(guest.position || "—")}</td>
+                    <td>${escapeHtml(guest.seat)}</td>
+                    <td>${guest.arrived ? escapeHtml(formatViewerTime(guest.arrived)) : "—"}</td>
                 </tr>`).join("");
-        }
-
-        function showWaiting(message) {
-            document.getElementById("count").firstChild.textContent = "—";
-            document.getElementById("rows").innerHTML = "";
-            const empty = document.getElementById("empty");
-            empty.hidden = false;
-            empty.textContent = message;
         }
 
         async function refreshCheckins(manual) {
@@ -327,28 +345,33 @@
             try {
                 const wentLive = await readWentLive();
                 const liveAt = parseInstant(wentLive);
-                if (!liveAt) {
-                    showWaiting("The event is not live yet. Final visitors appear here after Go live.");
-                    status.textContent = "Not live · refreshes every 30 seconds";
-                    return;
-                }
                 const res = await fetch(`${baseURL}/api/${eventApi}/users`, { cache: "no-store" });
                 if (!res.ok) throw new Error("Could not load guests");
                 const data = (await res.json()) || [];
-                const visitors = data.map(user => {
-                    const arrived = arrivalAfter(user, liveAt);
-                    if (!arrived) return null;
+                const labels = { accepted: "Accepted", pending: "Pending", declined: "Declined" };
+                const guests = data.map(user => {
+                    const statusKey = guestStatus(user);
                     const seatCode = user.seatCode || user.SeatCode || "";
                     return {
                         name: user.fullName || user.FullName || "Guest",
+                        status: statusKey,
+                        statusLabel: labels[statusKey],
                         company: user.company || user.Company || "",
                         position: user.position || user.Position || "",
                         seat: seatLabel(seatCode),
-                        arrived
+                        arrived: arrivalAfter(user, liveAt)
                     };
-                }).filter(Boolean).sort((a, b) => b.arrived - a.arrived);
-                renderRows(visitors);
-                status.innerHTML = `<span class="live-dot"></span>Live since ${escapeHtml(formatViewerTime(liveAt))} · updated ${escapeHtml(formatViewerTime(new Date()))} · refreshes every 30 seconds`;
+                }).sort((a, b) => {
+                    if (a.arrived && b.arrived) return b.arrived - a.arrived;
+                    if (a.arrived) return -1;
+                    if (b.arrived) return 1;
+                    return a.name.localeCompare(b.name);
+                });
+                renderRows(guests);
+                const updated = `updated ${escapeHtml(formatViewerTime(new Date()))} · refreshes every 30 seconds`;
+                status.innerHTML = liveAt
+                    ? `<span class="live-dot"></span>Live since ${escapeHtml(formatViewerTime(liveAt))} · ${updated}`
+                    : `Not live yet · every guest is listed · check-ins move to the top after Go live · ${updated}`;
             } catch (e) {
                 status.textContent = manual ? (e.message || "Update failed") : "Update failed · refreshes every 30 seconds";
             } finally {
