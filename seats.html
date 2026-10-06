@@ -1292,8 +1292,11 @@
                     <select id="arrNumbering">
                         <option value="c">C-001</option>
                         <option value="table">T01-C01</option>
+                        <option value="letters">ROW 1 - A1</option>
                     </select>
                 </label>
+                <label class="field" id="arrRowWordWrap">Row name<input id="arrRowWord" value="ROW" maxlength="16" /></label>
+                <label class="field" id="arrRowLetterWrap">First row letter<input id="arrRowLetter" value="A" maxlength="1" /></label>
             </div>
             <div class="preview-box" id="arrPreview"></div>
             <p class="hint" id="arrSummary"></p>
@@ -1456,7 +1459,9 @@
         function nextSeat() {
             let max = 0;
             allChairs().forEach(c => {
-                const n = parseInt(String(c.seatNumber || "").replace(/\D/g, ""), 10);
+                const match = /^C-(\d+)$/i.exec(String(c.seatNumber || "").trim());
+                if (!match) return;
+                const n = parseInt(match[1], 10);
                 if (n > max) max = n;
             });
             return "C-" + String(max + 1).padStart(3, "0");
@@ -1492,6 +1497,25 @@
             return active().objects.find(obj => obj.id === chair.tableId) || null;
         }
 
+        function rowLetterAt(start, index) {
+            const first = String(start || "A").toUpperCase().charCodeAt(0);
+            let n = (first >= 65 && first <= 90 ? first : 65) - 65 + Math.max(0, index);
+            let label = "";
+            do {
+                label = String.fromCharCode(65 + (n % 26)) + label;
+                n = Math.floor(n / 26) - 1;
+            } while (n >= 0);
+            return label;
+        }
+
+        function rowChairName(table, slotIndex) {
+            const per = Math.max(1, parseInt(table.perRow, 10) || 1);
+            const row = Math.floor(slotIndex / per);
+            const seat = (slotIndex % per) + 1;
+            const word = String(table.rowWord || "ROW").trim() || "ROW";
+            return word + " " + (row + 1) + " - " + rowLetterAt(table.rowLetter || "A", row) + seat;
+        }
+
         function chairLocalCode(chair) {
             const stored = String(chair && chair.seatNumber || "").trim();
             const table = tableOfChair(chair);
@@ -1504,6 +1528,7 @@
 
         function chairDisplayLabel(chair) {
             const table = tableOfChair(chair);
+            if (table && table.shape === "rows") return String(chair.seatNumber || "").trim() || "Chair";
             const code = chairLocalCode(chair);
             if (!table) return code || "Chair";
             const number = parseInt(table.tableNo, 10);
@@ -1936,8 +1961,14 @@
                 chair.groupId = table.groupId;
                 chair.arrangementId = table.arrangementId || "";
                 chair.seatShape = table.shape || "round";
-                if (table.numbering === "table" && !isAssigned(chair)) {
-                    chair.seatNumber = "T" + String(table.tableNo || 1).padStart(2, "0") + "-C" + String(i + 1).padStart(2, "0");
+                if (!isAssigned(chair)) {
+                    if (table.shape === "rows" && table.numbering === "letters") {
+                        chair.seatNumber = rowChairName(table, i);
+                    } else if (table.numbering === "table") {
+                        chair.seatNumber = "T" + String(table.tableNo || 1).padStart(2, "0") + "-C" + String(i + 1).padStart(2, "0");
+                    } else if (table.shape === "rows" && !/^C-\d+$/i.test(String(chair.seatNumber || "").trim())) {
+                        chair.seatNumber = nextSeat();
+                    }
                 }
                 if (chair.manual && !table.relayout) return;
                 chair.manual = false;
@@ -2007,6 +2038,8 @@
                 rot: ((parseInt(document.getElementById("arrRot").value, 10) || 0) % 360 + 360) % 360,
                 distribute: document.getElementById("arrDistMode").value || "auto",
                 numbering: document.getElementById("arrNumbering").value || "c",
+                rowWord: (document.getElementById("arrRowWord").value || "ROW").trim() || "ROW",
+                rowLetter: (document.getElementById("arrRowLetter").value || "A").trim().charAt(0).toUpperCase() || "A",
                 gapStyle: document.getElementById("arrGap").value || "even"
             };
         }
@@ -2070,7 +2103,16 @@
             document.getElementById("arrHeightWrap").hidden = rows || type === "round" || type === "square" || type === "crescent";
             document.getElementById("arrSpaceXWrap").hidden = rows;
             document.getElementById("arrDistWrap").hidden = rows || type === "round" || type === "oval" || type === "crescent";
-            document.getElementById("arrNumWrap").hidden = rows;
+            const numbering = document.getElementById("arrNumbering");
+            [...numbering.options].forEach(opt => {
+                if (opt.value === "table") opt.hidden = rows;
+                if (opt.value === "letters") opt.hidden = !rows;
+            });
+            if (rows && numbering.value === "table") numbering.value = "letters";
+            if (!rows && numbering.value === "letters") numbering.value = "c";
+            const letters = rows && numbering.value === "letters";
+            document.getElementById("arrRowWordWrap").hidden = !letters;
+            document.getElementById("arrRowLetterWrap").hidden = !letters;
             document.getElementById("arrRowsName").textContent = "Rows";
             document.getElementById("arrColsName").textContent = rows ? "Chairs per row" : "Columns";
             document.getElementById("arrWidthLabel").textContent = radial && type !== "oval" ? (type === "square" ? "Table size" : "Diameter") : "Table width";
@@ -2083,7 +2125,8 @@
             document.getElementById("arrSummary").textContent = tooMany ?
                 "Use 40 tables or fewer. Lower the rows or columns." :
                 ((rows ?
-                        `Creates 1 block · ${cfg.rows} rows · ${cfg.cols} chairs per row · ${chairs} chairs.` :
+                        `Creates 1 block · ${cfg.rows} rows · ${cfg.cols} chairs per row · ${chairs} chairs.` +
+                        (cfg.numbering === "letters" ? ` Names look like ${cfg.rowWord} 1 - ${rowLetterAt(cfg.rowLetter, 0)}1.` : " Names stay C-001.") :
                         `Creates ${tables} table${tables === 1 ? "" : "s"} · ${cfg.chairs} chairs each · ${chairs} chairs.`) +
                     (clipped ? " Preview shows the first rows and columns." : ""));
             const preview = document.getElementById("arrPreview");
@@ -2106,6 +2149,7 @@
                 y: snap(point.y)
             };
             document.getElementById("arrType").value = typeOf[tool] || document.getElementById("arrType").value || "rect";
+            if ((typeOf[tool] || "") === "rows") document.getElementById("arrNumbering").value = "letters";
             document.getElementById("arrWhere").textContent = `Placed at ${Math.round(arrangePoint.x)}, ${Math.round(arrangePoint.y)}.`;
             document.getElementById("arrangeModal").hidden = false;
             syncArrangeFields();
@@ -2336,6 +2380,8 @@
                 rowGap: config.spaceY,
                 distribute: config.distribute || "auto",
                 numbering: config.numbering || "c",
+                rowWord: config.rowWord || "ROW",
+                rowLetter: config.rowLetter || "A",
                 sides: null,
                 groupId: "grp-" + uid()
             };
@@ -2359,9 +2405,14 @@
                 rot: config.rot,
                 distribute: config.distribute,
                 numbering: config.numbering,
+                rowWord: config.rowWord || "ROW",
+                rowLetter: config.rowLetter || "A",
                 gapStyle: config.gapStyle || "even"
             };
             table.gapStyle = config.gapStyle || table.gapStyle || "even";
+            table.numbering = config.numbering || table.numbering || "c";
+            table.rowWord = config.rowWord || table.rowWord || "ROW";
+            table.rowLetter = config.rowLetter || table.rowLetter || "A";
             table.relayout = true;
             syncTable(table);
             table.relayout = false;
@@ -2491,6 +2542,12 @@
                 ${type === "round" || type === "square" || type === "crescent" || type === "rows" ? "" : `<label class="field">Table height<input id="editH" type="number" min="48" max="800" value="${Math.round(first.tableH || plan.h || 120)}" /></label>`}
                 ${type === "rows" ? "" : `<label class="field">Horizontal gap<input id="editSpaceX" type="number" min="0" max="400" value="${plan.spaceX ?? 100}" /></label>`}
                 <label class="field">${type === "rows" ? "Space between rows" : "Vertical gap"}<input id="editSpaceY" type="number" min="0" max="400" value="${plan.spaceY ?? first.rowGap ?? 120}" /></label>
+                ${type === "rows" ? `<label class="field">Chair names<select id="editNumbering">
+                    <option value="letters"${(first.numbering || "letters") === "letters" ? " selected" : ""}>ROW 1 - A1</option>
+                    <option value="c"${first.numbering === "c" ? " selected" : ""}>C-001</option>
+                </select></label>
+                <label class="field">Row name<input id="editRowWord" value="${esc(first.rowWord || "ROW")}" maxlength="16" /></label>
+                <label class="field">First row letter<input id="editRowLetter" value="${esc(first.rowLetter || "A")}" maxlength="1" /></label>` : ""}
                 ${type === "rows" || type === "round" || type === "oval" || type === "crescent" ? "" : `<label class="field">Chair distribution<select id="editMode">${modes.map(([v, l]) => `<option value="${v}"${(first.distribute || "auto") === v ? " selected" : ""}>${l}</option>`).join("")}</select></label>`}
                 <div class="row">
                     <button class="btn primary" type="button" id="applyArr">Apply changes</button>
@@ -2524,7 +2581,9 @@
                 spaceY: clamp(parseInt(document.getElementById("editSpaceY").value, 10) || 0, 0, 400),
                 rot: tables[0].spin || 0,
                 distribute: document.getElementById("editMode") ?.value || tables[0].distribute || "auto",
-                numbering: tables[0].numbering || "c",
+                numbering: document.getElementById("editNumbering") ? document.getElementById("editNumbering").value : (tables[0].numbering || "c"),
+                rowWord: (document.getElementById("editRowWord") && document.getElementById("editRowWord").value || tables[0].rowWord || "ROW").trim() || "ROW",
+                rowLetter: (document.getElementById("editRowLetter") && document.getElementById("editRowLetter").value || tables[0].rowLetter || "A").trim().charAt(0).toUpperCase() || "A",
                 gapStyle: document.getElementById("editGap") ?.value || tables[0].gapStyle || "even"
             };
             pushHistory();
@@ -2873,8 +2932,9 @@
             const rows = clamp(parseInt(obj.rows, 10) || 1, 1, 20);
             const gapY = clamp(Number(obj.rowGap != null ? obj.rowGap : chairDistanceOf(obj)), 0, 240);
             const step = CHAIR + gapY;
+            const word = obj.numbering === "letters" ? (String(obj.rowWord || "ROW").trim() || "ROW") : "Row";
             let html = "";
-            for (let r = 0; r < rows; r++) html += `<span class="row-pill" style="top:${r * step}px;height:${CHAIR}px">Row ${r + 1}</span>`;
+            for (let r = 0; r < rows; r++) html += `<span class="row-pill" style="top:${r * step}px;height:${CHAIR}px">${esc(word + " " + (r + 1))}</span>`;
             return html;
         }
 
@@ -2951,7 +3011,14 @@
                 ${shape === "rows" ? "" : `<label class="field">${shape === "round" ? "Diameter" : "Table width"}<input id="tblW" type="number" min="60" max="800" value="${Math.round(obj.tableW || obj.w || 240)}" /></label>
                 ${shape === "round" ? "" : `<label class="field">Table height<input id="tblH" type="number" min="48" max="800" value="${Math.round(obj.tableH || obj.h || 120)}" /></label>`}`}
                 ${shape === "rows" ? `<label class="field">Rows<input id="tblRows" type="number" min="1" max="20" value="${obj.rows || 1}" /></label>
-                    <label class="field">Chairs per row<input id="tblPer" type="number" min="1" max="30" value="${obj.perRow || 10}" /></label>`
+                    <label class="field">Chairs per row<input id="tblPer" type="number" min="1" max="30" value="${obj.perRow || 10}" /></label>
+                    <label class="field">Chair names<select id="tblNumbering">
+                        <option value="letters"${(obj.numbering || "c") === "letters" ? " selected" : ""}>ROW 1 - A1</option>
+                        <option value="c"${(obj.numbering || "c") !== "letters" ? " selected" : ""}>C-001</option>
+                    </select></label>
+                    <label class="field">Row name<input id="tblRowWord" value="${esc(obj.rowWord || "ROW")}" maxlength="16" /></label>
+                    <label class="field">First row letter<input id="tblRowLetter" value="${esc(obj.rowLetter || "A")}" maxlength="1" /></label>
+                    <p class="hint">Row 1 uses the first letter, row 2 the next letter. Example: ${(esc(obj.rowWord || "ROW"))} 1 - ${rowLetterAt(obj.rowLetter || "A", 0)}1, ${rowLetterAt(obj.rowLetter || "A", 0)}2.</p>`
                     : `<label class="field">Chairs<input id="tblSeats" type="number" min="2" max="40" value="${obj.seats || 8}" /></label>${sideFields}`}
                 <p class="hint">${chairsOf(obj).length} chairs with this ${shape === "rows" ? "block" : "table"}.</p>
                 <label class="field">X<input id="propX" type="number" value="${Math.round(itemLeft(obj))}" /></label>
@@ -3982,6 +4049,12 @@
                 table.perRow = clamp(parseInt(document.getElementById("tblPer") ?.value, 10) || table.perRow || 10, 1, 30);
                 table.sides = null;
                 table.rowGap = clamp(parseFloat(document.getElementById("tblSpace").value) || table.rowGap || 40, 0, 240);
+                const naming = document.getElementById("tblNumbering");
+                if (naming) table.numbering = naming.value || "c";
+                const word = document.getElementById("tblRowWord");
+                if (word) table.rowWord = (word.value || "ROW").trim() || "ROW";
+                const letter = document.getElementById("tblRowLetter");
+                if (letter) table.rowLetter = (letter.value || "A").trim().charAt(0).toUpperCase() || "A";
             } else if (table.shape === "rect" || table.shape === "ushape") {
                 const seatsEl = document.getElementById("tblSeats");
                 const topEl = document.getElementById("tblTop");
