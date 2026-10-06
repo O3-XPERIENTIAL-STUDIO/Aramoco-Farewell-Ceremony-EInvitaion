@@ -269,6 +269,12 @@
             return localStorage.getItem(liveStorageKey);
         }
 
+        function rowFaceCode(value) {
+            const text = String(value || "").trim();
+            const match = /-\s*([A-Z]+\d+)$/i.exec(text);
+            return match ? match[1].toUpperCase() : text;
+        }
+
         function indexSeatPlan(doc) {
             seatLabels = {};
             if (!doc || !doc.layouts || !doc.layouts.length) return;
@@ -294,6 +300,10 @@
                 chairs.forEach((chair, index) => {
                     const stored = String(chair.seatNumber || "").trim().toUpperCase();
                     if (!stored) return;
+                    if (table && table.shape === "rows") {
+                        seatLabels[stored] = rowFaceCode(chair.seatNumber);
+                        return;
+                    }
                     seatLabels[stored] = tableText + " - C-" + String(index + 1).padStart(3, "0");
                 });
             });

@@ -521,6 +521,12 @@
                 return seatLabels[key] || String(code).trim();
             }
 
+            function rowFaceCode(value) {
+                var text = String(value || "").trim();
+                var match = /-\s*([A-Z]+\d+)$/i.exec(text);
+                return match ? match[1].toUpperCase() : text;
+            }
+
             function indexSeatPlan(doc) {
                 seatLabels = {};
                 if (!doc || !doc.layouts || !doc.layouts.length) return;
@@ -548,6 +554,10 @@
                     chairs.forEach(function(chair, index) {
                         var stored = String(chair.seatNumber || "").trim().toUpperCase();
                         if (!stored) return;
+                        if (table && table.shape === "rows") {
+                            seatLabels[stored] = rowFaceCode(chair.seatNumber);
+                            return;
+                        }
                         seatLabels[stored] = tableText + " - C-" + padSeat(index + 1);
                     });
                 });

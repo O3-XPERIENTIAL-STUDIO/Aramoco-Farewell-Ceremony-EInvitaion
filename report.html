@@ -426,6 +426,12 @@
             return String(n).padStart(3, "0");
         }
 
+        function rowFaceCode(value) {
+            const text = String(value || "").trim();
+            const match = /-\s*([A-Z]+\d+)$/i.exec(text);
+            return match ? match[1].toUpperCase() : text;
+        }
+
         function indexLayout(doc) {
             const labels = {};
             const chairsByTable = {};
@@ -450,7 +456,12 @@
                 const tableText = number ? ("Table " + number) : ((table && table.label) || "Table");
                 chairs.forEach((chair, index) => {
                     const stored = String(chair.seatNumber || "").trim().toUpperCase();
-                    if (stored) labels[stored] = tableText + " - C-" + pad3(index + 1);
+                    if (!stored) return;
+                    if (table && table.shape === "rows") {
+                        labels[stored] = rowFaceCode(chair.seatNumber);
+                        return;
+                    }
+                    labels[stored] = tableText + " - C-" + pad3(index + 1);
                 });
             });
             return { layout: layout, labels: labels };
