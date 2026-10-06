@@ -92,6 +92,12 @@
             font-size: 13px;
         }
 
+        .field input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
         .err {
             color: var(--danger);
             min-height: 18px;
@@ -1292,11 +1298,15 @@
                     <select id="arrNumbering">
                         <option value="c">C-001</option>
                         <option value="table">T01-C01</option>
-                        <option value="letters">ROW 1 - A1</option>
+                        <option value="letters">A1, B1</option>
                     </select>
                 </label>
                 <label class="field" id="arrRowWordWrap">Row name<input id="arrRowWord" value="ROW" maxlength="16" /></label>
+                <label class="field" id="arrRowStartWrap">First row number<input id="arrRowStart" type="number" min="1" max="99" value="1" /></label>
                 <label class="field" id="arrRowLetterWrap">First row letter<input id="arrRowLetter" value="A" maxlength="1" /></label>
+                <label class="field" id="arrLabelGapWrap">Space after row name<input id="arrLabelGap" type="number" min="24" max="400" value="120" /></label>
+                <label class="field" id="arrSegmentsWrap">Segments in each row<input id="arrSegments" type="number" min="1" max="6" value="1" /></label>
+                <label class="field" id="arrSegmentGapWrap">Space between segments<input id="arrSegmentGap" type="number" min="0" max="800" value="180" /></label>
             </div>
             <div class="preview-box" id="arrPreview"></div>
             <p class="hint" id="arrSummary"></p>
@@ -1512,8 +1522,39 @@
             const per = Math.max(1, parseInt(table.perRow, 10) || 1);
             const row = Math.floor(slotIndex / per);
             const seat = (slotIndex % per) + 1;
-            const word = String(table.rowWord || "ROW").trim() || "ROW";
-            return word + " " + (row + 1) + " - " + rowLetterAt(table.rowLetter || "A", row) + seat;
+            return rowLetterAt(table.rowLetter || "A", row) + seat;
+        }
+
+        function rowFaceCode(value) {
+            const text = String(value || "").trim();
+            const match = /-\s*([A-Z]+\d+)$/i.exec(text);
+            return match ? match[1].toUpperCase() : text;
+        }
+
+        function rowDisplayNumber(table, index) {
+            return (parseInt(table && table.rowStart, 10) || 1) + (index || 0);
+        }
+
+        function nextRowContinuation() {
+            let end = 0;
+            let letter = "A";
+            active().objects.forEach(obj => {
+                if (obj.type !== "table" || obj.shape !== "rows") return;
+                const start = parseInt(obj.rowStart, 10) || 1;
+                const count = clamp(parseInt(obj.rows, 10) || 1, 1, 20);
+                const last = start + count - 1;
+                if (last >= end) {
+                    end = last;
+                    letter = rowLetterAt(obj.rowLetter || "A", count);
+                }
+            });
+            return end ? {
+                rowStart: end + 1,
+                rowLetter: letter
+            } : {
+                rowStart: 1,
+                rowLetter: "A"
+            };
         }
 
         function chairLocalCode(chair) {
@@ -1528,7 +1569,7 @@
 
         function chairDisplayLabel(chair) {
             const table = tableOfChair(chair);
-            if (table && table.shape === "rows") return String(chair.seatNumber || "").trim() || "Chair";
+            if (table && table.shape === "rows") return rowFaceCode(chair.seatNumber) || "Chair";
             const code = chairLocalCode(chair);
             if (!table) return code || "Chair";
             const number = parseInt(table.tableNo, 10);
@@ -1698,27 +1739,39 @@
                 const gapY = clamp(Number(table.rowGap != null ? table.rowGap : dist), 0, 240);
                 const style = table.gapStyle || "even";
                 const base = CHAIR + dist;
-                const steps = [];
-                for (let c = 0; c < per - 1; c++) {
-                    if (style === "uneven") steps.push(base * (c % 2 ? 1.65 : 0.6));
-                    else if (style === "opening" && c === Math.floor((per - 1) / 2)) steps.push(base * 2.2);
-                    else steps.push(base);
+                const labelGap = clamp(Number(table.labelGap != null ? table.labelGap : 120), 24, 400);
+                const segments = clamp(parseInt(table.segments, 10) || 1, 1, 6);
+                const counts = [];
+                const each = Math.floor(per / segments);
+                let extra = per % segments;
+                for (let s = 0; s < segments; s++) {
+                    const count = each + (extra > 0 ? 1 : 0);
+                    if (extra > 0) extra -= 1;
+                    if (count > 0) counts.push(count);
                 }
+                const segGap = counts.length > 1 ? clamp(Number(table.segmentGap != null ? table.segmentGap : 180), 0, 800) : 0;
                 const slots = [];
+                let maxX = ROW_LABEL + labelGap;
                 for (let r = 0; r < rows; r++) {
-                    let x = ROW_LABEL + 42;
-                    for (let c = 0; c < per; c++) {
-                        slots.push({
-                            x,
-                            y: r * (CHAIR + gapY),
-                            rot: 0,
-                            edge: "row",
-                            row: r
-                        });
-                        if (c < steps.length) x += steps[c];
-                    }
+                    let x = ROW_LABEL + labelGap;
+                    counts.forEach((count, s) => {
+                        if (s > 0) x += segGap;
+                        for (let c = 0; c < count; c++) {
+                            let step = base;
+                            if (style === "uneven") step = base * (c % 2 ? 1.65 : 0.6);
+                            else if (style === "opening" && c === Math.floor((count - 1) / 2) && c < count - 1) step = base * 2.2;
+                            slots.push({
+                                x,
+                                y: r * (CHAIR + gapY),
+                                rot: 0,
+                                edge: "row",
+                                row: r
+                            });
+                            x += c < count - 1 ? step : CHAIR;
+                        }
+                    });
+                    maxX = Math.max(maxX, x);
                 }
-                const w = ROW_LABEL + 42 + steps.reduce((sum, step) => sum + step, 0) + CHAIR;
                 const h = Math.max(CHAIR, rows * (CHAIR + gapY) - gapY);
                 return {
                     slots,
@@ -1728,7 +1781,7 @@
                         w: ROW_LABEL,
                         h
                     },
-                    w,
+                    w: maxX,
                     h
                 };
             }
@@ -2039,7 +2092,11 @@
                 distribute: document.getElementById("arrDistMode").value || "auto",
                 numbering: document.getElementById("arrNumbering").value || "c",
                 rowWord: (document.getElementById("arrRowWord").value || "ROW").trim() || "ROW",
+                rowStart: clamp(parseInt(document.getElementById("arrRowStart").value, 10) || 1, 1, 99),
                 rowLetter: (document.getElementById("arrRowLetter").value || "A").trim().charAt(0).toUpperCase() || "A",
+                labelGap: clamp(parseInt(document.getElementById("arrLabelGap").value, 10) || 120, 24, 400),
+                segments: clamp(parseInt(document.getElementById("arrSegments").value, 10) || 1, 1, 6),
+                segmentGap: clamp(parseInt(document.getElementById("arrSegmentGap").value, 10) || 0, 0, 800),
                 gapStyle: document.getElementById("arrGap").value || "even"
             };
         }
@@ -2110,14 +2167,25 @@
             });
             if (rows && numbering.value === "table") numbering.value = "letters";
             if (!rows && numbering.value === "letters") numbering.value = "c";
+            if (rows && syncArrangeFields.lastType !== "rows") {
+                const next = nextRowContinuation();
+                document.getElementById("arrRowStart").value = next.rowStart;
+                document.getElementById("arrRowLetter").value = next.rowLetter;
+                numbering.value = "letters";
+            }
+            syncArrangeFields.lastType = type;
             const letters = rows && numbering.value === "letters";
             document.getElementById("arrRowWordWrap").hidden = !letters;
+            document.getElementById("arrRowStartWrap").hidden = !rows;
             document.getElementById("arrRowLetterWrap").hidden = !letters;
+            document.getElementById("arrLabelGapWrap").hidden = !rows;
+            document.getElementById("arrSegmentsWrap").hidden = !rows;
             document.getElementById("arrRowsName").textContent = "Rows";
             document.getElementById("arrColsName").textContent = rows ? "Chairs per row" : "Columns";
             document.getElementById("arrWidthLabel").textContent = radial && type !== "oval" ? (type === "square" ? "Table size" : "Diameter") : "Table width";
             document.getElementById("arrSpaceYName").textContent = rows ? "Space between rows" : "Vertical spacing";
             const cfg = readArrange();
+            document.getElementById("arrSegmentGapWrap").hidden = !rows || cfg.segments < 2;
             const tables = rows ? 1 : cfg.rows * cfg.cols;
             const chairs = rows ? cfg.rows * cfg.cols : tables * cfg.chairs;
             const tooMany = !rows && tables > 40;
@@ -2126,7 +2194,7 @@
                 "Use 40 tables or fewer. Lower the rows or columns." :
                 ((rows ?
                         `Creates 1 block · ${cfg.rows} rows · ${cfg.cols} chairs per row · ${chairs} chairs.` +
-                        (cfg.numbering === "letters" ? ` Names look like ${cfg.rowWord} 1 - ${rowLetterAt(cfg.rowLetter, 0)}1.` : " Names stay C-001.") :
+                        (cfg.numbering === "letters" ? ` Chairs show ${rowLetterAt(cfg.rowLetter, 0)}1. The row label starts at ${cfg.rowWord} ${cfg.rowStart}.` : " Names stay C-001.") :
                         `Creates ${tables} table${tables === 1 ? "" : "s"} · ${cfg.chairs} chairs each · ${chairs} chairs.`) +
                     (clipped ? " Preview shows the first rows and columns." : ""));
             const preview = document.getElementById("arrPreview");
@@ -2149,7 +2217,12 @@
                 y: snap(point.y)
             };
             document.getElementById("arrType").value = typeOf[tool] || document.getElementById("arrType").value || "rect";
-            if ((typeOf[tool] || "") === "rows") document.getElementById("arrNumbering").value = "letters";
+            if ((typeOf[tool] || document.getElementById("arrType").value) === "rows") {
+                document.getElementById("arrNumbering").value = "letters";
+                const next = nextRowContinuation();
+                document.getElementById("arrRowStart").value = next.rowStart;
+                document.getElementById("arrRowLetter").value = next.rowLetter;
+            }
             document.getElementById("arrWhere").textContent = `Placed at ${Math.round(arrangePoint.x)}, ${Math.round(arrangePoint.y)}.`;
             document.getElementById("arrangeModal").hidden = false;
             syncArrangeFields();
@@ -2381,7 +2454,12 @@
                 distribute: config.distribute || "auto",
                 numbering: config.numbering || "c",
                 rowWord: config.rowWord || "ROW",
+                rowStart: config.rowStart || 1,
                 rowLetter: config.rowLetter || "A",
+                labelGap: config.labelGap != null ? config.labelGap : 120,
+                segments: config.segments || 1,
+                segmentGap: config.segmentGap != null ? config.segmentGap : 180,
+                moveAsGroup: config.moveAsGroup !== false,
                 sides: null,
                 groupId: "grp-" + uid()
             };
@@ -2412,7 +2490,12 @@
             table.gapStyle = config.gapStyle || table.gapStyle || "even";
             table.numbering = config.numbering || table.numbering || "c";
             table.rowWord = config.rowWord || table.rowWord || "ROW";
+            table.rowStart = config.rowStart || table.rowStart || 1;
             table.rowLetter = config.rowLetter || table.rowLetter || "A";
+            if (config.labelGap != null) table.labelGap = config.labelGap;
+            if (config.segments != null) table.segments = config.segments;
+            if (config.segmentGap != null) table.segmentGap = config.segmentGap;
+            if (config.moveAsGroup != null) table.moveAsGroup = config.moveAsGroup !== false;
             table.relayout = true;
             syncTable(table);
             table.relayout = false;
@@ -2543,11 +2626,16 @@
                 ${type === "rows" ? "" : `<label class="field">Horizontal gap<input id="editSpaceX" type="number" min="0" max="400" value="${plan.spaceX ?? 100}" /></label>`}
                 <label class="field">${type === "rows" ? "Space between rows" : "Vertical gap"}<input id="editSpaceY" type="number" min="0" max="400" value="${plan.spaceY ?? first.rowGap ?? 120}" /></label>
                 ${type === "rows" ? `<label class="field">Chair names<select id="editNumbering">
-                    <option value="letters"${(first.numbering || "letters") === "letters" ? " selected" : ""}>ROW 1 - A1</option>
+                    <option value="letters"${(first.numbering || "letters") === "letters" ? " selected" : ""}>A1, B1</option>
                     <option value="c"${first.numbering === "c" ? " selected" : ""}>C-001</option>
                 </select></label>
                 <label class="field">Row name<input id="editRowWord" value="${esc(first.rowWord || "ROW")}" maxlength="16" /></label>
-                <label class="field">First row letter<input id="editRowLetter" value="${esc(first.rowLetter || "A")}" maxlength="1" /></label>` : ""}
+                <label class="field">First row letter<input id="editRowLetter" value="${esc(first.rowLetter || "A")}" maxlength="1" /></label>
+                <label class="field">First row number<input id="editRowStart" type="number" min="1" max="99" value="${parseInt(first.rowStart, 10) || 1}" /></label>
+                <label class="field">Space after row name<input id="editLabelGap" type="number" min="24" max="400" value="${first.labelGap != null ? first.labelGap : 120}" /></label>
+                <label class="field">Segments in each row<input id="editSegments" type="number" min="1" max="6" value="${first.segments || 1}" /></label>
+                <label class="field">Space between segments<input id="editSegmentGap" type="number" min="0" max="800" value="${first.segmentGap != null ? first.segmentGap : 180}" /></label>
+                <label class="field"><input id="editMoveGroup" type="checkbox" ${(first.moveAsGroup !== false) ? "checked" : ""} /> Move the row as one group</label>` : ""}
                 ${type === "rows" || type === "round" || type === "oval" || type === "crescent" ? "" : `<label class="field">Chair distribution<select id="editMode">${modes.map(([v, l]) => `<option value="${v}"${(first.distribute || "auto") === v ? " selected" : ""}>${l}</option>`).join("")}</select></label>`}
                 <div class="row">
                     <button class="btn primary" type="button" id="applyArr">Apply changes</button>
@@ -2583,7 +2671,12 @@
                 distribute: document.getElementById("editMode") ?.value || tables[0].distribute || "auto",
                 numbering: document.getElementById("editNumbering") ? document.getElementById("editNumbering").value : (tables[0].numbering || "c"),
                 rowWord: (document.getElementById("editRowWord") && document.getElementById("editRowWord").value || tables[0].rowWord || "ROW").trim() || "ROW",
+                rowStart: clamp(parseInt(document.getElementById("editRowStart") && document.getElementById("editRowStart").value, 10) || tables[0].rowStart || 1, 1, 99),
                 rowLetter: (document.getElementById("editRowLetter") && document.getElementById("editRowLetter").value || tables[0].rowLetter || "A").trim().charAt(0).toUpperCase() || "A",
+                labelGap: clamp(parseInt(document.getElementById("editLabelGap") && document.getElementById("editLabelGap").value, 10) || tables[0].labelGap || 120, 24, 400),
+                segments: clamp(parseInt(document.getElementById("editSegments") && document.getElementById("editSegments").value, 10) || tables[0].segments || 1, 1, 6),
+                segmentGap: clamp(parseInt(document.getElementById("editSegmentGap") && document.getElementById("editSegmentGap").value, 10) || tables[0].segmentGap || 180, 0, 800),
+                moveAsGroup: document.getElementById("editMoveGroup") ? document.getElementById("editMoveGroup").checked : tables[0].moveAsGroup !== false,
                 gapStyle: document.getElementById("editGap") ?.value || tables[0].gapStyle || "even"
             };
             pushHistory();
@@ -2934,7 +3027,7 @@
             const step = CHAIR + gapY;
             const word = obj.numbering === "letters" ? (String(obj.rowWord || "ROW").trim() || "ROW") : "Row";
             let html = "";
-            for (let r = 0; r < rows; r++) html += `<span class="row-pill" style="top:${r * step}px;height:${CHAIR}px">${esc(word + " " + (r + 1))}</span>`;
+            for (let r = 0; r < rows; r++) html += `<span class="row-pill" style="top:${r * step}px;height:${CHAIR}px">${esc(word + " " + rowDisplayNumber(obj, r))}</span>`;
             return html;
         }
 
@@ -3013,12 +3106,17 @@
                 ${shape === "rows" ? `<label class="field">Rows<input id="tblRows" type="number" min="1" max="20" value="${obj.rows || 1}" /></label>
                     <label class="field">Chairs per row<input id="tblPer" type="number" min="1" max="30" value="${obj.perRow || 10}" /></label>
                     <label class="field">Chair names<select id="tblNumbering">
-                        <option value="letters"${(obj.numbering || "c") === "letters" ? " selected" : ""}>ROW 1 - A1</option>
+                        <option value="letters"${(obj.numbering || "c") === "letters" ? " selected" : ""}>A1, B1</option>
                         <option value="c"${(obj.numbering || "c") !== "letters" ? " selected" : ""}>C-001</option>
                     </select></label>
                     <label class="field">Row name<input id="tblRowWord" value="${esc(obj.rowWord || "ROW")}" maxlength="16" /></label>
                     <label class="field">First row letter<input id="tblRowLetter" value="${esc(obj.rowLetter || "A")}" maxlength="1" /></label>
-                    <p class="hint">Row 1 uses the first letter, row 2 the next letter. Example: ${(esc(obj.rowWord || "ROW"))} 1 - ${rowLetterAt(obj.rowLetter || "A", 0)}1, ${rowLetterAt(obj.rowLetter || "A", 0)}2.</p>`
+                    <label class="field">First row number<input id="tblRowStart" type="number" min="1" max="99" value="${parseInt(obj.rowStart, 10) || 1}" /></label>
+                    <label class="field">Space after row name<input id="tblLabelGap" type="number" min="24" max="400" value="${obj.labelGap != null ? obj.labelGap : 120}" /></label>
+                    <label class="field">Segments in each row<input id="tblSegments" type="number" min="1" max="6" value="${obj.segments || 1}" /></label>
+                    <label class="field">Space between segments<input id="tblSegmentGap" type="number" min="0" max="800" value="${obj.segmentGap != null ? obj.segmentGap : 180}" /></label>
+                    <label class="field"><input id="tblMoveGroup" type="checkbox" ${(obj.moveAsGroup !== false) ? "checked" : ""} /> Move the row as one group</label>
+                    <p class="hint">The row label shows the row. Each chair shows only its letter and number, such as ${rowLetterAt(obj.rowLetter || "A", 0)}1. Segments split one row into groups with a gap between them.</p>`
                     : `<label class="field">Chairs<input id="tblSeats" type="number" min="2" max="40" value="${obj.seats || 8}" /></label>${sideFields}`}
                 <p class="hint">${chairsOf(obj).length} chairs with this ${shape === "rows" ? "block" : "table"}.</p>
                 <label class="field">X<input id="propX" type="number" value="${Math.round(itemLeft(obj))}" /></label>
@@ -4055,6 +4153,16 @@
                 if (word) table.rowWord = (word.value || "ROW").trim() || "ROW";
                 const letter = document.getElementById("tblRowLetter");
                 if (letter) table.rowLetter = (letter.value || "A").trim().charAt(0).toUpperCase() || "A";
+                const start = document.getElementById("tblRowStart");
+                if (start) table.rowStart = clamp(parseInt(start.value, 10) || 1, 1, 99);
+                const gap = document.getElementById("tblLabelGap");
+                if (gap) table.labelGap = clamp(parseInt(gap.value, 10) || 120, 24, 400);
+                const segments = document.getElementById("tblSegments");
+                if (segments) table.segments = clamp(parseInt(segments.value, 10) || 1, 1, 6);
+                const segmentGap = document.getElementById("tblSegmentGap");
+                if (segmentGap) table.segmentGap = clamp(parseInt(segmentGap.value, 10) || 0, 0, 800);
+                const moveGroup = document.getElementById("tblMoveGroup");
+                if (moveGroup) table.moveAsGroup = moveGroup.checked;
             } else if (table.shape === "rect" || table.shape === "ushape") {
                 const seatsEl = document.getElementById("tblSeats");
                 const topEl = document.getElementById("tblTop");
@@ -4352,8 +4460,17 @@
                 }
                 if (!selection.has(obj.id)) selectOnly(obj.id);
                 pushHistory();
-                const moving = obj.type === "chair" ? [obj] :
-                    (obj.arrangementId ? membersOf(obj.arrangementId) : (obj.type === "table" ? [obj, ...chairsOf(obj)] : selectedObjects()));
+                const moving = (function () {
+                    if (obj.type === "chair" && obj.tableId) {
+                        const parent = active().objects.find(item => item.id === obj.tableId);
+                        if (parent && parent.shape === "rows" && parent.moveAsGroup !== false) return [parent, ...chairsOf(parent)];
+                        return [obj];
+                    }
+                    if (obj.type === "table" && obj.shape === "rows") return [obj, ...chairsOf(obj)];
+                    if (obj.arrangementId) return membersOf(obj.arrangementId);
+                    if (obj.type === "table") return [obj, ...chairsOf(obj)];
+                    return selectedObjects();
+                })();
                 drag = {
                     kind: "move",
                     sx: e.clientX,
