@@ -2026,7 +2026,9 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'aramco_farewell_user_import_template.csv';
+            a.download = eventApi === 'CapitalMarketConversation'
+                ? 'Saudi Aramco Excellence Awards 2025-2026 - Guest Import.csv'
+                : 'aramco_farewell_user_import_template.csv';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -4047,18 +4049,25 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                 }
 
                 const blob = await res.blob();
-                let filename = isPdf ?
-                    `aramco-farewell-invite-pdfs_${new Date().toISOString().slice(0, 10)}.zip` :
-                    (isQrPdf ?
-                        `aramco-farewell-ebadge-pdfs_${new Date().toISOString().slice(0, 10)}.zip` :
-                        `aramco-farewell-qr-cards_${new Date().toISOString().slice(0, 10)}.zip`);
+                const day = new Date().toISOString().slice(0, 10);
+                let filename = eventApi === 'CapitalMarketConversation'
+                    ? (isPdf ?
+                        'Saudi Aramco Excellence Awards 2025-2026 - Invite PDFs.zip' :
+                        (isQrPdf ?
+                            'Saudi Aramco Excellence Awards 2025-2026 - E-Badge PDFs.zip' :
+                            'Saudi Aramco Excellence Awards 2025-2026 - E-Badges.zip'))
+                    : (isPdf ?
+                        `aramco-farewell-invite-pdfs_${day}.zip` :
+                        (isQrPdf ?
+                            `aramco-farewell-ebadge-pdfs_${day}.zip` :
+                            `aramco-farewell-qr-cards_${day}.zip`));
                 let outBlob = blob;
                 if (isQrPdf) {
                     setBulkDownloadStatus('Building E-Badge PDFs…', '');
                     outBlob = await imageZipToPdfZip(blob);
                 } else if (!isPdf) {
                     outBlob = await renameBadgeImageZip(blob);
-                } else {
+                } else if (eventApi !== 'CapitalMarketConversation') {
                     const disposition = res.headers.get('Content-Disposition') || '';
                     const match = /filename\*?=(?:UTF-8''|")?([^\";]+)/i.exec(disposition);
                     if (match && match[1]) {

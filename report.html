@@ -709,7 +709,9 @@
             const blob = new Blob([lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = "aramco-farewell-checkins.csv";
+            link.download = eventApi === "CapitalMarketConversation"
+                ? "Saudi Aramco Excellence Awards 2025-2026 - Check-ins.csv"
+                : "aramco-farewell-checkins.csv";
             link.click();
             URL.revokeObjectURL(link.href);
         }
@@ -726,7 +728,9 @@
             const blob = new Blob(["<!DOCTYPE html>\n" + clone.outerHTML], { type: "text/html;charset=utf-8" });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = "aramco-farewell-client-report.html";
+            link.download = eventApi === "CapitalMarketConversation"
+                ? "Saudi Aramco Excellence Awards 2025-2026 - Client Report.html"
+                : "aramco-farewell-client-report.html";
             link.click();
             URL.revokeObjectURL(link.href);
         }
