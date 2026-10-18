@@ -358,7 +358,11 @@
 
     <script>
         const baseURL = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
-        const eventApi = new URLSearchParams(location.search).has("cmc") ? "CapitalMarketConversation" : "AramcoFarewell";
+        function isExcellenceAwards(params) {
+            const eventName = (params.get("eventname") || "").trim().toLowerCase();
+            return eventName === "excellenceawards" || params.has("cmc");
+        }
+        const eventApi = isExcellenceAwards(new URLSearchParams(location.search)) ? "CapitalMarketConversation" : "AramcoFarewell";
         let report = null;
 
         function esc(value) {

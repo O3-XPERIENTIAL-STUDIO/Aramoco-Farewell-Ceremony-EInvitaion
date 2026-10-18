@@ -1,0 +1,16 @@
+---
+description: All new work is for Capital Markets Conversation, not the farewell event
+alwaysApply: true
+---
+
+# Capital Markets Conversation only
+
+Every change is for Capital Markets Conversation (CMC). Leave Aramco Farewell and Ashraq behavior as it is.
+
+- API prefix: `/api/CapitalMarketConversation`
+- Tables: `capitalMarketConversation*` only
+- Seat project code: `CapitalMarketConversation`
+- Site pages are shared. This event is `?eventname=excellenceAwards`. `eventApi` is `CapitalMarketConversation` only for that name. An older `cmc=1` link still selects this event. Farewell links have neither.
+- A shared-page change that would alter farewell must be gated on `eventApi === "CapitalMarketConversation"`.
+- Backend edits go in the Capital Markets controller and services, not `AramcoFarewell*` or Ashraq.
+- Do not change farewell badge drawing, wallet passes, QR size, invite artwork, or farewell routes.

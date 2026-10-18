@@ -1324,7 +1324,11 @@
     </div>
     <script>
         const baseURL = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
-        const eventApi = new URLSearchParams(location.search).has("cmc") ? "CapitalMarketConversation" : "AramcoFarewell";
+        function isExcellenceAwards(params) {
+            const eventName = (params.get("eventname") || "").trim().toLowerCase();
+            return eventName === "excellenceawards" || params.has("cmc");
+        }
+        const eventApi = isExcellenceAwards(new URLSearchParams(location.search)) ? "CapitalMarketConversation" : "AramcoFarewell";
         const ADMIN_PASSWORD = "admin123";
         const AUTH_KEY = "aramcoFarewellSeatAdmin";
         const DRAFT_KEY = "aramcoDesignerV2";
@@ -4988,12 +4992,12 @@
             applyTableNumbers();
         });
         document.getElementById("leaveSkip").onclick = () => {
-            location.href = "dashboard.html";
+            location.href = eventApi === "CapitalMarketConversation" ? "dashboard.html?eventname=excellenceAwards" : "dashboard.html";
         };
         document.getElementById("leaveForm").addEventListener("submit", async (e) => {
             e.preventDefault();
             const saved = await saveNow();
-            if (saved) location.href = "dashboard.html";
+            if (saved) location.href = eventApi === "CapitalMarketConversation" ? "dashboard.html?eventname=excellenceAwards" : "dashboard.html";
         });
         document.getElementById("previewBtn").onclick = () => {
             document.body.classList.toggle("is-preview");

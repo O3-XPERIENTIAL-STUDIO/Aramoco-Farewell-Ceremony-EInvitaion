@@ -364,7 +364,11 @@
     <script>
         (function() {
             var API_BASE = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
-            var eventApi = new URLSearchParams(location.search).has("cmc") ? "CapitalMarketConversation" : "AramcoFarewell";
+            function isExcellenceAwards(params) {
+                var eventName = (params.get("eventname") || "").trim().toLowerCase();
+                return eventName === "excellenceawards" || params.has("cmc");
+            }
+            var eventApi = isExcellenceAwards(new URLSearchParams(location.search)) ? "CapitalMarketConversation" : "AramcoFarewell";
             var params = new URLSearchParams(window.location.search);
             var status = (params.get("status") || "").trim().toLowerCase();
             var name = (params.get("name") || "").trim();
@@ -448,7 +452,7 @@
 
             function applyWallet(unique) {
                 if (!btnWallet || !unique || !isAppleDevice()) return;
-                btnWallet.href = "/wallet/" + encodeURIComponent(unique) + (eventApi === "CapitalMarketConversation" ? "?cmc=1" : "");
+                btnWallet.href = "/wallet/" + encodeURIComponent(unique) + (eventApi === "CapitalMarketConversation" ? "?eventname=excellenceAwards" : "");
                 btnWallet.classList.remove("hidden");
                 if (walletHint) {
                     walletHint.classList.remove("hidden");
@@ -457,7 +461,7 @@
             }
 
             var PUBLIC_SITE = "https://aramcocorporateevents.com";
-            var ebadgePath = uniqueId ? ("/e-badge/" + encodeURIComponent(uniqueId) + (eventApi === "CapitalMarketConversation" ? "?cmc=1" : "")) : "";
+            var ebadgePath = uniqueId ? ("/e-badge/" + encodeURIComponent(uniqueId) + (eventApi === "CapitalMarketConversation" ? "?eventname=excellenceAwards" : "")) : "";
             var ebadgeUrl = uniqueId ? (PUBLIC_SITE + ebadgePath) : "";
 
             function saveBlob(blob, filename) {

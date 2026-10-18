@@ -101,8 +101,14 @@ async function proxyQrCard(uniqueId, url) {
   });
 }
 
+function isExcellenceAwards(url) {
+  if (!url || !url.searchParams) return false;
+  const eventName = (url.searchParams.get("eventname") || "").trim().toLowerCase();
+  return eventName === "excellenceawards" || url.searchParams.has("cmc");
+}
+
 function eventApiName(url) {
-  return url && url.searchParams && url.searchParams.has("cmc") ? "CapitalMarketConversation" : "AramcoFarewell";
+  return isExcellenceAwards(url) ? "CapitalMarketConversation" : "AramcoFarewell";
 }
 
 function ebadgeHtml(uniqueId, url) {
@@ -136,8 +142,8 @@ function ebadgeHtml(uniqueId, url) {
 
 function landingHtml(uniqueId, url) {
   const safeId = encodeURIComponent(uniqueId);
-  const cmc = url && url.searchParams && url.searchParams.has("cmc") ? "?cmc=1" : "";
-  const pkpassUrl = `/wallet/${safeId}.pkpass${cmc}`;
+  const eventQuery = isExcellenceAwards(url) ? "?eventname=excellenceAwards" : "";
+  const pkpassUrl = `/wallet/${safeId}.pkpass${eventQuery}`;
   const qrUrl = `${API_BASE}/api/${eventApiName(url)}/qr/${safeId}`;
   return `<!DOCTYPE html>
 <html lang="en" dir="ltr">

@@ -1893,7 +1893,11 @@
     </div>
     <script>
         const baseURL = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
-        const eventApi = new URLSearchParams(location.search).has("cmc") ? "CapitalMarketConversation" : "AramcoFarewell";
+        function isExcellenceAwards(params) {
+            const eventName = (params.get("eventname") || "").trim().toLowerCase();
+            return eventName === "excellenceawards" || params.has("cmc");
+        }
+        const eventApi = isExcellenceAwards(new URLSearchParams(location.search)) ? "CapitalMarketConversation" : "AramcoFarewell";
         const publicSiteUrl = "https://aramcocorporateevents.com";
         const inviteEmailEndpoint = `${baseURL}/api/${eventApi}/send-invitation-email`;
         const inviteSmsEndpoint = `${baseURL}/api/${eventApi}/send-invitation-sms`;
@@ -4910,7 +4914,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                     const hashKey = u.hashKey || '';
                     const uniqueId = u.uniqueId || '';
                     const encodedPosition = encodeURIComponent((u.position || '').toString().trim());
-                    const emailInviteUrl = `${publicSiteUrl}/emailInvite?name=${encodedName}&position=${encodedPosition}&uniqueId=${encodeURIComponent(uniqueId)}${eventApi === "CapitalMarketConversation" ? "&cmc=1" : ""}`;
+                    const emailInviteUrl = `${publicSiteUrl}/emailInvite?name=${encodedName}&position=${encodedPosition}&uniqueId=${encodeURIComponent(uniqueId)}${eventApi === "CapitalMarketConversation" ? "&eventname=excellenceAwards" : ""}`;
                     return {
                         uniqueId: uniqueId,
                         userName: u.fullName,
@@ -5086,7 +5090,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
         // Kick off
         if (eventApi === "CapitalMarketConversation") {
             document.querySelectorAll('a[href="report.html"], a[href="seats.html"], a[href="scanner.html"], a[href="checkins.html"]').forEach(link => {
-                link.href = link.getAttribute("href") + "?cmc=1";
+                link.href = link.getAttribute("href") + "?eventname=excellenceAwards";
             });
             const eyebrow = document.querySelector(".header-eyebrow");
             if (eyebrow) eyebrow.textContent = "Capital Markets Conversation";

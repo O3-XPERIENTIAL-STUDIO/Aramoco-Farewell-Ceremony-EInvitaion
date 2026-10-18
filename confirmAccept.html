@@ -158,8 +158,12 @@
             var btnWallet = document.getElementById("btnAppleWallet");
             var btnDownloadQrCard = document.getElementById("btnDownloadQrCard");
 
-            var eventApi = params.has("cmc") ? "CapitalMarketConversation" : "AramcoFarewell";
-            var cmcSuffix = eventApi === "CapitalMarketConversation" ? "?cmc=1" : "";
+            function isExcellenceAwards(params) {
+                var eventName = (params.get("eventname") || "").trim().toLowerCase();
+                return eventName === "excellenceawards" || params.has("cmc");
+            }
+            var eventApi = isExcellenceAwards(params) ? "CapitalMarketConversation" : "AramcoFarewell";
+            var cmcSuffix = eventApi === "CapitalMarketConversation" ? "?eventname=excellenceAwards" : "";
 
             if (name && guestEl) {
                 guestEl.textContent = name;
