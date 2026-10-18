@@ -245,6 +245,48 @@
             min-height: 1.25rem;
         }
 
+        .decline-reasons {
+            width: min(100%, 32rem);
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 0.75rem;
+            text-align: left;
+            color: var(--white);
+        }
+
+        .decline-reasons p {
+            font-size: clamp(0.95rem, 2.4vw, 1.1rem);
+            line-height: 1.6;
+        }
+
+        .decline-reasons label {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.65rem;
+            font-size: clamp(0.92rem, 2.2vw, 1.02rem);
+            line-height: 1.45;
+            cursor: pointer;
+        }
+
+        .decline-reasons input[type="radio"] {
+            margin-top: 0.22rem;
+            flex: 0 0 auto;
+            accent-color: #ffffff;
+        }
+
+        .decline-reasons textarea {
+            width: 100%;
+            min-height: 5rem;
+            border: 0;
+            border-radius: 8px;
+            padding: 0.75rem 0.85rem;
+            font: inherit;
+            color: #140c09;
+            background: #ffffff;
+            resize: vertical;
+        }
+
         .btn-wallet.hidden {
             display: none;
         }
@@ -342,6 +384,14 @@
                 <p id="confirmTextAr"></p>
                 <p class="en" id="confirmTextEn">Please confirm your attendance.</p>
             </div>
+            <div id="declineReasons" class="decline-reasons hidden">
+                <p>Please let us know why you’re unable to attend:</p>
+                <label><input type="radio" name="declineReason" value="I have another commitment."> I have another commitment.</label>
+                <label><input type="radio" name="declineReason" value="I will be travelling."> I will be travelling.</label>
+                <label><input type="radio" name="declineReason" value="I'm unable to attend for personal reasons."> I’m unable to attend for personal reasons.</label>
+                <label><input type="radio" name="declineReason" value="Other"> Other — please specify.</label>
+                <textarea id="declineReasonNote" class="hidden" maxlength="500" placeholder="Please specify"></textarea>
+            </div>
             <button type="button" class="btn-download" id="btnConfirmRsvp">Accept</button>
             <p class="confirm-error" id="confirmError" aria-live="polite"></p>
         </section>
@@ -406,6 +456,8 @@
             var confirmTextEn = document.getElementById("confirmTextEn");
             var confirmError = document.getElementById("confirmError");
             var acceptError = document.getElementById("acceptError");
+            var declineReasons = document.getElementById("declineReasons");
+            var declineReasonNote = document.getElementById("declineReasonNote");
 
             var isAcceptIntent = status === "accept" || status === "accepted";
             var isDeclineIntent = status === "decline" || status === "declined";
@@ -433,6 +485,10 @@
                 if (!viewConfirm) return;
                 viewConfirm.classList.remove("hidden");
                 if (btnConfirm) btnConfirm.textContent = confirmButtonLabel();
+                if (declineReasons) {
+                    var showReasons = eventApi === "CapitalMarketConversation" && isDeclineIntent;
+                    declineReasons.classList.toggle("hidden", !showReasons);
+                }
                 if (isAcceptIntent) {
                     if (confirmTextAr) confirmTextAr.textContent = "";
                     if (confirmTextEn) confirmTextEn.textContent = "Please confirm your attendance.";
@@ -578,6 +634,24 @@
                 showConfirmView();
             }
 
+            if (declineReasons) {
+                declineReasons.addEventListener("change", function(ev) {
+                    if (!ev.target || ev.target.name !== "declineReason" || !declineReasonNote) return;
+                    declineReasonNote.classList.toggle("hidden", ev.target.value !== "Other");
+                });
+            }
+
+            function declinePayload() {
+                if (eventApi !== "CapitalMarketConversation" || !isDeclineIntent) return {};
+                var selected = document.querySelector('input[name="declineReason"]:checked');
+                var reason = selected ? selected.value : "";
+                var note = declineReasonNote ? declineReasonNote.value.trim() : "";
+                return {
+                    declineReason: reason,
+                    declineReasonNote: reason === "Other" ? note : ""
+                };
+            }
+
             function updateBackendStatus() {
                 if (!uniqueId || !apiStatus || commitInFlight) return;
                 commitInFlight = true;
@@ -596,10 +670,10 @@
                         "Content-Type": "application/json",
                         "X-AramcoFarewell-Rsvp-Commit": "1"
                     },
-                    body: JSON.stringify({
+                    body: JSON.stringify(Object.assign({
                         uniqueId: uniqueId,
                         status: apiStatus
-                    })
+                    }, declinePayload()))
                 }).then(function(res) {
                     return res.text().then(function(text) {
                         var body = {};

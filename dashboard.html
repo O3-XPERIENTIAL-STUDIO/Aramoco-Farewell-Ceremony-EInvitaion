@@ -1141,6 +1141,13 @@
             font-weight: 600;
         }
 
+        .decline-note {
+            margin-top: 4px;
+            font-size: 13px;
+            line-height: 1.45;
+            color: var(--text);
+        }
+
         /* ── Row 3: URL bar ── */
         .url-row {
             display: flex;
@@ -3190,6 +3197,14 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             applyFilters();
         }
 
+        function formatDeclineReason(user) {
+            const reason = (user.declineReason || '').trim();
+            const note = (user.declineReasonNote || '').trim();
+            if (!reason && !note) return '';
+            if (reason === 'Other') return note ? `Other — ${note}` : 'Other — please specify.';
+            return reason || note;
+        }
+
         function escapeHtml(value) {
             return (value || '').toString()
                 .replace(/&/g, '&amp;')
@@ -3588,6 +3603,9 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                 } [statusRaw] || 'Pending';
                 const emailSentLabel = formatTimelineValue(getEmailSentAtMs(u));
                 const statusChangedLabel = formatTimelineValue(getStatusChangedAtMs(u, statusRaw));
+                const declineReasonText = eventApi === "CapitalMarketConversation" && statusRaw === "declined"
+                    ? formatDeclineReason(u)
+                    : "";
 
                 card.innerHTML = `
         <div class="card-layout">
@@ -3614,6 +3632,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
               <span><strong>Email sent:</strong> ${emailSentLabel}</span>
               <span><strong>Status changed:</strong> ${statusChangedLabel}</span>
             </div>
+            ${declineReasonText ? `<div class="decline-note"><strong>Unable to attend:</strong> ${escapeHtml(declineReasonText)}</div>` : ""}
 
             <div class="card-admin">
               <select aria-label="Guest status" onchange="changeUserStatus('${safeUid}', this)">
@@ -4937,6 +4956,8 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                         position: u.position || '',
                         hashKey: hashKey,
                         status: normalizeStatus(u.status || 'pending'),
+                        declineReason: (u.declineReason || u.DeclineReason || '').toString().trim(),
+                        declineReasonNote: (u.declineReasonNote || u.DeclineReasonNote || '').toString().trim(),
                         createdOn: u.createdOn || u.CreatedOn || null,
                         inviteSend: !!(u.inviteSend || u.InviteSend),
                         inviteSmsSend: !!(u.inviteSmsSend || u.InviteSmsSend),
