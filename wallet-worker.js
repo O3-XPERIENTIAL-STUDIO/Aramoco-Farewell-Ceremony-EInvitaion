@@ -4,6 +4,11 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    const nameCardMatch = url.pathname.match(/^\/name-card\/excellenceAwards\/([^/]+)\.png$/i);
+    if (nameCardMatch) {
+      return proxyNameCard(decodeURIComponent(nameCardMatch[1]), url);
+    }
+
     const cardMatch = url.pathname.match(/^\/qr-card\/([^/]+?)\/?$/i);
     if (cardMatch) {
       return proxyQrCard(decodeURIComponent(cardMatch[1]), url);
@@ -71,6 +76,32 @@ export default {
     });
   }
 };
+
+async function proxyNameCard(uniqueId, url) {
+  const upstreamUrl = new URL(`${API_BASE}/api/CapitalMarketConversation/name-card/${encodeURIComponent(uniqueId)}.png`);
+  const name = url.searchParams.get("name");
+  const position = url.searchParams.get("position");
+  if (name) upstreamUrl.searchParams.set("name", name);
+  if (position) upstreamUrl.searchParams.set("position", position);
+  const upstream = await fetch(upstreamUrl.toString(), {
+    cf: { cacheTtl: 0, cacheEverything: false }
+  });
+  if (!upstream.ok) {
+    return new Response("Name image was not created.", {
+      status: upstream.status,
+      headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" }
+    });
+  }
+  const body = await upstream.arrayBuffer();
+  return new Response(body, {
+    status: 200,
+    headers: {
+      "Content-Type": "image/png",
+      "Cache-Control": "public, max-age=300",
+      "X-Content-Type-Options": "nosniff"
+    }
+  });
+}
 
 async function proxyQrCard(uniqueId, url) {
   const upstream = await fetch(

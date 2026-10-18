@@ -10,7 +10,7 @@
     <link rel="apple-touch-icon" href="assets/icon.png" />
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <style>
-:root {
+        :root {
             --navy: #002650;
             --gold: #CBA886;
             --white: #ffffff;
@@ -403,14 +403,14 @@
         </div>
 
         <div id="scanApp">
-        <div class="reader-shell" hidden>
-            <div id="reader"></div>
-        </div>
+            <div class="reader-shell" hidden>
+                <div id="reader"></div>
+            </div>
 
-        <div class="result" id="resultBox">
-            <h2 id="resultTitle"></h2>
-            <div class="meta" id="resultMeta"></div>
-        </div>
+            <div class="result" id="resultBox">
+                <h2 id="resultTitle"></h2>
+                <div class="meta" id="resultMeta"></div>
+            </div>
 
 
         </div>
@@ -438,6 +438,7 @@
     <script>
         (function() {
             var API_BASE = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
+
             function isExcellenceAwards(params) {
                 var eventName = (params.get("eventname") || "").trim().toLowerCase();
                 return eventName === "excellenceawards" || params.has("cmc");
@@ -661,12 +662,20 @@
                     method: "POST",
                     mode: "cors",
                     cache: "no-store",
-                    headers: { "Accept": "application/json" }
+                    headers: {
+                        "Accept": "application/json"
+                    }
                 }).then(function(res) {
                     return res.text().then(function(text) {
                         var body = {};
-                        try { body = text ? JSON.parse(text) : {}; } catch (e) {}
-                        return { ok: res.ok, status: res.status, body: body };
+                        try {
+                            body = text ? JSON.parse(text) : {};
+                        } catch (e) {}
+                        return {
+                            ok: res.ok,
+                            status: res.status,
+                            body: body
+                        };
                     });
                 }).then(function(result) {
                     var body = result.body || {};
@@ -693,9 +702,9 @@
                     renderSeatAction(currentGuest);
                     if (note) {
                         var whenSeated = currentGuest.seatedAt ? (" Seated at: " + formatTime(currentGuest.seatedAt)) : "";
-                        note.textContent = (body.alreadySeated || body.AlreadySeated)
-                            ? ("Guest is already seated." + whenSeated)
-                            : ("Guest marked as seated." + whenSeated);
+                        note.textContent = (body.alreadySeated || body.AlreadySeated) ?
+                            ("Guest is already seated." + whenSeated) :
+                            ("Guest marked as seated." + whenSeated);
                     }
                     beep(true);
                 }).catch(function() {
@@ -725,7 +734,9 @@
                         n: index + 1
                     };
                 });
-                rows.sort(function(a, b) { return b.whenMs - a.whenMs; });
+                rows.sort(function(a, b) {
+                    return b.whenMs - a.whenMs;
+                });
                 if (sessionLabel) {
                     sessionLabel.textContent = (name || "Guest") + " · " + rows.length + " scan" + (rows.length === 1 ? "" : "s");
                 }
@@ -747,7 +758,9 @@
             function getViewerTimeZoneLabel() {
                 try {
                     var zone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'local';
-                    var parts = new Intl.DateTimeFormat(undefined, { timeZoneName: 'shortOffset' }).formatToParts(new Date());
+                    var parts = new Intl.DateTimeFormat(undefined, {
+                        timeZoneName: 'shortOffset'
+                    }).formatToParts(new Date());
                     var offset = '';
                     for (var i = 0; i < parts.length; i++) {
                         if (parts[i].type === 'timeZoneName') offset = parts[i].value;
@@ -923,7 +936,13 @@
                 scanner = scanner || new Html5Qrcode("reader");
                 cameraBtn.disabled = true;
                 cameraStatus.textContent = "Starting camera…";
-                var source = selectedCameraId ? { deviceId: { exact: selectedCameraId } } : { facingMode: "environment" };
+                var source = selectedCameraId ? {
+                    deviceId: {
+                        exact: selectedCameraId
+                    }
+                } : {
+                    facingMode: "environment"
+                };
                 scanner.start(source, {
                         fps: 10,
                         aspectRatio: 3 / 4,
@@ -971,7 +990,9 @@
             function focusLaser() {
                 if (!laserInput || document.activeElement === laserInput) return;
                 try {
-                    laserInput.focus({ preventScroll: true });
+                    laserInput.focus({
+                        preventScroll: true
+                    });
                 } catch (e) {
                     laserInput.focus();
                 }
@@ -1168,9 +1189,9 @@
             }
 
             function loadDevices() {
-                var list = navigator.mediaDevices && navigator.mediaDevices.enumerateDevices
-                    ? navigator.mediaDevices.enumerateDevices()
-                    : Promise.resolve([]);
+                var list = navigator.mediaDevices && navigator.mediaDevices.enumerateDevices ?
+                    navigator.mediaDevices.enumerateDevices() :
+                    Promise.resolve([]);
                 list.then(function(devices) {
                     var cameras = (devices || []).filter(function(device) {
                         return device.kind === "videoinput";
@@ -1184,7 +1205,9 @@
                     html += '<button class="device-choice" type="button" data-laser="1">Laser scanner<small>MUNBYN and any other laser</small></button>';
                     deviceList.innerHTML = html;
                     if (findCamerasBtn) {
-                        var unnamed = cameras.some(function(device) { return !(device.label || "").trim(); });
+                        var unnamed = cameras.some(function(device) {
+                            return !(device.label || "").trim();
+                        });
                         findCamerasBtn.hidden = cameras.length > 0 && !unnamed;
                         findCamerasBtn.textContent = cameras.length ? "Show camera names" : "Find cameras";
                     }
@@ -1215,8 +1238,12 @@
                         return;
                     }
                     findCamerasBtn.disabled = true;
-                    navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
-                        stream.getTracks().forEach(function(track) { track.stop(); });
+                    navigator.mediaDevices.getUserMedia({
+                        video: true
+                    }).then(function(stream) {
+                        stream.getTracks().forEach(function(track) {
+                            track.stop();
+                        });
                     }).catch(function() {}).finally(function() {
                         findCamerasBtn.disabled = false;
                         loadDevices();

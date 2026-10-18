@@ -204,6 +204,41 @@
         </tr>
     </table>
 
+    <table id="excellence-card" role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" hidden style="display:none; width:100%; max-width:560px; margin:0 auto; border-collapse:collapse; background:#140c09;">
+        <tr>
+            <td colspan="2" style="padding:0; line-height:0; font-size:0;">
+                <img src="assets/emailInvitation/excellenceAwards/header.webp" width="560" alt="Aramco" style="display:block; width:100%; height:auto; border:0;" />
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" style="padding:0; line-height:0; font-size:0;">
+                <img src="assets/emailInvitation/excellenceAwards/above-name.webp" width="560" alt="" style="display:block; width:100%; height:auto; border:0;" />
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" style="padding:0; line-height:0; font-size:0;">
+                <img id="excellenceName" width="560" alt="" style="display:block; width:100%; height:auto; aspect-ratio:1080 / 190; border:0; background:#140c09;" />
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" style="padding:0; line-height:0; font-size:0;">
+                <img src="assets/emailInvitation/excellenceAwards/info.webp" width="560" alt="Saudi Aramco Excellence Award" style="display:block; width:100%; height:auto; border:0;" />
+            </td>
+        </tr>
+        <tr>
+            <td width="280" style="padding:0; width:50%; line-height:0; font-size:0;">
+                <a id="excellenceAccept" href="https://aramcocorporateevents.com/rsvp?status=accept&amp;uniqueId=" style="display:block; text-decoration:none;">
+                    <img src="assets/emailInvitation/excellenceAwards/accept.webp" width="280" alt="Accept" style="display:block; width:100%; height:auto; border:0;" />
+                </a>
+            </td>
+            <td width="280" style="padding:0; width:50%; line-height:0; font-size:0;">
+                <a id="excellenceDecline" href="https://aramcocorporateevents.com/rsvp?status=decline&amp;uniqueId=" style="display:block; text-decoration:none;">
+                    <img src="assets/emailInvitation/excellenceAwards/decline.webp" width="280" alt="Decline" style="display:block; width:100%; height:auto; border:0;" />
+                </a>
+            </td>
+        </tr>
+    </table>
+
     <script>
         (function() {
             var params = new URLSearchParams(window.location.search);
@@ -244,6 +279,27 @@
             var decline = document.getElementById("btnDecline");
             if (accept) accept.href = buildUrl("accept");
             if (decline) decline.href = buildUrl("decline");
+
+            var eventName = (params.get("eventname") || "").trim().toLowerCase();
+            if (eventName === "excellenceawards" || params.has("cmc")) {
+                var farewellCard = document.getElementById("invite-card");
+                var excellenceCard = document.getElementById("excellence-card");
+                if (farewellCard) farewellCard.style.display = "none";
+                if (excellenceCard) {
+                    excellenceCard.hidden = false;
+                    excellenceCard.style.display = "table";
+                }
+                var nameImage = document.getElementById("excellenceName");
+                if (nameImage) {
+                    var cardId = uniqueId || "guest";
+                    nameImage.alt = name || "Guest";
+                    nameImage.src = "/name-card/excellenceAwards/" + encodeURIComponent(cardId) + ".png?name=" + encodeURIComponent(name) + "&position=" + encodeURIComponent(position);
+                }
+                var excellenceAccept = document.getElementById("excellenceAccept");
+                var excellenceDecline = document.getElementById("excellenceDecline");
+                if (excellenceAccept) excellenceAccept.href = buildUrl("accept");
+                if (excellenceDecline) excellenceDecline.href = buildUrl("decline");
+            }
         })();
     </script>
 </body>
