@@ -3734,8 +3734,10 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             const safe = String(name || 'Guest')
                 .replace(/[<>:"/\\|?*\x00-\x1f]/g, '')
                 .replace(/\s+/g, ' ')
-                .trim();
-            return `${safe || 'Guest'} - ${badgeEventName()}`;
+                .trim() || 'Guest';
+            if (eventApi === 'CapitalMarketConversation')
+                return `Saudi Aramco Excellence Awards 2025-2026 - ${safe}`;
+            return `${safe} - ${badgeEventName()}`;
         }
 
         function inviteCardFileName(name) {
@@ -3744,6 +3746,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
 
         function badgeNameFromZipEntry(fileName) {
             let base = String(fileName || '').replace(/\.(jpe?g|png|pdf)$/i, '');
+            base = base.replace(/^Saudi Aramco Excellence Awards 2025-2026\s*-\s*/i, '');
             base = base.replace(/\s*-\s*(CapitalMarketConversation|AramcoFarewell)(Invite|Ebadge)?$/i, '');
             base = base.replace(/(CapitalMarketConversation|AramcoFarewell)(Invite|Ebadge)?$/i, '');
             base = base.replace(/[\s-]+$/g, '').trim();
