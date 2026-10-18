@@ -466,8 +466,10 @@
             var commitInFlight = false;
 
             var displayName = name || "Guest";
+            if (!/^dear\b/i.test(displayName)) displayName = "Dear " + displayName;
+            if (!/,\s*$/.test(displayName)) displayName += ",";
             if (guestEl) guestEl.textContent = displayName;
-            if (dearLine) dearLine.textContent = "Dear " + displayName + ",";
+            if (dearLine) dearLine.textContent = displayName;
 
             function hideAllViews() {
                 if (viewConfirm) viewConfirm.classList.add("hidden");
