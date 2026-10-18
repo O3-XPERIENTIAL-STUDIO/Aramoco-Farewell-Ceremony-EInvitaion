@@ -66,6 +66,10 @@
             font-size: 13px;
         }
 
+        #declineCsvBtn[hidden] {
+            display: none !important;
+        }
+
         .toolbar button,
         .toolbar .file-btn {
             height: 36px;
@@ -197,6 +201,14 @@
         .pill.assigned { background: #fff6d4; color: #7a5b10; }
         .pill.none { background: #eef1f4; color: #526070; }
 
+        .decline-reason {
+            margin-top: 6px;
+            max-width: 240px;
+            color: var(--red);
+            font-size: 12px;
+            line-height: 1.35;
+        }
+
         .layout {
             display: grid;
             grid-template-columns: minmax(0, 1fr) 280px;
@@ -300,6 +312,7 @@
         <button class="btn-gold" id="applyBtn" type="button">Show this window</button>
         <button class="btn-line" id="pdfBtn" type="button">Save PDF</button>
         <button class="btn-line" id="csvBtn" type="button">Download CSV</button>
+        <button class="btn-line" id="declineCsvBtn" type="button" hidden>Download decline report</button>
         <button class="btn-line" id="htmlBtn" type="button">Download interactive report</button>
         <p class="zone-note" id="zoneNote"></p>
     </div>
@@ -328,6 +341,11 @@
         <section>
             <h2>2. Invited guests</h2>
             <div id="guestTable"></div>
+        </section>
+
+        <section id="declineSection" hidden>
+            <h2>Decline report</h2>
+            <div id="declineTable"></div>
         </section>
 
         <section>
@@ -539,15 +557,27 @@
             document.getElementById("statPending").textContent = String(guests.filter(guest => guest.status === "pending").length);
         }
 
+        function formatDeclineReason(guest) {
+            const source = guest && guest.source ? guest.source : (guest || {});
+            const reason = String((guest && guest.declineReason) || source.declineReason || source.DeclineReason || "").trim();
+            const note = String((guest && guest.declineReasonNote) || source.declineReasonNote || source.DeclineReasonNote || "").trim();
+            if (!reason && !note) return "";
+            if (reason === "Other") return note ? ("Other — " + note) : "Other — please specify.";
+            return reason || note;
+        }
+
         function renderGuests(state) {
-            const rows = guestRows(state).map(guest => `
+            const rows = guestRows(state).map(guest => {
+                const reason = eventApi === "CapitalMarketConversation" && guest.status === "declined" ? formatDeclineReason(guest) : "";
+                return `
                 <tr id="guest-${esc(guest.id)}">
                     <td>${esc(guest.name)}</td>
                     <td>${esc(guest.company || "—")}</td>
                     <td>${esc(guest.position || "—")}</td>
-                    <td><span class="pill ${guest.status}">${esc(statusText(guest.status))}</span></td>
+                    <td><span class="pill ${guest.status}">${esc(statusText(guest.status))}</span>${reason ? `<div class="decline-reason">${esc(reason)}</div>` : ""}</td>
                     <td>${esc(guest.seat)}</td>
-                </tr>`).join("");
+                </tr>`;
+            }).join("");
             document.getElementById("guestTable").innerHTML = `
                 <table>
                     <thead><tr><th>Name</th><th>Company</th><th>Position</th><th>Status</th><th>Seat</th></tr></thead>
@@ -669,6 +699,7 @@
                 <p><strong>${esc(guest.name)}</strong></p>
                 <p>${esc(guest.company || "—")}${guest.position ? " · " + esc(guest.position) : ""}</p>
                 <p>Invitation: ${esc(statusText(guest.status))}</p>
+                ${eventApi === "CapitalMarketConversation" && guest.status === "declined" && formatDeclineReason(guest) ? `<p>Unable to attend: ${esc(formatDeclineReason(guest))}</p>` : ""}
                 <p>Seat status: ${esc(guest.seatStatus)}</p>
                 <p>Checked in: ${when ? esc(formatViewerTime(when)) : "Not in this window"}</p>`;
         }
@@ -677,6 +708,7 @@
             if (!report) return;
             renderStats(report);
             renderGuests(report);
+            renderDeclines(report);
             renderCheckins(report);
             renderMap(report);
             document.getElementById("generatedAt").textContent = "Prepared " + formatViewerTime(report.generatedAt);
@@ -694,6 +726,41 @@
             const text = String(value == null ? "" : value);
             if (/[",\n]/.test(text)) return '"' + text.replace(/"/g, '""') + '"';
             return text;
+        }
+
+        function renderDeclines(state) {
+            const section = document.getElementById("declineSection");
+            if (!section || eventApi !== "CapitalMarketConversation") return;
+            section.hidden = false;
+            const declined = guestRows(state).filter(guest => guest.status === "declined");
+            const rows = declined.map(guest => `
+                <tr>
+                    <td>${esc(guest.name)}</td>
+                    <td>${esc(guest.company || "—")}</td>
+                    <td>${esc(guest.position || "—")}</td>
+                    <td>${esc(formatDeclineReason(guest) || "—")}</td>
+                    <td>${esc(guest.seat)}</td>
+                </tr>`).join("");
+            document.getElementById("declineTable").innerHTML = `
+                <table>
+                    <thead><tr><th>Name</th><th>Company</th><th>Position</th><th>Reason</th><th>Seat</th></tr></thead>
+                    <tbody>${rows || '<tr><td colspan="5">No declined guests.</td></tr>'}</tbody>
+                </table>`;
+        }
+
+        function downloadDeclineCsv() {
+            if (!report || eventApi !== "CapitalMarketConversation") return;
+            const declined = guestRows(report).filter(guest => guest.status === "declined");
+            const lines = [["Name", "Company", "Position", "Reason", "Seat"].join(",")];
+            declined.forEach(guest => {
+                lines.push([guest.name, guest.company, guest.position, formatDeclineReason(guest), guest.seat].map(csvValue).join(","));
+            });
+            const blob = new Blob([lines.join("\r\n")], { type: "text/csv;charset=utf-8" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "Saudi Aramco Excellence Awards 2025-2026 - Declines.csv";
+            link.click();
+            URL.revokeObjectURL(link.href);
         }
 
         function downloadCsv() {
@@ -768,6 +835,8 @@
                     company: guest.company,
                     position: guest.position,
                     status: guest.status,
+                    declineReason: guest.declineReason || "",
+                    declineReasonNote: guest.declineReasonNote || "",
                     seat: guest.seat,
                     seatCode: guest.seatCode,
                     seatStatus: guest.seatStatus,
@@ -804,6 +873,8 @@
                     company: user.company || user.Company || "",
                     position: user.position || user.Position || "",
                     status: normalizeStatus(user.status || user.Status),
+                    declineReason: String(user.declineReason || user.DeclineReason || "").trim(),
+                    declineReasonNote: String(user.declineReasonNote || user.DeclineReasonNote || "").trim(),
                     seatCode: code,
                     seat: code ? seatLabel(code, indexed.labels) : "No seat",
                     seatStatus: seatStatus(record),
@@ -831,6 +902,8 @@
                 company: guest.company,
                 position: guest.position,
                 status: guest.status,
+                declineReason: guest.declineReason || "",
+                declineReasonNote: guest.declineReasonNote || "",
                 seatCode: String(guest.seatCode || "").toUpperCase(),
                 seat: guest.seat,
                 seatStatus: guest.seatStatus,
@@ -890,6 +963,11 @@
         document.getElementById("applyBtn").onclick = applyWindow;
         document.getElementById("pdfBtn").onclick = () => window.print();
         document.getElementById("csvBtn").onclick = downloadCsv;
+        if (eventApi === "CapitalMarketConversation") {
+            const declineCsvBtn = document.getElementById("declineCsvBtn");
+            declineCsvBtn.hidden = false;
+            declineCsvBtn.onclick = downloadDeclineCsv;
+        }
         document.getElementById("htmlBtn").onclick = downloadInteractive;
         document.getElementById("mapWorld").addEventListener("click", event => {
             const chair = event.target.closest(".piece.chair");

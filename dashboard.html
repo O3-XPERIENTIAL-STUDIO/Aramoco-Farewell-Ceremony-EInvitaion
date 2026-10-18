@@ -943,9 +943,18 @@
         /* ── Row 1: Name + right-side badges ── */
         .card-top {
             display: flex;
-            align-items: center;
+            align-items: flex-start;
             justify-content: space-between;
             gap: 12px;
+        }
+
+        .card-status {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 6px;
+            max-width: min(280px, 46%);
+            flex-shrink: 0;
         }
 
         .card-name-row {
@@ -1142,10 +1151,12 @@
         }
 
         .decline-note {
-            margin-top: 4px;
-            font-size: 13px;
-            line-height: 1.45;
-            color: var(--text);
+            margin: 0;
+            font-size: 12px;
+            font-weight: 500;
+            line-height: 1.4;
+            color: var(--red);
+            text-align: right;
         }
 
         /* ── Row 3: URL bar ── */
@@ -3615,7 +3626,10 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
               <div class="card-name-row">
                 <div class="card-name">${u.userName || 'Guest'}${u.seatCode ? `<span class="seat-badge">${escapeHtml(displayForStoredSeat(u.seatCode))}</span>` : ''}</div>
               </div>
-              <span class="status-badge ${statusBadgeClass}">${statusLabel}</span>
+              <div class="card-status">
+                <span class="status-badge ${statusBadgeClass}">${statusLabel}</span>
+                ${declineReasonText ? `<div class="decline-note">${escapeHtml(declineReasonText)}</div>` : ""}
+              </div>
             </div>
 
             <div class="card-meta">
@@ -3632,7 +3646,6 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
               <span><strong>Email sent:</strong> ${emailSentLabel}</span>
               <span><strong>Status changed:</strong> ${statusChangedLabel}</span>
             </div>
-            ${declineReasonText ? `<div class="decline-note"><strong>Unable to attend:</strong> ${escapeHtml(declineReasonText)}</div>` : ""}
 
             <div class="card-admin">
               <select aria-label="Guest status" onchange="changeUserStatus('${safeUid}', this)">
@@ -4607,19 +4620,26 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
         }
 
         function buildGuestExportWorkbook(list) {
+            const includeDecline = eventApi === "CapitalMarketConversation";
             const headers = ['Username', 'EmailId', 'PhoneNumber', 'Company', 'Position', 'Status', 'EmailSentAt', 'StatusChangedAt', 'InviteSend', 'InviteSmsSend'];
-            const rows = sortUsersForExport(list).map(user => [
-                (user.userName || '').toString().trim(),
-                (user.emailId || '').toString().trim(),
-                (user.phoneNumber || '').toString().trim(),
-                (user.company || '').toString().trim(),
-                (user.position || '').toString().trim(),
-                getExportStatusLabel(user),
-                formatTimelineValue(getEmailSentAtMs(user)),
-                formatTimelineValue(getStatusChangedAtMs(user)),
-                isInviteMailAlreadySent(user) ? 'Yes' : 'No',
-                user.inviteSmsSend ? 'Yes' : 'No'
-            ]);
+            if (includeDecline) headers.push('Decline reason');
+            const sorted = sortUsersForExport(list);
+            const rows = sorted.map(user => {
+                const row = [
+                    (user.userName || '').toString().trim(),
+                    (user.emailId || '').toString().trim(),
+                    (user.phoneNumber || '').toString().trim(),
+                    (user.company || '').toString().trim(),
+                    (user.position || '').toString().trim(),
+                    getExportStatusLabel(user),
+                    formatTimelineValue(getEmailSentAtMs(user)),
+                    formatTimelineValue(getStatusChangedAtMs(user)),
+                    isInviteMailAlreadySent(user) ? 'Yes' : 'No',
+                    user.inviteSmsSend ? 'Yes' : 'No'
+                ];
+                if (includeDecline) row.push(normalizeStatus(user.status) === 'declined' ? formatDeclineReason(user) : '');
+                return row;
+            });
 
             const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
             const range = XLSX.utils.decode_range(ws['!ref']);
@@ -4703,10 +4723,45 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                     wch: 14
                 }
             ];
+            if (includeDecline) ws['!cols'].push({
+                wch: 42
+            });
 
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Guests');
+            if (includeDecline) XLSX.utils.book_append_sheet(wb, buildDeclineSheet(sorted), 'Declines');
             return wb;
+        }
+
+        function buildDeclineSheet(list) {
+            const headers = ['Username', 'EmailId', 'PhoneNumber', 'Company', 'Position', 'Decline reason', 'StatusChangedAt'];
+            const declined = list.filter(user => normalizeStatus(user.status) === 'declined');
+            const rows = declined.map(user => [
+                (user.userName || '').toString().trim(),
+                (user.emailId || '').toString().trim(),
+                (user.phoneNumber || '').toString().trim(),
+                (user.company || '').toString().trim(),
+                (user.position || '').toString().trim(),
+                formatDeclineReason(user),
+                formatTimelineValue(getStatusChangedAtMs(user))
+            ]);
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+            ws['!cols'] = [{
+                wch: 28
+            }, {
+                wch: 32
+            }, {
+                wch: 18
+            }, {
+                wch: 24
+            }, {
+                wch: 24
+            }, {
+                wch: 42
+            }, {
+                wch: 22
+            }];
+            return ws;
         }
 
         function exportCSV() {
