@@ -6,12 +6,19 @@
     <link rel="stylesheet" href="assets/css/manifa.css" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>RSVP | Aramco Farewells</title>
+    <script>
+        (function() {
+            var params = new URLSearchParams(window.location.search);
+            var eventName = (params.get("eventname") || "").trim().toLowerCase();
+            if (eventName === "excellenceawards" || params.has("cmc"))
+                document.documentElement.classList.add("is-excellence");
+        })();
+    </script>
     <link rel="icon" type="image/png" href="assets/icon.png" />
     <link rel="apple-touch-icon" href="assets/icon.png" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrious/4.0.2/qrious.min.js"></script>
     <style>
-
-:root {
+        :root {
             --navy: #002650;
             --gold: #CBA886;
             --text: #002650;
@@ -48,6 +55,15 @@
             background-repeat: no-repeat;
             background-position: center bottom;
             background-size: auto 100vh;
+        }
+
+        html.is-excellence,
+        html.is-excellence body {
+            background-color: #140c09;
+            background-image: url("assets/rsvp/excellenceAward-bg.jpg");
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-size: cover;
         }
 
         body {
@@ -364,6 +380,7 @@
     <script>
         (function() {
             var API_BASE = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
+
             function isExcellenceAwards(params) {
                 var eventName = (params.get("eventname") || "").trim().toLowerCase();
                 return eventName === "excellenceawards" || params.has("cmc");
@@ -473,7 +490,9 @@
                 document.body.appendChild(link);
                 link.click();
                 link.remove();
-                window.setTimeout(function() { URL.revokeObjectURL(objectUrl); }, 1500);
+                window.setTimeout(function() {
+                    URL.revokeObjectURL(objectUrl);
+                }, 1500);
             }
 
             function downloadEbadge() {
@@ -485,16 +504,26 @@
                 btnViewEbadge.textContent = "Downloading…";
                 if (acceptError) acceptError.textContent = "";
 
-                fetch(url, { mode: "cors", cache: "no-store" })
+                fetch(url, {
+                        mode: "cors",
+                        cache: "no-store"
+                    })
                     .then(function(res) {
                         if (!res.ok) throw new Error("E-Badge download failed");
                         return res.blob();
                     })
                     .then(function(blob) {
-                        var file = new File([blob], filename, { type: blob.type || "image/jpeg" });
+                        var file = new File([blob], filename, {
+                            type: blob.type || "image/jpeg"
+                        });
                         var phone = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent || "");
-                        if (phone && navigator.canShare && navigator.canShare({ files: [file] })) {
-                            return navigator.share({ files: [file], title: "E-Badge" }).catch(function(err) {
+                        if (phone && navigator.canShare && navigator.canShare({
+                                files: [file]
+                            })) {
+                            return navigator.share({
+                                files: [file],
+                                title: "E-Badge"
+                            }).catch(function(err) {
                                 if (err && err.name === "AbortError") return;
                                 saveBlob(blob, filename);
                             });
@@ -588,9 +617,9 @@
                         try {
                             if (storageKey) sessionStorage.setItem(storageKey, "1");
                         } catch (e) {}
-                        var shown = (result.body && result.body.status)
-                            ? String(result.body.status).toLowerCase()
-                            : status;
+                        var shown = (result.body && result.body.status) ?
+                            String(result.body.status).toLowerCase() :
+                            status;
                         showResultView(shown);
                         return;
                     }
@@ -598,9 +627,9 @@
                         btnConfirm.disabled = false;
                         btnConfirm.textContent = confirmButtonLabel();
                     }
-                    var failText = (result.body && result.body.message)
-                        ? String(result.body.message)
-                        : "Could not save your reply. Please try again.";
+                    var failText = (result.body && result.body.message) ?
+                        String(result.body.message) :
+                        "Could not save your reply. Please try again.";
                     if (confirmError) confirmError.textContent = failText;
                     if (acceptError) acceptError.textContent = failText;
                     console.error("RSVP update failed", result.body);
