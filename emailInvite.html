@@ -277,6 +277,7 @@
 
             var eventName = (params.get("eventname") || "").trim().toLowerCase();
             if (eventName === "excellenceawards" || params.has("cmc")) {
+                document.title = "Official Invitation | Saudi Aramco Excellence Awards 2026";
                 var farewellCard = document.getElementById("invite-card");
                 var excellenceCard = document.getElementById("excellence-card");
                 if (farewellCard) farewellCard.style.display = "none";

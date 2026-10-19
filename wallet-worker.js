@@ -25,6 +25,10 @@ export default {
       });
     }
 
+    if (/^\/emailInvite(?:\.html)?\/?$/i.test(url.pathname) && isExcellenceAwards(url)) {
+      return rewriteExcellenceInvite(request, env);
+    }
+
     const match = url.pathname.match(/^\/wallet\/([^/]+?)(\.pkpass)?\/?$/i);
     if (!match) {
       return env.ASSETS.fetch(request);
@@ -128,6 +132,28 @@ async function proxyQrCard(uniqueId, url) {
       "Content-Length": String(body.byteLength),
       "Cache-Control": "no-store",
       "X-Content-Type-Options": "nosniff"
+    }
+  });
+}
+
+async function rewriteExcellenceInvite(request, env) {
+  const asset = await env.ASSETS.fetch(request);
+  const type = asset.headers.get("Content-Type") || "";
+  if (!asset.ok || !type.includes("text/html")) return asset;
+
+  const title = "Official Invitation | Saudi Aramco Excellence Awards 2026";
+  const html = (await asset.text()).replace(
+    "<title>Official Invitation | Aramco Farewells</title>",
+    `<title>${title}</title>
+    <meta property="og:title" content="${title}" />
+    <meta property="og:description" content="Saudi Aramco Excellence Awards 2026" />
+    <meta name="twitter:title" content="${title}" />`
+  );
+  return new Response(html, {
+    status: asset.status,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store"
     }
   });
 }
