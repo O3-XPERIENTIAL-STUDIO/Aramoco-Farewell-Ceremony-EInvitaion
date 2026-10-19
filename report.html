@@ -562,7 +562,7 @@
             const reason = String((guest && guest.declineReason) || source.declineReason || source.DeclineReason || "").trim();
             const note = String((guest && guest.declineReasonNote) || source.declineReasonNote || source.DeclineReasonNote || "").trim();
             if (!reason && !note) return "";
-            if (reason === "Other") return note ? ("Other — " + note) : "Other — please specify.";
+            if (reason === "Other") return note ? ("Other (please specify): " + note) : "Other (please specify).";
             return reason || note;
         }
 
