@@ -9,8 +9,9 @@
     <script>
         (function() {
             var params = new URLSearchParams(window.location.search);
+            var host = (location.hostname || "").toLowerCase();
             var eventName = (params.get("eventname") || "").trim().toLowerCase();
-            if (eventName === "excellenceawards" || params.has("cmc"))
+            if (host === "excellenceawards2026.com" || host === "www.excellenceawards2026.com" || eventName === "excellenceawards" || params.has("cmc"))
                 document.documentElement.classList.add("is-excellence");
         })();
     </script>
@@ -431,6 +432,8 @@
             var API_BASE = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
 
             function isExcellenceAwards(params) {
+                var host = (location.hostname || "").toLowerCase();
+                if (host === "excellenceawards2026.com" || host === "www.excellenceawards2026.com") return true;
                 var eventName = (params.get("eventname") || "").trim().toLowerCase();
                 return eventName === "excellenceawards" || params.has("cmc");
             }
@@ -534,7 +537,7 @@
                 }
             }
 
-            var PUBLIC_SITE = "https://aramcocorporateevents.com";
+            var PUBLIC_SITE = eventApi === "CapitalMarketConversation" ? "https://excellenceawards2026.com" : "https://aramcocorporateevents.com";
             var ebadgePath = uniqueId ? ("/e-badge/" + encodeURIComponent(uniqueId) + (eventApi === "CapitalMarketConversation" ? "?eventname=excellenceAwards" : "")) : "";
             var ebadgeUrl = uniqueId ? (PUBLIC_SITE + ebadgePath) : "";
 

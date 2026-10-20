@@ -222,12 +222,12 @@
         </tr>
         <tr>
             <td width="280" style="padding:0; width:50%; line-height:0; font-size:0;">
-                <a id="excellenceAccept" href="https://aramcocorporateevents.com/rsvp?status=accept&amp;uniqueId=" style="display:block; text-decoration:none;">
+                <a id="excellenceAccept" href="https://excellenceawards2026.com/rsvp?status=accept&amp;uniqueId=&amp;eventname=excellenceAwards" style="display:block; text-decoration:none;">
                     <img src="assets/emailInvitation/excellenceAwards/accept.webp" width="280" alt="Accept" style="display:block; width:100%; height:auto; border:0;" />
                 </a>
             </td>
             <td width="280" style="padding:0; width:50%; line-height:0; font-size:0;">
-                <a id="excellenceDecline" href="https://aramcocorporateevents.com/rsvp?status=decline&amp;uniqueId=" style="display:block; text-decoration:none;">
+                <a id="excellenceDecline" href="https://excellenceawards2026.com/rsvp?status=decline&amp;uniqueId=&amp;eventname=excellenceAwards" style="display:block; text-decoration:none;">
                     <img src="assets/emailInvitation/excellenceAwards/decline.webp" width="280" alt="Decline" style="display:block; width:100%; height:auto; border:0;" />
                 </a>
             </td>
@@ -258,14 +258,16 @@
                 }
             }
 
-            var RSVP_BASE = "https://aramcocorporateevents.com/rsvp";
+            var host = (location.hostname || "").toLowerCase();
+            var eventName = (params.get("eventname") || "").trim().toLowerCase();
+            var isExcellence = host === "excellenceawards2026.com" || host === "www.excellenceawards2026.com" || eventName === "excellenceawards" || params.has("cmc");
+            var RSVP_BASE = (isExcellence ? "https://excellenceawards2026.com" : "https://aramcocorporateevents.com") + "/rsvp";
 
             function buildUrl(statusValue) {
                 var next = new URLSearchParams();
                 if (name) next.set("name", name);
                 if (uniqueId) next.set("uniqueId", uniqueId);
-                var eventName = (params.get("eventname") || "").trim().toLowerCase();
-                if (eventName === "excellenceawards" || params.has("cmc")) next.set("eventname", "excellenceAwards");
+                if (isExcellence) next.set("eventname", "excellenceAwards");
                 next.set("status", statusValue);
                 return RSVP_BASE + "?" + next.toString();
             }
@@ -275,8 +277,7 @@
             if (accept) accept.href = buildUrl("accept");
             if (decline) decline.href = buildUrl("decline");
 
-            var eventName = (params.get("eventname") || "").trim().toLowerCase();
-            if (eventName === "excellenceawards" || params.has("cmc")) {
+            if (isExcellence) {
                 document.title = "Official Invitation | Saudi Aramco Excellence Awards 2026";
                 var farewellCard = document.getElementById("invite-card");
                 var excellenceCard = document.getElementById("excellence-card");

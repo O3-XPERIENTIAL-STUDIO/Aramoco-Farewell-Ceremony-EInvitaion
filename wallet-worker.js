@@ -4,6 +4,13 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    if (isFarewellHost(url) && (isExcellenceAwards(url) || isExcellenceOnlyPath(url)) && request.method !== "POST") {
+      const next = new URL(url.toString());
+      next.protocol = "https:";
+      next.hostname = "excellenceawards2026.com";
+      return Response.redirect(next.toString(), 302);
+    }
+
     const nameCardMatch = url.pathname.match(/^\/name-card\/excellenceAwards\/([^/]+)\.png$/i);
     if (nameCardMatch) {
       return proxyNameCard(decodeURIComponent(nameCardMatch[1]), url);
@@ -158,7 +165,22 @@ async function rewriteExcellenceInvite(request, env) {
   });
 }
 
+function isExcellenceOnlyPath(url) {
+  return /^\/name-card\/excellenceAwards\//i.test(url.pathname || "");
+}
+
+function isExcellenceHost(url) {
+  const host = (url && url.hostname ? url.hostname : "").toLowerCase();
+  return host === "excellenceawards2026.com" || host === "www.excellenceawards2026.com";
+}
+
+function isFarewellHost(url) {
+  const host = (url && url.hostname ? url.hostname : "").toLowerCase();
+  return host === "aramcocorporateevents.com" || host === "www.aramcocorporateevents.com";
+}
+
 function isExcellenceAwards(url) {
+  if (isExcellenceHost(url)) return true;
   if (!url || !url.searchParams) return false;
   const eventName = (url.searchParams.get("eventname") || "").trim().toLowerCase();
   return eventName === "excellenceawards" || url.searchParams.has("cmc");

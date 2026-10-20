@@ -159,6 +159,8 @@
             var btnDownloadQrCard = document.getElementById("btnDownloadQrCard");
 
             function isExcellenceAwards(params) {
+                var host = (location.hostname || "").toLowerCase();
+                if (host === "excellenceawards2026.com" || host === "www.excellenceawards2026.com") return true;
                 var eventName = (params.get("eventname") || "").trim().toLowerCase();
                 return eventName === "excellenceawards" || params.has("cmc");
             }

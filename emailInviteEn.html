@@ -181,14 +181,16 @@
             var guestEl = document.getElementById("guestName");
             if (name && guestEl) guestEl.textContent = name;
 
-            var RSVP_BASE = "https://aramcocorporateevents.com/rsvp";
+            var host = (location.hostname || "").toLowerCase();
+            var eventName = (params.get("eventname") || "").trim().toLowerCase();
+            var isExcellence = host === "excellenceawards2026.com" || host === "www.excellenceawards2026.com" || eventName === "excellenceawards" || params.has("cmc");
+            var RSVP_BASE = (isExcellence ? "https://excellenceawards2026.com" : "https://aramcocorporateevents.com") + "/rsvp";
 
             function buildUrl(statusValue) {
                 var next = new URLSearchParams();
                 if (name) next.set("name", name);
                 if (uniqueId) next.set("uniqueId", uniqueId);
-                var eventName = (params.get("eventname") || "").trim().toLowerCase();
-                if (eventName === "excellenceawards" || params.has("cmc")) next.set("eventname", "excellenceAwards");
+                if (isExcellence) next.set("eventname", "excellenceAwards");
                 next.set("status", statusValue);
                 return RSVP_BASE + "?" + next.toString();
             }

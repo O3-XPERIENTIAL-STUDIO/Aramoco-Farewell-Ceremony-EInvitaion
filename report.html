@@ -377,6 +377,8 @@
     <script>
         const baseURL = "https://udcwebapi2025-avdxdce9gngffkgx.uaenorth-01.azurewebsites.net";
         function isExcellenceAwards(params) {
+            const host = (location.hostname || "").toLowerCase();
+            if (host === "excellenceawards2026.com" || host === "www.excellenceawards2026.com") return true;
             const eventName = (params.get("eventname") || "").trim().toLowerCase();
             return eventName === "excellenceawards" || params.has("cmc");
         }
