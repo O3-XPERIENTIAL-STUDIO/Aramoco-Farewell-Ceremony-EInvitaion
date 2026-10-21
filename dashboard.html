@@ -543,6 +543,11 @@
             margin-top: 12px;
         }
 
+        #inviteTypeInput[hidden],
+        #editInviteTypeRow[hidden] {
+            display: none !important;
+        }
+
         .edit-grid label,
         .edit-sheet .edit-wide {
             display: flex;
@@ -1833,6 +1838,10 @@
                     <input type="email" id="emailInput" placeholder="Email ID" />
                     <input type="tel" id="phoneInput" placeholder="Phone Number" />
                     <input type="text" id="positionInput" placeholder="Position" />
+                    <select id="inviteTypeInput" hidden>
+                        <option value="General">Guest</option>
+                        <option value="Awardee">Awardee</option>
+                    </select>
                     <button class="btn btn-primary" onclick="addUser()">
                         <span>＋</span> Add User
                     </button>
@@ -1898,6 +1907,12 @@
                 <label>Phone<input id="editPhone" type="tel" /></label>
                 <label>Company<input id="editCompany" type="text" /></label>
                 <label>Position<input id="editPosition" type="text" /></label>
+                <label id="editInviteTypeRow" hidden>Invite type
+                    <select id="editInviteType">
+                        <option value="General">Guest</option>
+                        <option value="Awardee">Awardee</option>
+                    </select>
+                </label>
                 <label class="edit-wide">Group
                     <select id="editGroup" required></select>
                 </label>
@@ -1919,6 +1934,18 @@
         }
         const eventApi = isExcellenceAwards(new URLSearchParams(location.search)) ? "CapitalMarketConversation" : "AramcoFarewell";
         const publicSiteUrl = eventApi === "CapitalMarketConversation" ? "https://excellenceawards2026.com" : "https://aramcocorporateevents.com";
+        if (eventApi === "CapitalMarketConversation") {
+            const headerTitle = document.querySelector(".header-title");
+            if (headerTitle) headerTitle.textContent = "Excellence Award 2026";
+            const inviteTypeInput = document.getElementById("inviteTypeInput");
+            if (inviteTypeInput) inviteTypeInput.hidden = false;
+            const editInviteTypeRow = document.getElementById("editInviteTypeRow");
+            if (editInviteTypeRow) editInviteTypeRow.hidden = false;
+            const importHint = document.querySelector(".import-hint");
+            if (importHint) {
+                importHint.innerHTML = "Supported: <strong>CSV / Excel</strong>. Required columns: <strong>FullName</strong>, <strong>EmailId</strong>. Optional: <strong>Company</strong>, <strong>Position</strong>, <strong>PhoneNumber</strong>, <strong>UserType</strong> (Guest or Awardee), <strong>Status</strong> (Accept, Decline, or Pending). A blank status is Pending. A blank type is Guest.";
+            }
+        }
         const inviteEmailEndpoint = `${baseURL}/api/${eventApi}/send-invitation-email`;
         const inviteSmsEndpoint = `${baseURL}/api/${eventApi}/send-invitation-sms`;
         const inviteQueueStatusEndpoint = `${baseURL}/api/${eventApi}/invitation-email-queue-status`;
@@ -1963,7 +1990,10 @@
         }
 
         function resolveUserType(userType) {
-            return 'General';
+            if (eventApi !== "CapitalMarketConversation") return "General";
+            const key = normalizeUserTypeKey(userType);
+            if (key === "awardee" || key === "awardees") return "Awardee";
+            return "General";
         }
 
         function resolveUserTier(userType) {
@@ -1971,7 +2001,7 @@
         }
 
         function getUserTypeLabel(userType) {
-            return resolveUserType(userType);
+            return resolveUserType(userType) === "Awardee" ? "Awardee" : "Guest";
         }
 
         function parseCSV(text) {
@@ -2035,7 +2065,13 @@
         }
 
         function downloadImportTemplate() {
-            const template = `FullName,EmailId,PhoneNumber,Company,Position,Status
+            const template = eventApi === "CapitalMarketConversation"
+                ? `FullName,EmailId,PhoneNumber,Company,Position,UserType,Status
+John Doe,john.doe@example.com,+966501234567,ARAMCO,Manager,Guest,Pending
+Maryam Ali,maryam.ali@example.com,0599449820,Saudi Aramco,Director,Awardee,Accepted
+Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Guest,Declined
+`
+                : `FullName,EmailId,PhoneNumber,Company,Position,Status
 John Doe,john.doe@example.com,+966501234567,ARAMCO,Manager,Pending
 Maryam Ali,maryam.ali@example.com,0599449820,Saudi Aramco,Director,Accepted
 Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
@@ -2273,7 +2309,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
         function isGuestUser(user) {
             if (!user) return false;
             const type = resolveUserType(user.inviteType || user.userType || '');
-            return type === 'VIP' || type === 'VIP-EN' || type === 'General' || type === 'Media';
+            return type === 'VIP' || type === 'VIP-EN' || type === 'General' || type === 'Media' || type === 'Awardee';
         }
 
         function canSendFinalReminder(user) {
@@ -3036,7 +3072,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                 fullName: (o.fullName || '').toString().trim(),
                 emailId: (o.emailId || '').toString().trim(),
                 phoneNumber: (o.phoneNumber || '').toString().trim(),
-                userType: 'General',
+                userType: eventApi === "CapitalMarketConversation" && resolveUserType(o.userType) === "Awardee" ? "Awardee" : "General",
                 company: (o.company || '').toString().trim(),
                 position: (o.position || '').toString().trim(),
                 status: (o.status || '').toString().trim(),
@@ -3390,6 +3426,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             if (key === 'VIP') return 'invite-VIP';
             if (key === 'VIP-EN') return 'invite-VIP-EN';
             if (key === 'Media') return 'invite-Media';
+            if (key === 'Awardee') return 'invite-Awardee';
             if (key === 'General') return 'invite-General';
             return 'invite-default';
         }
@@ -3626,7 +3663,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
 
             <div class="card-top">
               <div class="card-name-row">
-                <div class="card-name">${u.userName || 'Guest'}${u.seatCode ? `<span class="seat-badge">${escapeHtml(displayForStoredSeat(u.seatCode))}</span>` : ''}</div>
+                <div class="card-name">${u.userName || 'Guest'}${eventApi === "CapitalMarketConversation" ? `<span class="seat-badge">${escapeHtml(getUserTypeLabel(u.inviteType))}</span>` : ''}${u.seatCode ? `<span class="seat-badge">${escapeHtml(displayForStoredSeat(u.seatCode))}</span>` : ''}</div>
               </div>
               <div class="card-status">
                 <span class="status-badge ${statusBadgeClass}">${statusLabel}</span>
@@ -3906,6 +3943,8 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             document.getElementById('editPhone').value = user.phoneNumber || '';
             document.getElementById('editCompany').value = user.company || '';
             document.getElementById('editPosition').value = user.position || '';
+            const editType = document.getElementById('editInviteType');
+            if (editType) editType.value = resolveUserType(user.inviteType) === "Awardee" ? "Awardee" : "General";
             fillEditGroups(user.groupId);
             document.getElementById('editUserModal').hidden = false;
         }
@@ -3926,6 +3965,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                 phoneNumber: document.getElementById('editPhone').value.trim(),
                 company: document.getElementById('editCompany').value.trim(),
                 position: document.getElementById('editPosition').value.trim(),
+                userType: eventApi === "CapitalMarketConversation" ? (document.getElementById('editInviteType').value || "General") : "General",
                 groupId: Number(document.getElementById('editGroup').value)
             };
             if (!payload.fullName || !payload.emailId) {
@@ -4463,6 +4503,9 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             const emailId = document.getElementById("emailInput").value.trim();
             const phoneNumber = (document.getElementById("phoneInput").value || '').trim();
             const position = (document.getElementById("positionInput").value || '').trim();
+            const inviteType = eventApi === "CapitalMarketConversation"
+                ? ((document.getElementById("inviteTypeInput") || {}).value || "General")
+                : "General";
             const groupId = selectedGroupId();
 
             if (!fullName) {
@@ -4488,7 +4531,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                         fullName: fullName,
                         emailId: emailId,
                         phoneNumber: phoneNumber,
-                        userType: 'General',
+                        userType: inviteType === "Awardee" ? "Awardee" : "General",
                         company: company,
                         position: position,
                         groupId: groupId
@@ -5002,13 +5045,14 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                     const hashKey = u.hashKey || '';
                     const uniqueId = u.uniqueId || '';
                     const encodedPosition = encodeURIComponent((u.position || '').toString().trim());
-                    const emailInviteUrl = `${publicSiteUrl}/emailInvite?name=${encodedName}&position=${encodedPosition}&uniqueId=${encodeURIComponent(uniqueId)}${eventApi === "CapitalMarketConversation" ? "&eventname=excellenceAwards" : ""}`;
+                    const storedType = resolveUserType(u.userType || u.UserType);
+                    const emailInviteUrl = `${publicSiteUrl}/emailInvite?name=${encodedName}&position=${encodedPosition}&uniqueId=${encodeURIComponent(uniqueId)}${eventApi === "CapitalMarketConversation" ? "&eventname=excellenceAwards" : ""}${storedType === "Awardee" ? "&userType=Awardee" : ""}`;
                     return {
                         uniqueId: uniqueId,
                         userName: u.fullName,
                         emailId: u.emailId,
                         phoneNumber: u.phoneNumber || u.PhoneNumber || '',
-                        inviteType: 'General',
+                        inviteType: storedType,
                         company: u.company || '',
                         position: u.position || '',
                         hashKey: hashKey,

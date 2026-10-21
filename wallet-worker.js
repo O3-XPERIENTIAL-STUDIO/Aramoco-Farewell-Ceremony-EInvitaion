@@ -92,8 +92,10 @@ async function proxyNameCard(uniqueId, url) {
   const upstreamUrl = new URL(`${API_BASE}/api/CapitalMarketConversation/name-card/${encodeURIComponent(uniqueId)}.png`);
   const name = url.searchParams.get("name");
   const position = url.searchParams.get("position");
+  const userType = url.searchParams.get("userType");
   if (name) upstreamUrl.searchParams.set("name", name);
   if (position) upstreamUrl.searchParams.set("position", position);
+  if (userType) upstreamUrl.searchParams.set("userType", userType);
   const upstream = await fetch(upstreamUrl.toString(), {
     cf: { cacheTtl: 0, cacheEverything: false }
   });
