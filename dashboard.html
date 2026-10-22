@@ -5013,6 +5013,12 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             return ws;
         }
 
+        function exportEventFileName() {
+            const fromUrl = (new URLSearchParams(location.search).get('eventname') || '').trim();
+            const raw = fromUrl || (eventApi === 'CapitalMarketConversation' ? 'excellenceAwards' : 'aramco_farewell');
+            return raw.replace(/[^\w\-]+/g, '') || 'event';
+        }
+
         function exportCSV() {
             try {
                 if (!users.length) {
@@ -5025,7 +5031,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                 }
 
                 const wb = buildGuestExportWorkbook(users);
-                XLSX.writeFile(wb, `aramco_farewell_guests_export_${new Date().toISOString().split('T')[0]}.xlsx`);
+                XLSX.writeFile(wb, `${exportEventFileName()}_guests_export_${new Date().toISOString().split('T')[0]}.xlsx`);
             } catch (e) {
                 alert(`Error exporting Excel: ${e.message}`);
             }
@@ -5046,7 +5052,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                 const safeName = String(group && group.name ? group.name : 'group')
                     .replace(/[^\w\-]+/g, '-')
                     .replace(/^-+|-+$/g, '') || 'group';
-                XLSX.writeFile(wb, `aramco_farewell_rsvp_${safeName}_${new Date().toISOString().split('T')[0]}.xlsx`);
+                XLSX.writeFile(wb, `${exportEventFileName()}_rsvp_${safeName}_${new Date().toISOString().split('T')[0]}.xlsx`);
             } catch (e) {
                 alert(`Error exporting RSVP report: ${e.message}`);
             }
