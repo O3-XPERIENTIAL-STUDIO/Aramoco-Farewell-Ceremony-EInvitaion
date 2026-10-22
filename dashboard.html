@@ -1952,6 +1952,8 @@
             if (inviteTypeInput) inviteTypeInput.hidden = false;
             const editInviteTypeRow = document.getElementById("editInviteTypeRow");
             if (editInviteTypeRow) editInviteTypeRow.hidden = false;
+            const bulkHint = document.querySelector("#bulkDownloadPanel .bulk-download-hint");
+            if (bulkHint) bulkHint.textContent = "Leave the box empty to download every guest, except guests in a group whose name contains “Test”. The ZIP puts each guest’s PDF or E-Badge in a folder named for their group. Paste emails to download only those guests.";
             const importHint = document.querySelector(".import-hint");
             if (importHint) {
                 importHint.innerHTML = "Supported: <strong>CSV / Excel</strong>. Required columns: <strong>FullName</strong>, <strong>EmailId</strong>. Optional: <strong>Company</strong>, <strong>Position</strong>, <strong>PhoneNumber</strong>, <strong>UserType</strong> (Guest or Awardee), <strong>Status</strong> (Accept, Decline, or Pending). A blank status is Pending. A blank type is Guest.";
@@ -3647,8 +3649,8 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                     qrHTML = `<div class="qr-frame">${imgTag}</div>
                   <div class="qr-caption"></div>`;
                     const safeCard = String(qrCardSrc).replace(/'/g, "\\'");
-                    dlBtn = `<button class="btn-download" onclick="downloadQR('${safeCard}','${safeName}')">⬇ E-Badge image</button>` +
-                        `<button class="btn-download" onclick="downloadQrPdf('${safeCard}','${safeName}')">⬇ E-Badge PDF</button>`;
+                    dlBtn = `<button class="btn-download" onclick="downloadQR('${safeCard}','${safeName}','${safeUid}')">⬇ E-Badge image</button>` +
+                        `<button class="btn-download" onclick="downloadQrPdf('${safeCard}','${safeName}','${safeUid}')">⬇ E-Badge PDF</button>`;
                 }
                 dlBtn = `${pdfBtn}${dlBtn}`;
 
@@ -3814,18 +3816,29 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             return eventApi === 'CapitalMarketConversation' ? 'Excellence Award 2026' : 'AramcoFarewell';
         }
 
-        function badgeFileStem(name) {
-            const safe = String(name || 'Guest')
+        function safeDownloadPart(value, fallback) {
+            const safe = String(value || '')
                 .replace(/[<>:"/\\|?*\x00-\x1f]/g, '')
                 .replace(/\s+/g, ' ')
-                .trim() || 'Guest';
-            if (eventApi === 'CapitalMarketConversation')
-                return `Saudi Aramco Excellence Awards 2025-2026 - ${safe}`;
-            return `${safe} - ${badgeEventName()}`;
+                .trim();
+            return safe || fallback;
         }
 
-        function inviteCardFileName(name) {
-            return `${badgeFileStem(name)}.jpg`;
+        function groupLabelForUser(user) {
+            const group = guestGroups.find(item => Number(item.id) === Number(user && user.groupId));
+            return safeDownloadPart((user && user.groupName) || (group && group.name), 'Ungrouped');
+        }
+
+        function badgeFileStem(name, uniqueId) {
+            const safe = safeDownloadPart(name, 'Guest');
+            if (eventApi !== 'CapitalMarketConversation') return `${safe} - ${badgeEventName()}`;
+            const user = (uniqueId && guestById(uniqueId)) || users.find(item => (item.userName || '').toString().trim().toLowerCase() === safe.toLowerCase());
+            const group = user ? groupLabelForUser(user) : '';
+            return group ? `${group} - ${safe}` : safe;
+        }
+
+        function inviteCardFileName(name, uniqueId) {
+            return `${badgeFileStem(name, uniqueId)}.jpg`;
         }
 
         function badgeNameFromZipEntry(fileName) {
@@ -3856,18 +3869,41 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             return next;
         }
 
-        async function downloadInvitePdf(uniqueId, name) {
-            if (!uniqueId) return;
-            // Direct navigation avoids cross-origin fetch/CORS; API returns Content-Disposition: attachment.
-            const url = `${baseURL}/api/${eventApi}/invite-pdf/${encodeURIComponent(uniqueId)}`;
+        function saveDownloadBlob(blob, filename) {
+            const objectUrl = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
-            a.target = '_blank';
+            a.href = objectUrl;
+            a.download = filename;
             a.rel = 'noopener';
             a.style.display = 'none';
             document.body.appendChild(a);
             a.click();
             a.remove();
+            setTimeout(() => URL.revokeObjectURL(objectUrl), 1500);
+        }
+
+        async function downloadInvitePdf(uniqueId, name) {
+            if (!uniqueId) return;
+            const url = `${baseURL}/api/${eventApi}/invite-pdf/${encodeURIComponent(uniqueId)}`;
+            if (eventApi !== 'CapitalMarketConversation') {
+                const a = document.createElement('a');
+                a.href = url;
+                a.target = '_blank';
+                a.rel = 'noopener';
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                return;
+            }
+            try {
+                const res = await fetch(url, { cache: 'no-store' });
+                if (!res.ok) throw new Error('Invite download failed');
+                saveDownloadBlob(await res.blob(), `${badgeFileStem(name, uniqueId)}.pdf`);
+            } catch (err) {
+                console.error(err);
+                alert('Could not download the invite PDF. Please try again.');
+            }
         }
 
         function setBulkDownloadStatus(msg, kind) {
@@ -4073,8 +4109,9 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             const byGroup = !!(emailsOverride && typeof emailsOverride === 'object' && !Array.isArray(emailsOverride));
             const emails = byGroup ? '' : (emailsOverride != null ? String(emailsOverride) : getBulkDownloadEmailsText()).trim();
             const badgeBulk = kind === 'qr' || kind === 'qr-pdf';
+            const excellenceAll = eventApi === 'CapitalMarketConversation';
             let everyoneIds = null;
-            if (!emails && !byGroup && badgeBulk) {
+            if (!emails && !byGroup && (badgeBulk || excellenceAll)) {
                 everyoneIds = users
                     .filter(user => user.uniqueId && !isTestGroupGuest(user))
                     .map(user => user.uniqueId);
@@ -4147,12 +4184,17 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                             `aramco-farewell-ebadge-pdfs_${day}.zip` :
                             `aramco-farewell-qr-cards_${day}.zip`));
                 let outBlob = blob;
-                if (isQrPdf) {
+                if (everyoneIds && eventApi === 'CapitalMarketConversation') {
+                    setBulkDownloadStatus('Sorting files into group folders…', '');
+                    outBlob = await zipIntoGroupFolders(blob, everyoneIds, isQrPdf);
+                } else if (isQrPdf) {
                     setBulkDownloadStatus('Building E-Badge PDFs…', '');
                     outBlob = await imageZipToPdfZip(blob);
                 } else if (!isPdf) {
                     outBlob = await renameBadgeImageZip(blob);
-                } else if (eventApi !== 'CapitalMarketConversation') {
+                } else if (eventApi === 'CapitalMarketConversation') {
+                    outBlob = await renameInvitePdfZip(blob);
+                } else {
                     const disposition = res.headers.get('Content-Disposition') || '';
                     const match = /filename\*?=(?:UTF-8''|")?([^\";]+)/i.exec(disposition);
                     if (match && match[1]) {
@@ -4405,8 +4447,48 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             return { bytes: new Uint8Array(await jpegBlob.arrayBuffer()), width, height };
         }
 
-        function ebadgePdfFileName(name) {
-            return `${badgeFileStem(name)}.pdf`;
+        function ebadgePdfFileName(name, uniqueId) {
+            return `${badgeFileStem(name, uniqueId)}.pdf`;
+        }
+
+        async function zipIntoGroupFolders(zipBlob, includedIds, convertImagesToPdf) {
+            const files = await readZipEntries(new Uint8Array(await zipBlob.arrayBuffer()));
+            const remaining = (includedIds || []).map(id => guestById(id)).filter(Boolean);
+            const used = new Set();
+            const packed = [];
+            for (const file of files) {
+                if (!file.name || file.name.endsWith('/')) continue;
+                const guestName = badgeNameFromZipEntry(file.name);
+                const matchAt = remaining.findIndex(user => (user.userName || '').toString().trim().toLowerCase() === guestName.toLowerCase());
+                const user = matchAt >= 0 ? remaining.splice(matchAt, 1)[0] : null;
+                const folder = safeDownloadPart(user ? groupLabelForUser(user) : 'Ungrouped', 'Ungrouped');
+                let data = file.data;
+                let ext = (file.name.match(/\.(jpe?g|png|pdf)$/i) || ['.pdf'])[0];
+                if (convertImagesToPdf && /\.(jpe?g|png)$/i.test(file.name)) {
+                    const type = /\.png$/i.test(file.name) ? 'image/png' : 'image/jpeg';
+                    const converted = await imageBlobToJpeg(new Blob([file.data], { type }), 1206);
+                    const pdf = jpegBadgeToPdfBlob(converted.bytes, converted.width, converted.height);
+                    data = new Uint8Array(await pdf.arrayBuffer());
+                    ext = '.pdf';
+                }
+                packed.push({
+                    name: uniqueDownloadName(used, `${folder}/${safeDownloadPart(guestName, 'Guest')}${ext.toLowerCase()}`),
+                    data
+                });
+            }
+            if (!packed.length) throw new Error('The download did not contain any files.');
+            return zipStored(packed);
+        }
+
+        async function renameInvitePdfZip(zipBlob) {
+            const files = await readZipEntries(new Uint8Array(await zipBlob.arrayBuffer()));
+            const pdfs = files.filter(file => /\.pdf$/i.test(file.name));
+            if (!pdfs.length) return zipBlob;
+            const used = new Set();
+            return zipStored(pdfs.map(file => ({
+                name: uniqueDownloadName(used, `${badgeFileStem(badgeNameFromZipEntry(file.name))}.pdf`),
+                data: file.data
+            })));
         }
 
         async function renameBadgeImageZip(zipBlob) {
@@ -4426,9 +4508,9 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             return name.toLowerCase().includes('test');
         }
 
-        async function downloadQrPdf(src, name) {
+        async function downloadQrPdf(src, name, uniqueId) {
             if (!src) return;
-            const filename = ebadgePdfFileName(name);
+            const filename = ebadgePdfFileName(name, uniqueId);
             const href = src.indexOf('data:') === 0 || src.indexOf('http') === 0 ?
                 src :
                 ('data:image/png;base64,' + src);
@@ -4453,9 +4535,9 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             }
         }
 
-        async function downloadQR(src, name) {
+        async function downloadQR(src, name, uniqueId) {
             if (!src) return;
-            const filename = inviteCardFileName(name);
+            const filename = inviteCardFileName(name, uniqueId);
             const href = src.indexOf('data:') === 0 || src.indexOf('http') === 0 ?
                 src :
                 ('data:image/png;base64,' + src);
