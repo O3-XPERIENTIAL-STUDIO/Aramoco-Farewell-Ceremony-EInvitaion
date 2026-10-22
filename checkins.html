@@ -58,6 +58,12 @@
             letter-spacing: 0.14em;
             text-transform: uppercase;
             color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+
+        .event-name {
+            font-size: 16px;
+            font-weight: 600;
             margin-bottom: 6px;
         }
 
@@ -176,6 +182,7 @@
         <div class="header">
             <div>
                 <div class="eyebrow" id="eyebrow">Invitation Management System</div>
+                <div class="event-name" id="eventName">Yahya Abu Shal Farewell Ceremony</div>
                 <h1>Live check-ins</h1>
             </div>
             <div class="links">
@@ -220,7 +227,7 @@
         const liveStorageKey = eventApi === "CapitalMarketConversation" ? "cmcWentLiveOn" : "aramcoFarewellWentLiveOn";
         const cmc = eventApi === "CapitalMarketConversation";
         if (cmc) {
-            document.getElementById("eyebrow").textContent = "Capital Markets Conversation";
+            document.getElementById("eventName").textContent = "Excellence Award 2026";
             document.getElementById("dashboardLink").href = "dashboard.html?eventname=excellenceAwards";
         }
 
