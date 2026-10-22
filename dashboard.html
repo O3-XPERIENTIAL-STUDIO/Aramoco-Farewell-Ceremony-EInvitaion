@@ -142,6 +142,11 @@
             border-radius: 2px;
         }
 
+        .header-event::before {
+            content: '·';
+            margin: 0 2px;
+        }
+
         .header-title {
             font-family: Inter, sans-serif;
             font-size: 30px;
@@ -1692,7 +1697,7 @@
         <!-- HEADER -->
         <div class="header">
             <div class="header-left">
-                <div class="header-eyebrow">Invitation Management System</div>
+                <div class="header-eyebrow">Invitation Management System <span class="header-event" id="headerEventName">Yahya Abu Shal Farewell Ceremony</span></div>
                 <h1 class="header-title">entourage <span>Invite</span> Dashboard</h1>
             </div>
             <div class="header-right">
@@ -1935,8 +1940,8 @@
         const eventApi = isExcellenceAwards(new URLSearchParams(location.search)) ? "CapitalMarketConversation" : "AramcoFarewell";
         const publicSiteUrl = eventApi === "CapitalMarketConversation" ? "https://excellenceawards2026.com" : "https://aramcocorporateevents.com";
         if (eventApi === "CapitalMarketConversation") {
-            const headerTitle = document.querySelector(".header-title");
-            if (headerTitle) headerTitle.textContent = "Excellence Award 2026";
+            const headerEventName = document.getElementById("headerEventName");
+            if (headerEventName) headerEventName.textContent = "Excellence Awards 2026";
             const inviteTypeInput = document.getElementById("inviteTypeInput");
             if (inviteTypeInput) inviteTypeInput.hidden = false;
             const editInviteTypeRow = document.getElementById("editInviteTypeRow");
@@ -5226,8 +5231,6 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             document.querySelectorAll('a[href="report.html"], a[href="seats.html"], a[href="scanner.html"], a[href="checkins.html"]').forEach(link => {
                 link.href = link.getAttribute("href") + "?eventname=excellenceAwards";
             });
-            const eyebrow = document.querySelector(".header-eyebrow");
-            if (eyebrow) eyebrow.textContent = "Capital Markets Conversation";
         }
         fetchUsers(false);
         loadSeatPlan(false);
