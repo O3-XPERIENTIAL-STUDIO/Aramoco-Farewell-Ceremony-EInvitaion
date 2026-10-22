@@ -4815,8 +4815,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             return row;
         }
 
-        function buildGuestExportWorkbook(list) {
-            const includeExcellence = eventApi === "CapitalMarketConversation";
+        function buildGroupedGuestSheet(list, includeExcellence) {
             const headers = ['Username', 'EmailId', 'PhoneNumber', 'Company', 'Position', 'Status', 'EmailSentAt', 'StatusChangedAt', 'InviteSend', 'InviteSmsSend'];
             if (includeExcellence) headers.push('Invite type', 'Seat', 'Decline reason', 'Invite URL', 'Badge URL');
             const sorted = sortUsersForExport(list);
@@ -4966,9 +4965,20 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                 });
             }
 
+            return ws;
+        }
+
+        function buildGuestExportWorkbook(list) {
+            const includeExcellence = eventApi === "CapitalMarketConversation";
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Guests');
-            if (includeExcellence) XLSX.utils.book_append_sheet(wb, buildDeclineSheet(sorted), 'Declines');
+            XLSX.utils.book_append_sheet(wb, buildGroupedGuestSheet(list, includeExcellence), 'Guests');
+            if (includeExcellence) {
+                const guests = list.filter(user => resolveUserType(user.inviteType) !== 'Awardee');
+                const awardees = list.filter(user => resolveUserType(user.inviteType) === 'Awardee');
+                XLSX.utils.book_append_sheet(wb, buildGroupedGuestSheet(guests, true), 'Guest');
+                XLSX.utils.book_append_sheet(wb, buildGroupedGuestSheet(awardees, true), 'Awardee');
+                XLSX.utils.book_append_sheet(wb, buildDeclineSheet(sortUsersForExport(list)), 'Declines');
+            }
             return wb;
         }
 
