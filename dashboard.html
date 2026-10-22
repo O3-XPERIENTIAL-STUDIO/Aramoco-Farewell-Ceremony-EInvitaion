@@ -4681,34 +4681,61 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             return `${publicSiteUrl}/e-badge/${encodeURIComponent(id)}?eventname=excellenceAwards`;
         }
 
+        function guestExportCells(user, includeExcellence) {
+            const row = [
+                (user.userName || '').toString().trim(),
+                (user.emailId || '').toString().trim(),
+                (user.phoneNumber || '').toString().trim(),
+                (user.company || '').toString().trim(),
+                (user.position || '').toString().trim(),
+                getExportStatusLabel(user),
+                formatTimelineValue(getEmailSentAtMs(user)),
+                formatTimelineValue(getStatusChangedAtMs(user)),
+                isInviteMailAlreadySent(user) ? 'Yes' : 'No',
+                user.inviteSmsSend ? 'Yes' : 'No'
+            ];
+            if (includeExcellence) {
+                row.push(getUserTypeLabel(user.inviteType));
+                row.push((user.groupName || '').toString().trim());
+                row.push(user.seatCode ? displayForStoredSeat(user.seatCode) : '');
+                row.push(normalizeStatus(user.status) === 'declined' ? formatDeclineReason(user) : '');
+                row.push((user.emailInviteLink || user.urlLink || '').toString().trim());
+                row.push(guestBadgePageUrl(user));
+            }
+            return row;
+        }
+
         function buildGuestExportWorkbook(list) {
             const includeExcellence = eventApi === "CapitalMarketConversation";
             const headers = ['Username', 'EmailId', 'PhoneNumber', 'Company', 'Position', 'Status', 'EmailSentAt', 'StatusChangedAt', 'InviteSend', 'InviteSmsSend'];
             if (includeExcellence) headers.push('Invite type', 'Group', 'Seat', 'Decline reason', 'Invite URL', 'Badge URL');
             const sorted = sortUsersForExport(list);
-            const rows = sorted.map(user => {
-                const row = [
-                    (user.userName || '').toString().trim(),
-                    (user.emailId || '').toString().trim(),
-                    (user.phoneNumber || '').toString().trim(),
-                    (user.company || '').toString().trim(),
-                    (user.position || '').toString().trim(),
-                    getExportStatusLabel(user),
-                    formatTimelineValue(getEmailSentAtMs(user)),
-                    formatTimelineValue(getStatusChangedAtMs(user)),
-                    isInviteMailAlreadySent(user) ? 'Yes' : 'No',
-                    user.inviteSmsSend ? 'Yes' : 'No'
-                ];
-                if (includeExcellence) {
-                    row.push(getUserTypeLabel(user.inviteType));
-                    row.push((user.groupName || '').toString().trim());
-                    row.push(user.seatCode ? displayForStoredSeat(user.seatCode) : '');
-                    row.push(normalizeStatus(user.status) === 'declined' ? formatDeclineReason(user) : '');
-                    row.push((user.emailInviteLink || user.urlLink || '').toString().trim());
-                    row.push(guestBadgePageUrl(user));
-                }
-                return row;
-            });
+            const titleSheetRows = new Set();
+            let rows;
+            if (includeExcellence) {
+                rows = [];
+                const seen = new Set();
+                const sections = [];
+                guestGroups.forEach(group => {
+                    const members = sortUsersForExport(list.filter(user => Number(user.groupId) === Number(group.id)));
+                    members.forEach(user => seen.add(user.uniqueId));
+                    if (members.length) sections.push({
+                        title: (group.name || 'Group').toString().trim() || 'Group',
+                        users: members
+                    });
+                });
+                const loose = sortUsersForExport(list.filter(user => !seen.has(user.uniqueId)));
+                if (loose.length) sections.push({ title: 'Ungrouped', users: loose });
+                sections.forEach(section => {
+                    titleSheetRows.add(rows.length + 1);
+                    const title = new Array(headers.length).fill('');
+                    title[0] = section.title;
+                    rows.push(title);
+                    section.users.forEach(user => rows.push(guestExportCells(user, true)));
+                });
+            } else {
+                rows = sorted.map(user => guestExportCells(user, false));
+            }
 
             const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
             const range = XLSX.utils.decode_range(ws['!ref']);
@@ -4752,7 +4779,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                         r: r,
                         c: c
                     });
-                    if (!ws[addr]) continue;
+                    if (!ws[addr] || titleSheetRows.has(r)) continue;
                     if (c === 5) {
                         ws[addr].s = getExportStatusXlsxStyle(ws[addr].v);
                     } else {
@@ -4793,6 +4820,23 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                 }
             ];
             if (includeExcellence) {
+                if (titleSheetRows.size) {
+                    ws['!merges'] = [...titleSheetRows].map(r => ({
+                        s: { r: r, c: 0 },
+                        e: { r: r, c: headers.length - 1 }
+                    }));
+                }
+                const titleStyle = {
+                    fill: { patternType: 'solid', fgColor: { rgb: '0A3A5C' } },
+                    font: { bold: true, sz: 14, color: { rgb: 'FFFFFF' } },
+                    alignment: { horizontal: 'left', vertical: 'center' }
+                };
+                titleSheetRows.forEach(r => {
+                    const addr = XLSX.utils.encode_cell({ r: r, c: 0 });
+                    if (ws[addr]) ws[addr].s = titleStyle;
+                    if (!ws['!rows']) ws['!rows'] = [];
+                    ws['!rows'][r] = { hpt: 24 };
+                });
                 ws['!cols'].push({ wch: 14 }, { wch: 22 }, { wch: 14 }, { wch: 42 }, { wch: 72 }, { wch: 72 });
                 const inviteCol = headers.indexOf('Invite URL');
                 const badgeCol = headers.indexOf('Badge URL');
