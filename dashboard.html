@@ -4675,10 +4675,16 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             };
         }
 
+        function guestBadgePageUrl(user) {
+            const id = (user && user.uniqueId || '').toString().trim();
+            if (!id || eventApi !== "CapitalMarketConversation") return '';
+            return `${publicSiteUrl}/e-badge/${encodeURIComponent(id)}?eventname=excellenceAwards`;
+        }
+
         function buildGuestExportWorkbook(list) {
-            const includeDecline = eventApi === "CapitalMarketConversation";
+            const includeExcellence = eventApi === "CapitalMarketConversation";
             const headers = ['Username', 'EmailId', 'PhoneNumber', 'Company', 'Position', 'Status', 'EmailSentAt', 'StatusChangedAt', 'InviteSend', 'InviteSmsSend'];
-            if (includeDecline) headers.push('Decline reason');
+            if (includeExcellence) headers.push('Invite type', 'Group', 'Seat', 'Decline reason', 'Invite URL', 'Badge URL');
             const sorted = sortUsersForExport(list);
             const rows = sorted.map(user => {
                 const row = [
@@ -4693,7 +4699,14 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                     isInviteMailAlreadySent(user) ? 'Yes' : 'No',
                     user.inviteSmsSend ? 'Yes' : 'No'
                 ];
-                if (includeDecline) row.push(normalizeStatus(user.status) === 'declined' ? formatDeclineReason(user) : '');
+                if (includeExcellence) {
+                    row.push(getUserTypeLabel(user.inviteType));
+                    row.push((user.groupName || '').toString().trim());
+                    row.push(user.seatCode ? displayForStoredSeat(user.seatCode) : '');
+                    row.push(normalizeStatus(user.status) === 'declined' ? formatDeclineReason(user) : '');
+                    row.push((user.emailInviteLink || user.urlLink || '').toString().trim());
+                    row.push(guestBadgePageUrl(user));
+                }
                 return row;
             });
 
@@ -4779,13 +4792,29 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                     wch: 14
                 }
             ];
-            if (includeDecline) ws['!cols'].push({
-                wch: 42
-            });
+            if (includeExcellence) {
+                ws['!cols'].push({ wch: 14 }, { wch: 22 }, { wch: 14 }, { wch: 42 }, { wch: 72 }, { wch: 72 });
+                const inviteCol = headers.indexOf('Invite URL');
+                const badgeCol = headers.indexOf('Badge URL');
+                [inviteCol, badgeCol].forEach(col => {
+                    if (col < 0) return;
+                    for (let r = 1; r <= range.e.r; r++) {
+                        const addr = XLSX.utils.encode_cell({ r: r, c: col });
+                        const cell = ws[addr];
+                        if (!cell || !cell.v) continue;
+                        cell.l = { Target: String(cell.v) };
+                        cell.s = {
+                            font: { color: { rgb: '0563C1' }, underline: true },
+                            alignment: { vertical: 'center' },
+                            border: xlsxBorder('DDDDDD')
+                        };
+                    }
+                });
+            }
 
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Guests');
-            if (includeDecline) XLSX.utils.book_append_sheet(wb, buildDeclineSheet(sorted), 'Declines');
+            if (includeExcellence) XLSX.utils.book_append_sheet(wb, buildDeclineSheet(sorted), 'Declines');
             return wb;
         }
 
