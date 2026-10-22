@@ -3829,12 +3829,41 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             return safeDownloadPart((user && user.groupName) || (group && group.name), 'Ungrouped');
         }
 
+        function pdfSafeGuestName(name) {
+            let result = '';
+            for (const c of String(name || '').trim()) {
+                if (/^[\p{L}\p{N}]$/u.test(c) || c === '-' || c === '_' || c === ' ') result += c;
+            }
+            result = result.replace(/^-+|-+$/g, '');
+            return result.length > 60 ? result.slice(0, 60) : result;
+        }
+
+        function takeGuestForZipName(remaining, zipGuestName) {
+            const raw = pdfSafeGuestName(zipGuestName).toLowerCase();
+            const base = raw.replace(/_\d+$/, '');
+            const keys = raw && raw !== base ? [raw, base] : [raw];
+            for (const key of keys) {
+                if (!key) continue;
+                const matchAt = remaining.findIndex(user => pdfSafeGuestName(user.userName).toLowerCase() === key);
+                if (matchAt >= 0) return remaining.splice(matchAt, 1)[0];
+            }
+            return null;
+        }
+
+        function guestByDownloadName(name) {
+            const key = pdfSafeGuestName(name).toLowerCase().replace(/_\d+$/, '');
+            return users.find(item => pdfSafeGuestName(item.userName).toLowerCase() === key) ||
+                users.find(item => (item.userName || '').toString().trim().toLowerCase() === String(name || '').trim().toLowerCase()) ||
+                null;
+        }
+
         function badgeFileStem(name, uniqueId) {
             const safe = safeDownloadPart(name, 'Guest');
             if (eventApi !== 'CapitalMarketConversation') return `${safe} - ${badgeEventName()}`;
-            const user = (uniqueId && guestById(uniqueId)) || users.find(item => (item.userName || '').toString().trim().toLowerCase() === safe.toLowerCase());
+            const user = (uniqueId && guestById(uniqueId)) || guestByDownloadName(name);
+            const guest = safeDownloadPart(user && user.userName, safe);
             const group = user ? groupLabelForUser(user) : '';
-            return group ? `${group} - ${safe}` : safe;
+            return group ? `${group} - ${guest}` : guest;
         }
 
         function inviteCardFileName(name, uniqueId) {
@@ -4459,9 +4488,9 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
             for (const file of files) {
                 if (!file.name || file.name.endsWith('/')) continue;
                 const guestName = badgeNameFromZipEntry(file.name);
-                const matchAt = remaining.findIndex(user => (user.userName || '').toString().trim().toLowerCase() === guestName.toLowerCase());
-                const user = matchAt >= 0 ? remaining.splice(matchAt, 1)[0] : null;
-                const folder = safeDownloadPart(user ? groupLabelForUser(user) : 'Ungrouped', 'Ungrouped');
+                const user = takeGuestForZipName(remaining, guestName);
+                const folder = user ? groupLabelForUser(user) : 'Ungrouped';
+                const fileGuest = safeDownloadPart(user && user.userName, guestName);
                 let data = file.data;
                 let ext = (file.name.match(/\.(jpe?g|png|pdf)$/i) || ['.pdf'])[0];
                 if (convertImagesToPdf && /\.(jpe?g|png)$/i.test(file.name)) {
@@ -4472,7 +4501,7 @@ Sara Khan,sara.khan@example.com,,Partner Co,Advisor,Declined
                     ext = '.pdf';
                 }
                 packed.push({
-                    name: uniqueDownloadName(used, `${folder}/${safeDownloadPart(guestName, 'Guest')}${ext.toLowerCase()}`),
+                    name: uniqueDownloadName(used, `${folder}/${fileGuest || 'Guest'}${ext.toLowerCase()}`),
                     data
                 });
             }
